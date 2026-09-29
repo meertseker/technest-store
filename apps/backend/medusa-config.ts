@@ -156,6 +156,7 @@ module.exports = defineConfig({
     disable: process.env.DISABLE_MEDUSA_ADMIN === "true",
   },
   modules: [
+    { resolve: "./src/modules/device" },
     fileModule,
     ...redisModules,
     ...paymentModules,

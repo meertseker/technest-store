@@ -1,8 +1,8 @@
 import { configureStoreSearch, defineMiddlewares } from '@medusajs/framework/http'
+import { adminDeviceMiddlewares } from './admin/devices/middlewares'
 import { rejectClientPaymentData } from './store/payment-collections/reject-client-payment-data'
+import { storeDeviceMiddlewares } from './store/devices/middlewares'
 
-// The product index declares filterable `status` and `sales_channel_ids`, so
-// the route narrows it to published products in the key's sales channels.
 export default defineMiddlewares({
   routes: [
     {
@@ -11,6 +11,8 @@ export default defineMiddlewares({
       matcher: '/store/payment-collections/:id/payment-sessions',
       middlewares: [rejectClientPaymentData],
     },
+    // The product index declares filterable `status` and `sales_channel_ids`, so
+    // the route narrows it to published products in the key's sales channels.
     {
       method: ['POST'],
       matcher: '/store/search',
@@ -22,5 +24,7 @@ export default defineMiddlewares({
         }),
       ],
     },
+    ...storeDeviceMiddlewares,
+    ...adminDeviceMiddlewares,
   ],
 })
