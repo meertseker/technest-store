@@ -20,7 +20,8 @@ type Props = {
 }
 
 export async function generateStaticParams() {
-  const product_categories = await listCategories()
+  // No backend at image-build time (CI/Docker): render on demand instead
+  const product_categories = await listCategories().catch(() => null)
 
   if (!product_categories) {
     return []
