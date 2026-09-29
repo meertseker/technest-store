@@ -10,6 +10,11 @@ export const metadata: Metadata = {
   title: "Checkout",
 }
 
+// Must render per request: src/middleware.ts sets a fresh CSP nonce on every
+// /checkout request, and Next stamps it on this page's scripts at render time.
+// A static/cached checkout would serve a stale nonce and Stripe would be blocked.
+export const dynamic = "force-dynamic"
+
 export default async function Checkout() {
   const cart = await retrieveCart()
 

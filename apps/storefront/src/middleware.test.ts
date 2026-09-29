@@ -96,3 +96,14 @@ describe("middleware: /checkout Content-Security-Policy", () => {
   })
 })
 
+describe("middleware matcher", () => {
+  // Guards the /checkout CSP: if the matcher ever stops covering checkout, fail here.
+  const matches = (path: string) =>
+    config.matcher.some((m: string) => new RegExp(`^${m}$`).test(path))
+
+  it("runs on /checkout and its sub-paths", () => {
+    expect(matches("/checkout")).toBe(true)
+    expect(matches("/checkout/review")).toBe(true)
+  })
+})
+
