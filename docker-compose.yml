@@ -40,7 +40,12 @@ x-backend-env: &backend-env
   SMTP_PORT: ${SMTP_PORT:-587}
   SMTP_USER: ${SMTP_USER:-}
   SMTP_PASS: ${SMTP_PASS:-}
-  SMTP_FROM: ${SMTP_FROM:-Tech Nest <hello@technest.co.uk>}
+  SMTP_SECURE: ${SMTP_SECURE:-false}
+  SMTP_REQUIRE_TLS: ${SMTP_REQUIRE_TLS:-true}
+  MAIL_FROM: ${MAIL_FROM:-Tech Nest <hello@technest.co.uk>}
+  MAIL_REPLY_TO: ${MAIL_REPLY_TO:-hello@technest.co.uk}
+  SHOP_NOTIFY_EMAIL: ${SHOP_NOTIFY_EMAIL:-hello@technest.co.uk}
+  STOREFRONT_URL: https://${SHOP_DOMAIN:-technest.co.uk}
 
 services:
   caddy:
