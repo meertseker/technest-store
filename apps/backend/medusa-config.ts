@@ -64,6 +64,41 @@ const fileModule = {
   },
 }
 
+// Payments (E2): our subclass of Medusa's Stripe provider (see
+// docs/adr/0002-stripe-payment-params.md). Still pp_stripe_stripe; webhook at
+// /hooks/payment/stripe_stripe. Authorise only (capture: false): delivery
+// orders are captured after order.placed, Click & Collect on "Collected".
+// Without STRIPE_API_KEY (dev/test) the module is left out so the app boots;
+// production refuses to start without it.
+if (isProduction && !process.env.STRIPE_API_KEY) {
+  throw new Error("STRIPE_API_KEY is required in production")
+}
+const paymentModules = process.env.STRIPE_API_KEY
+  ? [
+      {
+        resolve: "@medusajs/medusa/payment",
+        options: {
+          providers: [
+            {
+              resolve: "./src/modules/stripe",
+              id: "stripe",
+              options: {
+                apiKey: process.env.STRIPE_API_KEY,
+                webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+                capture: false,
+                // Option name per @medusajs/payment-stripe 2.21 source
+                // (the docs' "automatic_payment_methods" is not read).
+                automaticPaymentMethods: true,
+                paymentDescription: "Tech Nest order",
+                klarnaMinBasketPence: process.env.KLARNA_MIN_BASKET_PENCE || 3000,
+              },
+            },
+          ],
+        },
+      },
+    ]
+  : []
+
 // Email (E2): our own SMTP provider. Dev/test default to Mailpit on
 // localhost:1025; production must set SMTP_HOST and MAIL_FROM explicitly
 // (validateOptions fails the boot otherwise).
@@ -119,7 +154,7 @@ module.exports = defineConfig({
   modules: [
     fileModule,
     ...redisModules,
-    // Payments (Stripe) are configured here by E2.
+    ...paymentModules,
     notificationModule,
   ],
 })
