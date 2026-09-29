@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server"
 import { describe, expect, it } from "vitest"
-import { middleware } from "./middleware"
+import { config, middleware } from "./middleware"
 
 const req = (path: string, cookie?: string) =>
   new NextRequest(new URL(path, "http://localhost:8003"), {
@@ -32,4 +32,25 @@ describe("middleware", () => {
     const again = await middleware(req("/", "_medusa_cache_id=abc"))
     expect(again.cookies.get("_medusa_cache_id")).toBeUndefined()
   })
+})
+
+describe("middleware matcher", () => {
+  // Next anchors the matcher source like this when compiling it
+  const runsOn = (path: string) => new RegExp(`^${config.matcher[0]}$`).test(path)
+
+  it.each([
+    "/gb/products/silicone-case",
+    "/dk/categories/gifts",
+    "/products/notification-light",
+    "/",
+  ])("runs on page path %s", (path) => {
+    expect(runsOn(path)).toBe(true)
+  })
+
+  it.each(["/api/health", "/images/shop/shopfront.jpg", "/robots.txt", "/_next/static/x.js"])(
+    "skips %s",
+    (path) => {
+      expect(runsOn(path)).toBe(false)
+    }
+  )
 })

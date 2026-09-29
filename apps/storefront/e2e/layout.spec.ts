@@ -60,6 +60,11 @@ test.describe("site shell", () => {
     expect(res?.ok()).toBe(true)
   })
 
+  test("legacy product URL whose slug contains a file-like word redirects", async ({ page }) => {
+    await page.goto("/gb/products/silicone-case-magsafe")
+    expect(new URL(page.url()).pathname).toBe("/products/silicone-case-magsafe")
+  })
+
   test("header has no axe violations", async ({ page }) => {
     await page.goto("/")
     const results = await new AxeBuilder({ page }).withTags(WCAG).include("header").analyze()
