@@ -25,8 +25,16 @@ function makeService(options: Record<string, unknown> = {}) {
     amount: params.amount ?? 1000,
     currency: "gbp",
   }))
-  ;(service as any).stripe_ = { paymentIntents: { create, update } }
-  return { service, create, update }
+  const retrieve = jest.fn(async (id: string) => ({
+    id,
+    object: "payment_intent",
+    status: "requires_capture",
+    amount: 5000,
+    currency: "gbp",
+    metadata: { session_id: "payses_1" },
+  }))
+  ;(service as any).stripe_ = { paymentIntents: { create, update, retrieve } }
+  return { service, create, update, retrieve }
 }
 
 describe("TechNestStripeService", () => {
@@ -148,6 +156,38 @@ describe("TechNestStripeService", () => {
       } as any)
 
       expect(update).not.toHaveBeenCalled()
+    })
+  })
+
+  describe("authorizePayment (security review: stale client data.id)", () => {
+    it("authorises an intent created for this payment session", async () => {
+      const { service } = makeService()
+
+      const result = await service.authorizePayment({
+        data: { id: "pi_123" },
+        context: { idempotency_key: "payses_1" },
+      } as any)
+
+      expect(result.status).toBe("authorized")
+    })
+
+    it("refuses an intent that belongs to another payment session", async () => {
+      const { service } = makeService()
+
+      await expect(
+        service.authorizePayment({
+          data: { id: "pi_from_other_order" },
+          context: { idempotency_key: "payses_2" },
+        } as any)
+      ).rejects.toThrow("does not belong to this payment session")
+    })
+
+    it("refuses when the payment session id is unknown", async () => {
+      const { service } = makeService()
+
+      await expect(
+        service.authorizePayment({ data: { id: "pi_123" }, context: {} } as any)
+      ).rejects.toThrow("does not belong to this payment session")
     })
   })
 })

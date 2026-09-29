@@ -4,8 +4,10 @@
 import StripeProviderService from "@medusajs/payment-stripe/dist/services/stripe-provider"
 // eslint-disable-next-line @medusajs/import-from-framework-not-internal
 import { getSmallestUnit } from "@medusajs/payment-stripe/dist/utils/get-smallest-unit"
-import { isPresent } from "@medusajs/framework/utils"
+import { isPresent, MedusaError } from "@medusajs/framework/utils"
 import type {
+  AuthorizePaymentInput,
+  AuthorizePaymentOutput,
   InitiatePaymentInput,
   InitiatePaymentOutput,
   UpdatePaymentInput,
@@ -71,6 +73,26 @@ class TechNestStripeService extends StripeProviderService {
         [EXCLUDED]: this.excludedTypes_(amountPence),
       } as Record<string, unknown>,
     })
+  }
+
+  /**
+   * Medusa stores `{ ...clientData, ...intent }` as session data, so a client
+   * `data.id` can survive if intent creation failed. Only authorise an intent
+   * that this provider created for this very session (metadata.session_id is
+   * set server-side; the payment module passes the session id as
+   * idempotency_key). The intent's amount is then this session's amount.
+   */
+  async authorizePayment(input: AuthorizePaymentInput): Promise<AuthorizePaymentOutput> {
+    const result = await super.authorizePayment(input)
+    const intent = result.data as { metadata?: Record<string, unknown> } | undefined
+    const sessionId = input.context?.idempotency_key
+    if (!sessionId || intent?.metadata?.session_id !== sessionId) {
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        "Stripe payment does not belong to this payment session"
+      )
+    }
+    return result
   }
 
   async updatePayment(input: UpdatePaymentInput): Promise<UpdatePaymentOutput> {

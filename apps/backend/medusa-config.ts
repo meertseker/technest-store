@@ -69,12 +69,13 @@ const fileModule = {
 // /hooks/payment/stripe_stripe. Authorise only (capture: false): delivery
 // orders are captured after order.placed, Click & Collect on "Collected".
 // Without STRIPE_API_KEY (dev/test) the module is left out so the app boots;
-// production refuses to start without it.
-if (isProduction && !process.env.STRIPE_API_KEY) {
-  throw new MedusaError(
-    MedusaError.Types.INVALID_DATA,
-    "STRIPE_API_KEY is required in production"
-  )
+// production refuses to start without the key and the webhook secret.
+// Without the webhook secret every Stripe webhook fails verification and
+// 3DS/Klarna orders stay pending after the shopper has paid.
+for (const name of ["STRIPE_API_KEY", "STRIPE_WEBHOOK_SECRET"]) {
+  if (isProduction && !process.env[name]) {
+    throw new MedusaError(MedusaError.Types.INVALID_DATA, `${name} is required in production`)
+  }
 }
 const paymentModules = process.env.STRIPE_API_KEY
   ? [
