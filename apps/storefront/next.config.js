@@ -1,11 +1,11 @@
 const path = require("path")
 const checkEnvVariables = require("./check-env-variables")
-const { securityHeaders } = require("./security-headers")
+const { securityHeaders, loadCheckoutCsp } = require("./security-headers")
 
 checkEnvVariables()
 
 const BACKEND_URL = new URL(
-  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9003"
+  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
 )
 // Public host of product images (R2 / CDN), from E1's .env.template
 const IMAGE_HOST = process.env.NEXT_PUBLIC_IMAGE_HOSTNAME
@@ -49,13 +49,13 @@ const nextConfig = {
   async headers() {
     const rules = [{ source: "/:path*", headers: securityHeaders }]
     // E2 owns checkout-csp.js (agreed in TEAM_CHAT 2026-09-29); applied once it exists
-    try {
-      const { checkoutCsp } = require("./checkout-csp")
+    const checkoutCsp = loadCheckoutCsp(require)
+    if (checkoutCsp) {
       rules.push({
         source: "/checkout/:path*",
         headers: [{ key: "Content-Security-Policy", value: checkoutCsp }],
       })
-    } catch {}
+    }
     return rules
   },
 }

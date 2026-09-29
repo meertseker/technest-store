@@ -22,6 +22,12 @@ describe("next.config images", () => {
     expect(h).toContain("files.technest.co.uk")
   })
 
+  it("uses the same default backend port as the SDK when unset", () => {
+    vi.stubEnv("NEXT_PUBLIC_MEDUSA_BACKEND_URL", "")
+    const patterns = loadConfig().images.remotePatterns as { hostname: string; port?: string }[]
+    expect(patterns[0]).toMatchObject({ hostname: "localhost", port: "9000" })
+  })
+
   it("allows Medusa's demo image bucket outside production only", () => {
     vi.stubEnv("NODE_ENV", "development")
     expect(hosts(loadConfig())).toContain("medusa-public-images.s3.eu-west-1.amazonaws.com")
