@@ -1,6 +1,7 @@
 "use server"
 
 import { sdk } from "@lib/config"
+import { STORE_COUNTRY } from "@lib/constants/store"
 import { HttpTypes } from "@medusajs/types"
 import { getCacheOptions } from "./cookies"
 
@@ -53,7 +54,7 @@ export const getRegion = async (countryCode: string) => {
 
   const region = countryCode
     ? regionMap.get(countryCode)
-    : regionMap.get("us")
+    : regionMap.get(STORE_COUNTRY)
 
   return region
 }

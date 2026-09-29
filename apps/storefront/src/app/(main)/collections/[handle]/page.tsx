@@ -1,15 +1,15 @@
 import { Metadata } from "next"
+import { STORE_COUNTRY } from "@lib/constants/store"
 import { notFound } from "next/navigation"
 
 import { getCollectionByHandle, listCollections } from "@lib/data/collections"
-import { listRegions } from "@lib/data/regions"
-import { StoreCollection, StoreRegion } from "@medusajs/types"
+import { StoreCollection } from "@medusajs/types"
 import CollectionTemplate from "@modules/collections/templates"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 import { parseOptionValueIds } from "@lib/util/product-option-filters"
 
 type Props = {
-  params: Promise<{ handle: string; countryCode: string }>
+  params: Promise<{ handle: string }>
   searchParams: Promise<
     Record<string, string | string[] | undefined> & {
       page?: string
@@ -30,28 +30,11 @@ export async function generateStaticParams() {
     return []
   }
 
-  const countryCodes = await listRegions().then(
-    (regions: StoreRegion[]) =>
-      regions
-        ?.map((r) => r.countries?.map((c) => c.iso_2))
-        .flat()
-        .filter(Boolean) as string[]
-  )
-
   const collectionHandles = collections.map(
     (collection: StoreCollection) => collection.handle
   )
 
-  const staticParams = countryCodes
-    ?.map((countryCode: string) =>
-      collectionHandles.map((handle: string | undefined) => ({
-        countryCode,
-        handle,
-      }))
-    )
-    .flat()
-
-  return staticParams
+  return collectionHandles.map((handle: string | undefined) => ({ handle }))
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
@@ -89,7 +72,7 @@ export default async function CollectionPage(props: Props) {
       collection={collection}
       page={page}
       sortBy={sortBy}
-      countryCode={params.countryCode}
+      countryCode={STORE_COUNTRY}
       optionValueIds={optionValueIds}
     />
   )

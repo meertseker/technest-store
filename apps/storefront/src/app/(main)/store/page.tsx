@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { STORE_COUNTRY } from "@lib/constants/store"
 import { notFound } from "next/navigation"
 
 import { getRegion } from "@lib/data/regions"
@@ -9,11 +10,8 @@ export const metadata: Metadata = {
   description: "Explore all of our products.",
 }
 
-export default async function StorePage(props: {
-  params: Promise<{ countryCode: string }>
-}) {
-  const { countryCode } = await props.params
-  const region = await getRegion(countryCode)
+export default async function StorePage() {
+  const region = await getRegion(STORE_COUNTRY)
 
   if (!region) {
     notFound()

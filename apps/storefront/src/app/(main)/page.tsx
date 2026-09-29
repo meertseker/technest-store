@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { STORE_COUNTRY } from "@lib/constants/store"
 
 import FeaturedProducts from "@modules/home/components/featured-products"
 import Hero from "@modules/home/components/hero"
@@ -11,13 +12,8 @@ export const metadata: Metadata = {
     "A performant frontend ecommerce starter template with Next.js 15 and Medusa.",
 }
 
-export default async function Home(props: {
-  params: Promise<{ countryCode: string }>
-}) {
-  const params = await props.params
-
-  const { countryCode } = params
-
+export default async function Home() {
+  const countryCode = STORE_COUNTRY
   const region = await getRegion(countryCode)
 
   const { collections } = await listCollections({
