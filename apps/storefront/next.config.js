@@ -1,54 +1,62 @@
+const path = require("path")
 const checkEnvVariables = require("./check-env-variables")
+const { securityHeaders } = require("./security-headers")
 
 checkEnvVariables()
 
-/**
- * Medusa Cloud-related environment variables
- */
-const S3_HOSTNAME = process.env.MEDUSA_CLOUD_S3_HOSTNAME
-const S3_PATHNAME = process.env.MEDUSA_CLOUD_S3_PATHNAME
+const BACKEND_URL = new URL(
+  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9003"
+)
+// Public host of product images (R2 / CDN), from E1's .env.template
+const IMAGE_HOST = process.env.NEXT_PUBLIC_IMAGE_HOSTNAME
+// Medusa's demo seed images; dev only, real product images come from the backend or R2
+const DEMO_IMAGE_HOST = "medusa-public-images.s3.eu-west-1.amazonaws.com"
+const IS_PROD = process.env.NODE_ENV === "production"
+// A stray C:\Users\meert\package-lock.json makes Next pick the wrong workspace root
+const MONOREPO_ROOT = path.join(__dirname, "../..")
 
 /**
  * @type {import('next').NextConfig}
  */
 const nextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
+  turbopack: { root: MONOREPO_ROOT },
+  outputFileTracingRoot: MONOREPO_ROOT,
   logging: {
     fetches: {
       fullUrl: true,
     },
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   images: {
-    unoptimized: true,
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
-        protocol: "http",
-        hostname: "localhost",
+        protocol: BACKEND_URL.protocol.replace(":", ""),
+        hostname: BACKEND_URL.hostname,
+        port: BACKEND_URL.port,
       },
-      {
-        protocol: "https",
-        hostname: "*.s3.*.amazonaws.com",
-      },
-      {
-        protocol: "https",
-        hostname: "*.s3.amazonaws.com",
-      },
-      ...(S3_HOSTNAME && S3_PATHNAME
-        ? [
-            {
-              protocol: "https",
-              hostname: S3_HOSTNAME,
-              pathname: S3_PATHNAME,
-            },
-          ]
-        : []),
+      ...(IMAGE_HOST ? [{ protocol: "https", hostname: IMAGE_HOST }] : []),
+      ...(IS_PROD ? [] : [{ protocol: "https", hostname: DEMO_IMAGE_HOST }]),
     ],
+  },
+  async headers() {
+    const rules = [{ source: "/:path*", headers: securityHeaders }]
+    // E2 owns checkout-csp.js (agreed in TEAM_CHAT 2026-09-29); applied once it exists
+    try {
+      const { checkoutCsp } = require("./checkout-csp")
+      rules.push({
+        source: "/checkout/:path*",
+        headers: [{ key: "Content-Security-Policy", value: checkoutCsp }],
+      })
+    } catch {}
+    return rules
   },
 }
 
