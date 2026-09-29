@@ -26,6 +26,14 @@ describe("middleware", () => {
     expect(res.headers.get("location")).toBeNull()
   })
 
+  it("sets the cache id cookie httpOnly and sameSite=lax", async () => {
+    const res = await middleware(req("/"))
+    const setCookie = res.headers.get("set-cookie") ?? ""
+    expect(setCookie).toMatch(/_medusa_cache_id=/)
+    expect(setCookie.toLowerCase()).toContain("httponly")
+    expect(setCookie.toLowerCase()).toContain("samesite=lax")
+  })
+
   it("sets the cache id cookie once", async () => {
     const res = await middleware(req("/"))
     expect(res.cookies.get("_medusa_cache_id")?.value).toBeTruthy()

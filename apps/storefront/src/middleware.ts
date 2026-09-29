@@ -25,6 +25,9 @@ export async function middleware(request: NextRequest) {
     response.cookies.set("_medusa_cache_id", crypto.randomUUID(), {
       maxAge: 60 * 60 * 24,
       sameSite: "lax",
+      // only read server-side (lib/data/cookies.ts)
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
     })
   }
   return response
