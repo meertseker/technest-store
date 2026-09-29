@@ -2,6 +2,7 @@
 # Images are built by GitHub Actions and pulled from GHCR; nothing is built on the server.
 #   docker compose pull && docker compose run --rm migrate && docker compose up -d --remove-orphans
 # Secrets live in /opt/technest/.env (chmod 600), never in git. See .env.production.template.
+# POSTGRES_PASSWORD goes into DATABASE_URL unencoded: generate it hex-only (openssl rand -hex 32).
 
 name: technest
 
@@ -111,6 +112,8 @@ services:
     <<: *defaults
     image: ghcr.io/${GHCR_OWNER:?}/technest-storefront:${IMAGE_TAG:-main}
     environment:
+      # Server-side calls should use the internal network instead of going out through
+      # Cloudflare. Needs the storefront to read MEDUSA_BACKEND_URL on the server (asked E3).
       MEDUSA_BACKEND_URL: http://server:9000
       SENTRY_DSN: ${SENTRY_DSN_STOREFRONT:-}
     depends_on:
