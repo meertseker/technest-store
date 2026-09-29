@@ -1,0 +1,60 @@
+{
+  "name": "Tech Nest",
+  "category": "Mobile phone repair shop",
+  "rating": 5.0,
+  "review_count": 30,
+  "address": "Unit 2A, Southwark Park Rd., London SE16 3TU",
+  "plus_code": "FWRP+W7 London",
+  "phone": "07775 669000",
+  "coordinates": {
+    "lat": 51.4923393,
+    "lng": -0.0643359
+  },
+  "website": null,
+  "order_online": "deliveroo.co.uk",
+  "opening_hours": [
+    "Tuesday 9 am–8 pm",
+    "Wednesday 9 am–8 pm",
+    "Thursday 9 am–8 pm",
+    "Friday 9 am–8 pm",
+    "Saturday 9 am–8 pm",
+    "Sunday 11 am–5 pm",
+    "Monday 9 am–8 pm"
+  ],
+  "service_options": [
+    "On-site services"
+  ],
+  "payments": [
+    "Credit cards",
+    "Debit cards",
+    "NFC mobile payments"
+  ],
+  "review_topics": {
+    "power bank": 2,
+    "value for money": 2,
+    "range of stock": 2,
+    "quality products": 3
+  },
+  "review_highlights": [
+    "Excellent Service and friendly staff.",
+    "Great value for their price and their customer service and quality is 10/10.",
+    "I’m very satisfied with both the service and the value for money."
+  ],
+  "photo_count": 10,
+  "photo_categories": [
+    "All",
+    "Exterior",
+    "Street View & 360°"
+  ],
+  "google_ids": {
+    "place_id": "ChIJcR24n1UDdkgRr2HfXi6pF8w",
+    "kgmid": "/g/11zbptg_yt",
+    "cid_hex": "0x487603559fb81d71:0xcc17a92e5edf61af",
+    "cid": "14706409124826931631"
+  },
+  "links": {
+    "share": "https://share.google/7mmHO5UBq1A3uSSlO",
+    "maps": "https://www.google.com/maps/place/Tech+Nest/data=!4m7!3m6!1s0x487603559fb81d71:0xcc17a92e5edf61af!8m2!3d51.4923393!4d-0.0643359!16s%2Fg%2F11zbptg_yt!19sChIJcR24n1UDdkgRr2HfXi6pF8w?hl=en"
+  },
+  "scraped_at": "2026-09-29"
+}
