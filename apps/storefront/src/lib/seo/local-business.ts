@@ -11,7 +11,7 @@ export function buildLocalBusinessJsonLd(config: SiteConfig, baseUrl: string) {
     name: config.name,
     url: baseUrl,
     telephone: config.phone.e164,
-    email: config.email,
+    ...(config.email ? { email: config.email } : {}),
     image: `${baseUrl}/images/shop/shopfront.jpg`,
     address: {
       "@type": "PostalAddress",

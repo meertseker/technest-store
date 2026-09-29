@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  buildWeek,
   formatTime,
   getOpenStatus,
   parseHoursLine,
@@ -52,6 +53,28 @@ describe("parseHoursLine", () => {
   })
 })
 
+describe("unexpected hours lines never crash the site", () => {
+  it("returns null for a line without a known day", () => {
+    expect(parseHoursLine("Bank holiday Hours might differ")).toBeNull()
+    expect(parseHoursLine("Mon 9 am–8 pm")).toBeNull()
+  })
+
+  it("buildWeek skips bad lines and still returns Monday..Sunday", () => {
+    const week = buildWeek(["Tuesday 9 am–8 pm", "Bank holiday Hours might differ"])
+    expect(week.map((d) => d.day)).toEqual([
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ])
+    expect(week[1]).toEqual({ day: "Tuesday", opens: "09:00", closes: "20:00" })
+    expect(week[0]).toEqual({ day: "Monday", opens: null, closes: null })
+  })
+})
+
 describe("siteConfig", () => {
   it("is built from the profile", () => {
     expect(siteConfig.address.postcode).toBe("SE16 3TU")
@@ -64,6 +87,8 @@ describe("siteConfig", () => {
       closes: "17:00",
     })
     expect(siteConfig.rating).toEqual({ value: 5, count: 30 })
+    // not in the Google profile, so not published until the lead confirms it
+    expect(siteConfig.email).toBeNull()
   })
 })
 

@@ -35,10 +35,14 @@ const to24 = (h: string, m: string | undefined, ampm: string) => {
 const TIME = "(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm)"
 const RANGE = new RegExp(`${TIME}\\s*[–-]\\s*${TIME}`, "i")
 
-/** Parses one Google Business Profile hours line, e.g. "Tuesday 9 am–8 pm" */
-export function parseHoursLine(line: string): DayHours {
+/**
+ * Parses one Google Business Profile hours line, e.g. "Tuesday 9 am–8 pm".
+ * Returns null for a line without a known day so a changed export can never
+ * crash the pages that import siteConfig.
+ */
+export function parseHoursLine(line: string): DayHours | null {
   const day = DAYS.find((d) => line.startsWith(d))
-  if (!day) throw new Error(`Unknown day in hours line: ${line}`)
+  if (!day) return null
   const rest = line.slice(day.length).trim()
   if (/open 24 hours/i.test(rest)) return { day, opens: "00:00", closes: "24:00" }
   const m = rest.match(RANGE)
@@ -66,12 +70,15 @@ const postcode =
   cityPostcode.match(/[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/i)?.[0] ?? ""
 const locality = cityPostcode.replace(postcode, "").trim()
 
-const hoursByDay = new Map(
-  profile.opening_hours.map((line) => {
+/** Monday..Sunday from hours lines; unparseable lines are skipped, missing days are closed */
+export function buildWeek(lines: string[]): DayHours[] {
+  const byDay = new Map<DayName, DayHours>()
+  for (const line of lines) {
     const parsed = parseHoursLine(line)
-    return [parsed.day, parsed] as const
-  })
-)
+    if (parsed) byDay.set(parsed.day, parsed)
+  }
+  return DAYS.map((d) => byDay.get(d) ?? { day: d, opens: null, closes: null })
+}
 
 /** The shop's facts, built once from the Google Business Profile export */
 export const siteConfig = {
@@ -82,7 +89,7 @@ export const siteConfig = {
     display: profile.phone,
     e164: `+44${profile.phone.replace(/\s/g, "").replace(/^0/, "")}`,
   },
-  email: "hello@technest.co.uk",
+  email: null as string | null, // not in the Google profile; [LEAD?] before publishing one
   address: {
     line1,
     line2: line2Raw.replace(/\.$/, ""),
@@ -94,9 +101,7 @@ export const siteConfig = {
   geo: { lat: profile.coordinates.lat, lng: profile.coordinates.lng },
   mapsUrl: profile.links.maps,
   rating: { value: profile.rating, count: profile.review_count },
-  hours: DAYS.map(
-    (d): DayHours => hoursByDay.get(d) ?? { day: d, opens: null, closes: null }
-  ),
+  hours: buildWeek(profile.opening_hours),
 }
 
 const londonParts = (now: Date) => {

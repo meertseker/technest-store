@@ -40,6 +40,18 @@ describe("buildLocalBusinessJsonLd", () => {
     expect(ld.openingHoursSpecification).toHaveLength(7)
   })
 
+  it("omits email while none is confirmed", () => {
+    expect("email" in ld).toBe(false)
+  })
+
+  it("includes email once one is configured", () => {
+    const withEmail = buildLocalBusinessJsonLd(
+      { ...siteConfig, email: "shop@example.com" },
+      "https://technest.co.uk"
+    ) as Ld
+    expect(withEmail.email).toBe("shop@example.com")
+  })
+
   it("does not claim a rating (self-serving LocalBusiness reviews are ineligible)", () => {
     expect(ld.aggregateRating).toBeUndefined()
   })
