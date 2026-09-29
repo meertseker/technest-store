@@ -1,157 +1,147 @@
-import { listCategories } from "@lib/data/categories";
-import { listCollections } from "@lib/data/collections";
-import { Text, clx } from "@modules/common/components/ui";
+import Link from "next/link"
+import { MapPin, Phone } from "lucide-react"
+import { listCategories } from "@lib/data/categories"
+import { formatTime, getOpenStatus, siteConfig } from "@/lib/site-config"
 
-import LocalizedClientLink from "@modules/common/components/localized-client-link";
-import MedusaCTA from "@modules/layout/components/medusa-cta";
+const HELP = [
+  { href: "/click-and-collect", label: "Click & Collect" },
+  { href: "/contact", label: "Contact us" },
+  { href: "/legal/accessibility", label: "Accessibility statement" },
+]
+
+const LEGAL = [
+  { href: "/legal/terms", label: "Terms" },
+  { href: "/legal/delivery", label: "Delivery" },
+  { href: "/legal/returns", label: "Returns" },
+  { href: "/legal/privacy", label: "Privacy" },
+  { href: "/legal/cookies", label: "Cookies" },
+  { href: "/legal/accessibility", label: "Accessibility" },
+]
+
+const linkClass = "inline-flex min-h-11 items-center hover:underline"
 
 export default async function Footer() {
-  const { collections } = await listCollections({
-    fields: "*products",
-  });
-  const productCategories = await listCategories();
+  // The footer must still render when the backend is down
+  const categories = await listCategories()
+    .then((all) => all.filter((c) => !c.parent_category_id).slice(0, 8))
+    .catch(() => [])
+  const status = getOpenStatus(new Date())
+  const { address, phone, mapsUrl, hours } = siteConfig
 
   return (
-    <footer className="border-t border-ui-border-base w-full">
-      <div className="content-container flex flex-col w-full">
-        <div className="flex flex-col gap-y-6 xsmall:flex-row items-start justify-between py-40">
-          <div>
-            <LocalizedClientLink
-              href="/"
-              className="txt-compact-xlarge-plus text-ui-fg-subtle hover:text-ui-fg-base uppercase"
+    <footer className="mt-20 border-t border-border bg-surface">
+      <div className="content-container grid gap-10 py-12 md:grid-cols-2 lg:grid-cols-4">
+        <section aria-labelledby="footer-shop">
+          <h2 id="footer-shop" className="text-lg font-semibold">
+            Shop
+          </h2>
+          <ul className="mt-3">
+            {categories.map((c) => (
+              <li key={c.id}>
+                <Link href={`/categories/${c.handle}`} className={linkClass}>
+                  {c.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section aria-labelledby="footer-visit">
+          <h2 id="footer-visit" className="text-lg font-semibold">
+            Visit us
+          </h2>
+          <address className="mt-3 not-italic">
+            {address.line1}, {address.line2}
+            <br />
+            {address.locality} {address.postcode}
+          </address>
+          <p className="mt-2 font-semibold">{status.label}</p>
+          <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4">
+            {hours.map((h) => (
+              <div key={h.day} className="contents">
+                <dt>{h.day}</dt>
+                <dd className="tabular-nums">
+                  {h.opens && h.closes
+                    ? `${formatTime(h.opens)}–${formatTime(h.closes)}`
+                    : "Closed"}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <div className="mt-3 flex flex-col">
+            <a href={`tel:${phone.e164}`} className={`${linkClass} gap-2`}>
+              <Phone aria-hidden className="size-5" /> {phone.display}
+            </a>
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${linkClass} gap-2`}
             >
-              Medusa Store
-            </LocalizedClientLink>
+              <MapPin aria-hidden className="size-5" /> Open in Google Maps
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
           </div>
-          <div className="text-small-regular gap-10 md:gap-x-16 grid grid-cols-2 sm:grid-cols-3">
-            {productCategories && productCategories?.length > 0 && (
-              <div className="flex flex-col gap-y-2">
-                <span className="txt-small-plus txt-ui-fg-base">
-                  Categories
-                </span>
-                <ul
-                  className="grid grid-cols-1 gap-2"
-                  data-testid="footer-categories"
-                >
-                  {productCategories?.slice(0, 6).map((c) => {
-                    if (c.parent_category) {
-                      return;
-                    }
+        </section>
 
-                    const children =
-                      c.category_children?.map((child) => ({
-                        name: child.name,
-                        handle: child.handle,
-                        id: child.id,
-                      })) || null;
+        <section aria-labelledby="footer-help">
+          <h2 id="footer-help" className="text-lg font-semibold">
+            Help
+          </h2>
+          <ul className="mt-3">
+            {HELP.map((l) => (
+              <li key={l.href}>
+                <Link href={l.href} className={linkClass}>
+                  {l.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-                    return (
-                      <li
-                        className="flex flex-col gap-2 text-ui-fg-subtle txt-small"
-                        key={c.id}
-                      >
-                        <LocalizedClientLink
-                          className={clx(
-                            "hover:text-ui-fg-base",
-                            children && "txt-small-plus"
-                          )}
-                          href={`/categories/${c.handle}`}
-                          data-testid="category-link"
-                        >
-                          {c.name}
-                        </LocalizedClientLink>
-                        {children && (
-                          <ul className="grid grid-cols-1 ml-3 gap-2">
-                            {children &&
-                              children.map((child) => (
-                                <li key={child.id}>
-                                  <LocalizedClientLink
-                                    className="hover:text-ui-fg-base"
-                                    href={`/categories/${child.handle}`}
-                                    data-testid="category-link"
-                                  >
-                                    {child.name}
-                                  </LocalizedClientLink>
-                                </li>
-                              ))}
-                          </ul>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-            {collections && collections.length > 0 && (
-              <div className="flex flex-col gap-y-2">
-                <span className="txt-small-plus txt-ui-fg-base">
-                  Collections
-                </span>
-                <ul
-                  className={clx(
-                    "grid grid-cols-1 gap-2 text-ui-fg-subtle txt-small",
-                    {
-                      "grid-cols-2": (collections?.length || 0) > 3,
-                    }
-                  )}
-                >
-                  {collections?.slice(0, 6).map((c) => (
-                    <li key={c.id}>
-                      <LocalizedClientLink
-                        className="hover:text-ui-fg-base"
-                        href={`/collections/${c.handle}`}
-                      >
-                        {c.title}
-                      </LocalizedClientLink>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <div className="flex flex-col gap-y-2">
-              <span className="txt-small-plus txt-ui-fg-base">Medusa</span>
-              <ul className="grid grid-cols-1 gap-y-2 text-ui-fg-subtle txt-small">
-                <li>
-                  <a
-                    href="https://github.com/medusajs"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-ui-fg-base"
-                  >
-                    GitHub
-                  </a>
+        <section aria-labelledby="footer-more">
+          <h2 id="footer-more" className="text-lg font-semibold">
+            Repairs and trade
+          </h2>
+          <ul className="mt-3">
+            <li>
+              <Link href="/repairs" className={linkClass}>
+                Book a repair
+              </Link>
+            </li>
+            <li>
+              <Link href="/trade" className={linkClass}>
+                Trade accounts
+              </Link>
+            </li>
+            <li>
+              <Link href="/about" className={linkClass}>
+                About us
+              </Link>
+            </li>
+          </ul>
+        </section>
+      </div>
+
+      <div className="border-t border-border">
+        <div className="content-container flex flex-col gap-3 py-6 text-muted-foreground lg:flex-row lg:items-center lg:justify-between">
+          <p>
+            &copy; {new Date().getFullYear()} {siteConfig.legalName ?? siteConfig.name}
+            {siteConfig.vatNumber ? ` · VAT ${siteConfig.vatNumber}` : ""}
+          </p>
+          <nav aria-label="Legal">
+            <ul className="flex flex-wrap gap-x-4">
+              {LEGAL.map((l) => (
+                <li key={l.label}>
+                  <Link href={l.href} className={linkClass}>
+                    {l.label}
+                  </Link>
                 </li>
-                <li>
-                  <a
-                    href="https://docs.medusajs.com"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-ui-fg-base"
-                  >
-                    Documentation
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="https://github.com/medusajs/dtc-starter"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-ui-fg-base"
-                  >
-                    Source code
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <div className="flex w-full mb-16 justify-between text-ui-fg-muted">
-          <Text className="txt-compact-small">
-            © {new Date().getFullYear()} Medusa Store. All rights reserved.
-          </Text>
-          <MedusaCTA />
+              ))}
+            </ul>
+          </nav>
         </div>
       </div>
     </footer>
-  );
+  )
 }

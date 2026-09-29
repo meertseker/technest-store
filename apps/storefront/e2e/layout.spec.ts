@@ -66,3 +66,42 @@ test.describe("site shell", () => {
     expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])
   })
 })
+
+test.describe("footer", () => {
+  test("shows real shop details from the profile", async ({ page }) => {
+    await page.goto("/")
+    const footer = page.getByRole("contentinfo")
+    await expect(footer).toContainText("Unit 2A, Southwark Park Rd")
+    await expect(footer).toContainText("SE16 3TU")
+    await expect(footer.getByRole("link", { name: /07775 669000/ })).toHaveAttribute(
+      "href",
+      "tel:+447775669000"
+    )
+    await expect(
+      footer.getByRole("link", { name: /open in google maps/i })
+    ).toHaveAttribute("href", /google\.com\/maps/)
+    await expect(footer).toContainText("Sunday")
+    await expect(footer).toContainText("11am–5pm")
+    const legal = footer.getByRole("navigation", { name: "Legal" })
+    for (const name of ["Terms", "Delivery", "Returns", "Privacy", "Cookies", "Accessibility"]) {
+      await expect(legal.getByRole("link", { name, exact: true })).toBeVisible()
+    }
+  })
+
+  test("a focused footer link is not hidden under the sticky header", async ({ page }) => {
+    await page.goto("/")
+    const link = page
+      .getByRole("navigation", { name: "Legal" })
+      .getByRole("link", { name: "Terms", exact: true })
+    await link.focus()
+    const box = await link.boundingBox()
+    const header = await page.getByRole("banner").boundingBox()
+    expect(box!.y).toBeGreaterThanOrEqual(header!.y + header!.height)
+  })
+
+  test("whole page has no axe violations", async ({ page }) => {
+    await page.goto("/")
+    const results = await new AxeBuilder({ page }).withTags(WCAG).analyze()
+    expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])
+  })
+})
