@@ -5,33 +5,27 @@ import {
   StepResponse,
   WorkflowResponse,
 } from "@medusajs/framework/workflows-sdk"
+import { sendEmailOnce, type EmailSend } from "../lib/email/send-email-once"
 
-export type SendEmailInput = {
-  to: string
-  /** Template id from docs/contracts/emails.md (rendered by @technest/emails). */
-  template: string
-  data: Record<string, unknown>
-  /** "<template>:<entity id>". The Notification module skips keys already sent. */
-  idempotency_key: string
-  resource_id?: string
-  resource_type?: string
-  trigger_type?: string
-}
+export type SendEmailInput = EmailSend
 
 const sendEmailStep = createStep(
   {
     name: "technest-send-email",
-    // SMTP hiccups retry every 60 s, up to 5 times. Retries reuse the same
-    // idempotency key, so the Notification module only resends failed ones.
+    // SMTP hiccups retry every 60 s, up to 5 times. Each attempt first checks
+    // for an earlier successful send, so a retry never emails twice.
     maxRetries: 5,
     retryInterval: 60,
   },
   async (input: SendEmailInput, { container }) => {
-    const notifications = container.resolve(Modules.NOTIFICATION)
-    const [notification] = await notifications.createNotifications([
-      { ...input, channel: "email" },
-    ])
-    return new StepResponse({ id: notification?.id })
+    const result = await sendEmailOnce(
+      {
+        notifications: container.resolve(Modules.NOTIFICATION),
+        locking: container.resolve(Modules.LOCKING),
+      },
+      input
+    )
+    return new StepResponse(result)
   }
   // No compensation: an email can't be unsent.
 )

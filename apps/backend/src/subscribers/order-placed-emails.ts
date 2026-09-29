@@ -9,10 +9,18 @@ export default async function orderPlacedEmails({
   container,
 }: SubscriberArgs<{ id: string }>) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
-  const { email, data: order } = await loadOrderEmailData(container, data.id)
 
+  let loaded: Awaited<ReturnType<typeof loadOrderEmailData>>
+  try {
+    loaded = await loadOrderEmailData(container, data.id)
+  } catch (e) {
+    logger.error(`order.placed emails: could not load order ${data.id}: ${(e as Error).message}`)
+    return
+  }
+
+  // Each send is independent: a missing customer email must not stop the shop alert.
   const sends = [
-    { to: email, template: "order-confirmation" },
+    ...(loaded.email ? [{ to: loaded.email, template: "order-confirmation" }] : []),
     { to: shopNotifyEmail(), template: "shop-new-order" },
   ]
   for (const send of sends) {
@@ -20,8 +28,7 @@ export default async function orderPlacedEmails({
       await sendEmailWorkflow(container).run({
         input: {
           ...send,
-          data: order as unknown as Record<string, unknown>,
-          idempotency_key: `${send.template}:${data.id}`,
+          data: loaded.data as unknown as Record<string, unknown>,
           resource_id: data.id,
           resource_type: "order",
           trigger_type: "order.placed",

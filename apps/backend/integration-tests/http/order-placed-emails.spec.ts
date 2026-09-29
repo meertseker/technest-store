@@ -52,7 +52,7 @@ medusaIntegrationTestRunner({
         for (const o of options) optionIds[o.type!.code] = o.id
       })
 
-      async function placeOrder(email: string, optionCode: string, shippingAmount: number) {
+      async function placeOrder(email: string | undefined, optionCode: string, shippingAmount: number) {
         const { result } = await createOrderWorkflow(getContainer()).run({
           input: {
             region_id: regionId,
@@ -126,6 +126,15 @@ medusaIntegrationTestRunner({
 
         await mailTo(email, 2) // wait long enough that a duplicate would have arrived
         expect(await mailTo(email, 1)).toHaveLength(1)
+      })
+
+      it("still alerts the shop when the order has no customer email", async () => {
+        const order = await placeOrder(undefined, "standard", 3.49)
+
+        await orderPlacedEmails({ event: { name: "order.placed", data: { id: order.id } }, container: getContainer() } as any)
+
+        const shop = await mailTo(process.env.SHOP_NOTIFY_EMAIL!, 4)
+        expect(shop.length).toBeGreaterThanOrEqual(4)
       })
     })
   },
