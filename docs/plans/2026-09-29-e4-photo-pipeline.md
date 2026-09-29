@@ -60,3 +60,14 @@ CMD ["rembg","s","--host","0.0.0.0","--port","7000","--no-ui","-t","1","-l","war
 
 ## Open questions
 - Where the product-photo files live in dev: the local file provider (fine). In prod, R2 `originals/` should be private. Needs E1's file-provider config (private bucket vs public prefix).
+
+## Spike results (2026-09-29, local Docker, prod limits 2 CPU / 4 GB, rembg 2.0.85)
+| Model | Time per photo (quiet host) | Peak RAM | Result |
+|---|---|---|---|
+| isnet-general-use | 5–7 s | 2.1 GB | OK |
+| birefnet-general-lite | — | ~3.8 GB, then OOM-killed | fails at 4 GB (6 GB run inconclusive: the host VM was also building images) |
+| birefnet-general | — | OOM-killed on the first photo | fails at 4 GB |
+
+Early isnet runs (40–88 s) overlapped with a pnpm install on the same host and are discarded.
+Decision pending with the lead ([LEAD?] in TEAM_CHAT, 2026-09-29): default `PHOTO_MODEL=isnet-general-use`.
+Re-test BiRefNet at 6 GB on a real CX-class staging box in week 2, with side-by-side quality images.

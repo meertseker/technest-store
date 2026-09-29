@@ -4,7 +4,8 @@
 # and CI fails if that model's id appears anywhere in the repo.
 FROM python:3.11-slim
 ARG REMBG_VERSION=2.0.85
-# birefnet-general (MIT) is the default; isnet-general-use (Apache-2.0) is the faster fallback.
+# isnet-general-use (Apache-2.0) is the default: it fits 2 CPU / 4 GB. birefnet-general (MIT)
+# needs more than 4 GB (OOM-killed in tests); kept for the week-2 re-test on real hardware.
 ARG MODELS="birefnet-general isnet-general-use"
 RUN pip install --no-cache-dir "rembg[cpu,cli]==${REMBG_VERSION}" \
  && useradd -r -u 10001 -m rembg

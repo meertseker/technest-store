@@ -29,7 +29,8 @@ x-backend-env: &backend-env
   S3_ENDPOINT: ${S3_ENDPOINT:?}
   S3_REGION: auto
   PHOTO_WORKER_URL: http://photo-worker:7000
-  PHOTO_MODEL: ${PHOTO_MODEL:-birefnet-general}
+  # isnet-general-use fits the 4 GB limit; birefnet-general was OOM-killed at 4 GB (see docs/plans).
+  PHOTO_MODEL: ${PHOTO_MODEL:-isnet-general-use}
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
   SENTRY_DSN: ${SENTRY_DSN_BACKEND:-}
   # Payments and email (E2)
