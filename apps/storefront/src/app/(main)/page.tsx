@@ -13,15 +13,22 @@ export const metadata: Metadata = {
 }
 
 export default async function Home() {
-  const countryCode = STORE_COUNTRY
-  const region = await getRegion(countryCode)
-
-  const { collections } = await listCollections({
-    fields: "id, handle, title",
-  })
+  const [region, collections] = await Promise.all([
+    getRegion(STORE_COUNTRY).catch(() => null),
+    listCollections({ fields: "id, handle, title" })
+      .then((res) => res.collections)
+      .catch(() => null),
+  ])
 
   if (!collections || !region) {
-    return null
+    return (
+      <>
+        <Hero />
+        <p className="content-container py-12 text-center text-muted-foreground">
+          We can&apos;t show products right now. Please try again in a moment.
+        </p>
+      </>
+    )
   }
 
   return (
