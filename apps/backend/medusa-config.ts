@@ -64,6 +64,33 @@ const fileModule = {
   },
 }
 
+// Email (E2): our own SMTP provider. Dev/test default to Mailpit on
+// localhost:1025; production must set SMTP_HOST and MAIL_FROM explicitly
+// (validateOptions fails the boot otherwise).
+const notificationModule = {
+  resolve: "@medusajs/medusa/notification",
+  options: {
+    providers: [
+      {
+        resolve: "./src/modules/smtp",
+        id: "smtp",
+        options: {
+          channels: ["email"],
+          host: process.env.SMTP_HOST || (isProduction ? undefined : "localhost"),
+          port: process.env.SMTP_PORT || (isProduction ? undefined : "1025"),
+          secure: process.env.SMTP_SECURE === "true",
+          user: process.env.SMTP_USER || undefined,
+          pass: process.env.SMTP_PASS || undefined,
+          from:
+            process.env.MAIL_FROM ||
+            (isProduction ? undefined : "Tech Nest <hello@technest.co.uk>"),
+          reply_to: process.env.MAIL_REPLY_TO || undefined,
+        },
+      },
+    ],
+  },
+}
+
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
@@ -89,6 +116,6 @@ module.exports = defineConfig({
     fileModule,
     ...redisModules,
     // Payments (Stripe) are configured here by E2.
-    // Notifications (smtp provider) are configured here by E2.
+    notificationModule,
   ],
 })
