@@ -4,7 +4,7 @@ import type {
   ProviderSendNotificationDTO,
   ProviderSendNotificationResultsDTO,
 } from "@medusajs/framework/types"
-import nodemailer, { type Transporter } from "nodemailer"
+import nodemailer, { type SendMailOptions, type Transporter } from "nodemailer"
 
 export type SmtpOptions = {
   host: string
@@ -14,11 +14,19 @@ export type SmtpOptions = {
   pass?: string
   from: string
   reply_to?: string
+  /** Refuse to send unless STARTTLS succeeds (production on port 587). */
+  require_tls?: boolean | string
   /** Raw nodemailer transport options; overrides host/port/auth when set. */
   transport?: Record<string, unknown>
 }
 
 type InjectedDependencies = { logger: Logger }
+
+// Exactly one plain address: no display name, lists, groups or line breaks.
+const ADDRESS_PART = String.raw`[^\s@<>,;:"'()\[\]\\]+`
+const SINGLE_ADDRESS = new RegExp(`^${ADDRESS_PART}@${ADDRESS_PART}\\.${ADDRESS_PART}$`)
+
+const isTrue = (v: unknown) => v === true || v === "true"
 
 /**
  * Email channel provider for the Notification module. Sends through any SMTP
@@ -51,7 +59,8 @@ class SmtpNotificationService extends AbstractNotificationProviderService {
       (options.transport ?? {
         host: options.host,
         port: Number(options.port),
-        secure: options.secure === true || options.secure === "true",
+        secure: isTrue(options.secure),
+        requireTLS: !isTrue(options.secure) && isTrue(options.require_tls),
         auth: options.user ? { user: options.user, pass: options.pass } : undefined,
       }) as any
     )
@@ -68,7 +77,14 @@ class SmtpNotificationService extends AbstractNotificationProviderService {
       )
     }
 
-    const info = await this.transporter_.sendMail({
+    if (!SINGLE_ADDRESS.test(notification.to)) {
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        `smtp notification provider: recipient must be exactly one email address (template "${notification.template}")`
+      )
+    }
+
+    const info = await this.sendMail_(notification.template, {
       from: notification.from || this.options_.from,
       replyTo: this.options_.reply_to || undefined,
       to: notification.to,
@@ -83,11 +99,29 @@ class SmtpNotificationService extends AbstractNotificationProviderService {
         contentDisposition: a.disposition as "attachment" | "inline" | undefined,
         cid: a.id,
       })),
+      // Never let message fields pull in local files or URLs.
+      disableFileAccess: true,
+      disableUrlAccess: true,
     })
 
     // Template and message id only: never the recipient, subject or body (PII).
     this.logger_.info(`smtp: sent template=${notification.template} message_id=${info.messageId}`)
     return { id: info.messageId }
+  }
+
+  // SMTP errors often echo the recipient (e.g. "550 <jane@x.com> rejected"), and
+  // Medusa logs and stores error messages. Rethrow a PII-free error instead.
+  protected async sendMail_(template: string, message: SendMailOptions) {
+    try {
+      return await this.transporter_.sendMail(message)
+    } catch (e) {
+      const err = e as { code?: string; responseCode?: number; command?: string }
+      const summary =
+        `smtp: send failed template=${template} code=${err.code ?? "unknown"}` +
+        ` response_code=${err.responseCode ?? "-"} command=${err.command ?? "-"}`
+      this.logger_.error(summary)
+      throw new MedusaError(MedusaError.Types.UNEXPECTED_STATE, summary)
+    }
   }
 }
 

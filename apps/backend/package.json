@@ -43,7 +43,6 @@
     "@swc/jest": "^0.2.36",
     "@types/jest": "^29.5.13",
     "@types/node": "^20.12.11",
-    "@types/nodemailer": "^8.0.2",
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.2.25",
     "cross-env": "^10.1.0",

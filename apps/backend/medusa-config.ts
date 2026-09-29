@@ -79,6 +79,10 @@ const notificationModule = {
           host: process.env.SMTP_HOST || (isProduction ? undefined : "localhost"),
           port: process.env.SMTP_PORT || (isProduction ? undefined : "1025"),
           secure: process.env.SMTP_SECURE === "true",
+          // Production refuses to send (or authenticate) without TLS.
+          require_tls: process.env.SMTP_REQUIRE_TLS
+            ? process.env.SMTP_REQUIRE_TLS === "true"
+            : isProduction,
           user: process.env.SMTP_USER || undefined,
           pass: process.env.SMTP_PASS || undefined,
           from:

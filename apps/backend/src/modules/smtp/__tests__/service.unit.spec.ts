@@ -112,3 +112,67 @@ describe("SmtpNotificationService.send", () => {
     expect(all).not.toContain("Body 123")
   })
 })
+
+describe("SmtpNotificationService hardening (security review)", () => {
+  it("requires STARTTLS when require_tls is set and implicit TLS is off", () => {
+    const service = new SmtpNotificationService({ logger: makeLogger().logger }, {
+      ...baseOptions,
+      port: 587,
+      require_tls: true,
+    } as any)
+    expect((service as any).transporter_.options.requireTLS).toBe(true)
+  })
+
+  it.each([
+    "a@example.com, b@evil.example",
+    "x@example.com\r\nBcc: evil@evil.example",
+    "Name <a@example.com>; b@evil.example",
+    "not-an-address",
+  ])("rejects a recipient that is not exactly one address: %j", async (to) => {
+    const service = makeService()
+    const sendMail = jest.spyOn((service as any).transporter_, "sendMail")
+
+    await expect(
+      service.send({ to, channel: "email", template: "t", content: { subject: "s", text: "t" } })
+    ).rejects.toThrow("recipient")
+    expect(sendMail).not.toHaveBeenCalled()
+  })
+
+  it("never reads local files or URLs, even if a caller passes an object as content", async () => {
+    const service = makeService()
+
+    await expect(
+      service.send({
+        to: "customer@example.com",
+        channel: "email",
+        template: "t",
+        content: { subject: "s", text: "t" },
+        attachments: [{ filename: "x.txt", content: { path: __filename } as any }],
+      })
+    ).rejects.toThrow()
+  })
+
+  it("rethrows SMTP failures without the recipient address and logs no PII", async () => {
+    const { lines, logger } = makeLogger()
+    const service = makeService(logger)
+    jest
+      .spyOn((service as any).transporter_, "sendMail")
+      .mockRejectedValue(
+        Object.assign(new Error("Can't send mail - all recipients were rejected: 550 5.1.1 <jane.doe@example.com>: Recipient address rejected"), {
+          code: "EENVELOPE",
+          responseCode: 550,
+          command: "RCPT TO",
+        })
+      )
+
+    const error = await service
+      .send({ to: "jane.doe@example.com", channel: "email", template: "welcome", content: { subject: "s", text: "t" } })
+      .catch((e) => e)
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error.message).toContain("EENVELOPE")
+    expect(error.message).toContain("550")
+    expect(error.message).not.toContain("jane.doe")
+    expect(lines.join("\n")).not.toContain("jane.doe")
+  })
+})
