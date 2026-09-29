@@ -1,11 +1,11 @@
 "use client"
 
-import { Button, Heading } from "@modules/common/components/ui"
+import { Heading } from "@modules/common/components/ui"
+import { buttonVariants } from "@/components/ui/button"
 
 import CartTotals from "@modules/common/components/cart-totals"
 import Divider from "@modules/common/components/divider"
 import DiscountCode from "@modules/checkout/components/discount-code"
-import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { HttpTypes } from "@medusajs/types"
 
 type SummaryProps = {
@@ -33,12 +33,15 @@ const Summary = ({ cart }: SummaryProps) => {
       <DiscountCode cart={cart} />
       <Divider />
       <CartTotals totals={cart} />
-      <LocalizedClientLink
+      {/* Full page load on purpose: /checkout's CSP only applies to a document
+          the server sends, so no client-side navigation into checkout */}
+      <a
         href={"/checkout?step=" + step}
+        className={buttonVariants({ className: "w-full" })}
         data-testid="checkout-button"
       >
-        <Button className="w-full h-10">Go to checkout</Button>
-      </LocalizedClientLink>
+        Go to checkout
+      </a>
     </div>
   )
 }
