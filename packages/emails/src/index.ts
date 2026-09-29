@@ -1,12 +1,18 @@
 import { render } from "@react-email/render"
 import { createElement, type ComponentType } from "react"
+import * as orderConfirmation from "./templates/order-confirmation"
+import * as shopNewOrder from "./templates/shop-new-order"
 import * as welcome from "./templates/welcome"
+
+export type { OrderEmailData, OrderEmailItem } from "./order-types"
 
 type Template<D> = { subject: (data: D) => string; Email: ComponentType<D> }
 
 // Template ids must match docs/contracts/emails.md.
 const templates = {
   welcome,
+  "order-confirmation": orderConfirmation,
+  "shop-new-order": shopNewOrder,
 } satisfies Record<string, Template<any>>
 
 export type TemplateId = keyof typeof templates
