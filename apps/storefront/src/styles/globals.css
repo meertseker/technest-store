@@ -2,6 +2,59 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+/* Tech Nest design tokens (docs/specs/design.md section 2). Mirrored in src/lib/design/tokens.ts */
+:root {
+  --brand: #D6001C;
+  --brand-hover: #B00017;
+  --brand-foreground: #FFFFFF;
+  --brand-subtle: #FDECEE;
+  --background: #FFFFFF;
+  --surface: #F6F7F9;
+  --surface-2: #EEF0F3;
+  --border: #E3E6EA;
+  --border-strong: #6B7280;
+  --foreground: #111827;
+  --muted-foreground: #4B5563;
+  --success: #166534;
+  --success-subtle: #E8F5EC;
+  --warning: #92400E;
+  --warning-subtle: #FEF3E2;
+  --destructive: #B91C1C;
+  --ring: #1D4ED8;
+  --radius: 0.5rem;
+  --header-h: 64px;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --header-h: 72px;
+  }
+}
+
+@layer base {
+  html {
+    scroll-padding-top: calc(var(--header-h) + 52px);
+    scroll-padding-bottom: 96px;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground font-sans text-base leading-relaxed antialiased;
+  }
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
 @layer utilities {
   /* Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar {

@@ -33,6 +33,22 @@ module.exports = {
           80: "#1F2937",
           90: "#111827",
         },
+        // Tech Nest tokens: CSS variables in src/styles/globals.css
+        brand: {
+          DEFAULT: "var(--brand)",
+          hover: "var(--brand-hover)",
+          foreground: "var(--brand-foreground)",
+          subtle: "var(--brand-subtle)",
+        },
+        background: "var(--background)",
+        surface: { DEFAULT: "var(--surface)", 2: "var(--surface-2)" },
+        border: { DEFAULT: "var(--border)", strong: "var(--border-strong)" },
+        foreground: "var(--foreground)",
+        "muted-foreground": "var(--muted-foreground)",
+        success: { DEFAULT: "var(--success)", subtle: "var(--success-subtle)" },
+        warning: { DEFAULT: "var(--warning)", subtle: "var(--warning-subtle)" },
+        destructive: "var(--destructive)",
+        ring: "var(--ring)",
       },
       borderRadius: {
         none: "0px",
@@ -41,6 +57,7 @@ module.exports = {
         rounded: "8px",
         large: "16px",
         circle: "9999px",
+        DEFAULT: "var(--radius)",
       },
       maxWidth: {
         "8xl": "100rem",
@@ -59,6 +76,7 @@ module.exports = {
       },
       fontFamily: {
         sans: [
+          "var(--font-inter)",
           "Inter",
           "-apple-system",
           "BlinkMacSystemFont",
