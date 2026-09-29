@@ -60,6 +60,32 @@ describe("SmtpNotificationService.send", () => {
     expect(sent.text).toBe("Hi")
   })
 
+  it("sends attachments (base64 content) instead of dropping them", async () => {
+    const service = makeService()
+    const sendMail = jest.spyOn((service as any).transporter_, "sendMail")
+
+    await service.send({
+      to: "customer@example.com",
+      channel: "email",
+      template: "order-confirmation",
+      content: { subject: "Invoice", html: "<p>Hi</p>", text: "Hi" },
+      attachments: [
+        {
+          filename: "invoice.pdf",
+          content: Buffer.from("%PDF-1.4 test").toString("base64"),
+          content_type: "application/pdf",
+        },
+      ],
+    })
+
+    const info: any = await sendMail.mock.results[0].value
+    const sent = JSON.parse(info.message)
+    expect(sent.attachments).toHaveLength(1)
+    expect(sent.attachments[0].filename).toBe("invoice.pdf")
+    expect(sent.attachments[0].contentType).toBe("application/pdf")
+    expect(Buffer.from(sent.attachments[0].content, "base64").toString()).toBe("%PDF-1.4 test")
+  })
+
   it("rejects a notification with no content and no renderer for the template", async () => {
     const service = makeService()
 

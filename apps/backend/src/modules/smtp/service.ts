@@ -75,6 +75,14 @@ class SmtpNotificationService extends AbstractNotificationProviderService {
       subject: content.subject,
       html: content.html,
       text: content.text,
+      attachments: notification.attachments?.map((a) => ({
+        filename: a.filename,
+        content: a.content,
+        encoding: "base64",
+        contentType: a.content_type,
+        contentDisposition: a.disposition as "attachment" | "inline" | undefined,
+        cid: a.id,
+      })),
     })
 
     // Template and message id only: never the recipient, subject or body (PII).
