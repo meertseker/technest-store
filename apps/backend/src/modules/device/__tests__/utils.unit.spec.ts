@@ -68,6 +68,15 @@ describe("sortDevices / groupDevices", () => {
     expect(samsung.series[0].devices.map((x) => x.model)).toEqual(["Galaxy S24", "Galaxy S23"])
   })
 
+  it("orders series by launch year, not by a late addition", () => {
+    const groups = groupDevices([
+      d({ id: "a", series: "iPhone 16", model: "iPhone 16", release_year: 2024 }),
+      d({ id: "b", series: "iPhone 16", model: "iPhone 16e", slug: "iphone-16e", release_year: 2025 }),
+      d({ id: "c", series: "iPhone 17", model: "iPhone 17", slug: "iphone-17", release_year: 2025 }),
+    ])
+    expect(groups[0].series.map((s) => s.series)).toEqual(["iPhone 17", "iPhone 16"])
+  })
+
   it("sortDevices flattens in the same order as the groups", () => {
     expect(sortDevices(devices).map((x) => x.id)).toEqual(["5", "4", "3", "6", "2", "7", "8", "1"])
   })

@@ -1,5 +1,9 @@
 import { medusaIntegrationTestRunner } from "@medusajs/test-utils"
-import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys, ProductStatus } from "@medusajs/framework/utils"
+import {
+  createProductsWorkflow,
+  createSalesChannelsWorkflow,
+} from "@medusajs/medusa/core-flows"
 import { seedTechNest } from "../../src/scripts/seed"
 import { setProductDevicesWorkflow } from "../../src/workflows/set-product-devices"
 import { adminHeaders, storeHeaders } from "../helpers/auth"
@@ -136,6 +140,18 @@ medusaIntegrationTestRunner({
         expect(missing.status).toBe(404)
       })
 
+      it("orders by created_at", async () => {
+        const { data } = await api.get("/admin/devices?order=-created_at", admin)
+        expect(data.devices.map((d: any) => d.slug)).toEqual(["iphone-11", "ps5", "iphone-16", "iphone-16-pro"])
+      })
+
+      it("rejects a model that yields an empty slug", async () => {
+        const err = await api
+          .post("/admin/devices", newDevice({ model: "日本" }), admin)
+          .catch((e: any) => e.response)
+        expect(err.status).toBe(400)
+      })
+
       it("returns the device's products with notes", async () => {
         const { data } = await api.get(`/admin/devices/${device["iphone-16"].id}`, admin)
         expect(data.device.products).toEqual([
@@ -162,6 +178,15 @@ medusaIntegrationTestRunner({
           admin
         )
         expect(data.devices.map((d: any) => [d.slug, d.note])).toEqual([["iphone-16", null]])
+      })
+
+      it("collapses a repeated device_id in add, keeping the last note", async () => {
+        const { data } = await api.post(
+          `/admin/products/${caseId()}/devices`,
+          { add: [{ device_id: device["iphone-11"].id, note: "a" }, { device_id: device["iphone-11"].id, note: "b" }] },
+          admin
+        )
+        expect(data.devices.find((d: any) => d.slug === "iphone-11").note).toBe("b")
       })
 
       it("returns 404 for an unknown device or product", async () => {
@@ -255,6 +280,35 @@ medusaIntegrationTestRunner({
 
         const err = await api.get("/store/devices/iphone-99/products", store).catch((e: any) => e.response)
         expect(err.status).toBe(404)
+      })
+
+      it("ignores products outside the storefront's sales channel", async () => {
+        const container = getContainer()
+        const { result: [otherChannel] } = await createSalesChannelsWorkflow(container).run({
+          input: { salesChannelsData: [{ name: "Trade counter" }] },
+        })
+        const { result: [hidden] } = await createProductsWorkflow(container).run({
+          input: {
+            products: [{
+              title: "Trade-only case",
+              status: ProductStatus.PUBLISHED,
+              options: [{ title: "Size", values: ["One"] }],
+              variants: [{ title: "One", options: { Size: "One" }, prices: [{ currency_code: "gbp", amount: 5 }] }],
+              sales_channels: [{ id: otherChannel.id }],
+            }],
+          },
+        })
+        await api.post(`/admin/products/${hidden.id}/devices`, { add: [{ device_id: device["iphone-16"].id, note: "secret" }] }, admin)
+
+        const detail = await api.get("/store/devices/iphone-16", store)
+        expect(detail.data.product_count).toBe(1)
+
+        const list = await api.get("/store/devices/iphone-16/products", store)
+        expect(list.data.count).toBe(1)
+        expect(Object.keys(list.data.notes)).not.toContain(hidden.id)
+
+        const fits = await api.get(`/store/products/${hidden.id}/devices`, store).catch((e: any) => e.response)
+        expect(fits.status).toBe(404)
       })
 
       it("lists a product's devices for the product page", async () => {

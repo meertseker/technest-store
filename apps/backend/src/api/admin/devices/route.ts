@@ -1,7 +1,7 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { deviceMatchesQuery, DeviceDTO } from "../../../modules/device/utils"
 import { createDevicesWorkflow } from "../../../workflows/create-devices"
-import { listDeviceDTOs, retrieveDeviceById } from "../../utils/devices"
+import { listDevicesWithCreatedAt, retrieveDeviceById } from "../../utils/devices"
 import { AdminCreateDevice, AdminGetDevicesParams } from "./middlewares"
 
 type Sortable = DeviceDTO & { created_at?: string | Date }
@@ -26,10 +26,10 @@ export async function GET(
   res: MedusaResponse
 ) {
   const { q, type, brand, limit, offset, order } = req.validatedQuery
-  const all = (await listDeviceDTOs(req.scope, {
+  const all: Sortable[] = await listDevicesWithCreatedAt(req.scope, {
     ...(type ? { type } : {}),
     ...(brand ? { brand } : {}),
-  })) as Sortable[]
+  })
 
   const matching = all
     .filter((device) => deviceMatchesQuery(device, q ?? ""))

@@ -4,11 +4,11 @@ import {
   validateAndTransformQuery,
 } from "@medusajs/framework/http"
 import { z } from "@medusajs/framework/zod"
-import { DEVICE_TYPES } from "../../../modules/device/utils"
+import { DEVICE_SLUG_PATTERN, DEVICE_TYPES } from "../../../modules/device/utils"
 
 const slug = z
   .string()
-  .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Slug must be lowercase kebab-case")
+  .regex(DEVICE_SLUG_PATTERN, "Slug must be lowercase kebab-case")
 
 const deviceFields = {
   brand: z.string().trim().min(1),

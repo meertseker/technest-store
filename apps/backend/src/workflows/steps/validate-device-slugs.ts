@@ -2,6 +2,7 @@ import { MedusaError } from "@medusajs/framework/utils"
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
 import { DEVICE_MODULE } from "../../modules/device"
 import DeviceModuleService from "../../modules/device/service"
+import { DEVICE_SLUG_PATTERN } from "../../modules/device/utils"
 
 export type ValidateDeviceSlugsInput = {
   slugs: string[]
@@ -12,6 +13,14 @@ export type ValidateDeviceSlugsInput = {
 export const validateDeviceSlugsStep = createStep(
   "validate-device-slugs",
   async ({ slugs, exclude_id }: ValidateDeviceSlugsInput, { container }) => {
+    const invalid = slugs.find((slug) => !DEVICE_SLUG_PATTERN.test(slug))
+    if (invalid !== undefined) {
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        `"${invalid}" is not a valid device slug. Send a lowercase kebab-case slug.`
+      )
+    }
+
     const duplicates = slugs.filter((slug, i) => slugs.indexOf(slug) !== i)
     if (duplicates.length) {
       throw new MedusaError(

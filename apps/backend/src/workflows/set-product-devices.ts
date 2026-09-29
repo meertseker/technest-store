@@ -25,12 +25,16 @@ export const setProductDevicesWorkflow = createWorkflow(
     validateProductDeviceIdsStep(ids)
 
     const change = transform({ input }, ({ input }) => {
-      const added = new Set((input.add ?? []).map((a) => a.device_id))
+      // One row per device; a repeated device_id keeps its last note.
+      const adds = [
+        ...new Map((input.add ?? []).map((a) => [a.device_id, a])).values(),
+      ]
+      const added = new Set(adds.map((a) => a.device_id))
       return {
         dismiss: (input.remove ?? [])
           .filter((device_id) => !added.has(device_id))
           .map((device_id) => ({ product_id: input.product_id, device_id })),
-        create: (input.add ?? []).map((a) => ({
+        create: adds.map((a) => ({
           product_id: input.product_id,
           device_id: a.device_id,
           note: a.note ?? null,

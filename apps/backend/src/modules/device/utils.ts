@@ -34,6 +34,8 @@ export const DEVICE_FIELDS = [
   "image_url",
 ] as const
 
+export const DEVICE_SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
+
 export function slugifyDevice(model: string): string {
   return model
     .toLowerCase()
@@ -70,6 +72,12 @@ function compareDevice(a: DeviceDTO, b: DeviceDTO): number {
   return (b.release_year ?? 0) - (a.release_year ?? 0) || a.model.localeCompare(b.model)
 }
 
+// A series is ordered by when it launched (its earliest device), so a late
+// addition such as the iPhone 16e doesn't lift "iPhone 16" above "iPhone 17".
+const years = (devices: DeviceDTO[]) => devices.map((d) => d.release_year ?? 0)
+const seriesLaunch = (devices: DeviceDTO[]) => Math.min(...years(devices))
+const seriesLatest = (devices: DeviceDTO[]) => Math.max(...years(devices))
+
 /** Groups devices brand -> series -> devices in storefront display order. */
 export function groupDevices(devices: DeviceDTO[]): DeviceGroup[] {
   const byBrand = new Map<string, Map<string, DeviceDTO[]>>()
@@ -87,7 +95,8 @@ export function groupDevices(devices: DeviceDTO[]): DeviceGroup[] {
         .map(([series, list]) => ({ series, devices: [...list].sort(compareDevice) }))
         .sort(
           (a, b) =>
-            (b.devices[0].release_year ?? 0) - (a.devices[0].release_year ?? 0) ||
+            seriesLaunch(b.devices) - seriesLaunch(a.devices) ||
+            seriesLatest(b.devices) - seriesLatest(a.devices) ||
             a.series.localeCompare(b.series)
         ),
     }))

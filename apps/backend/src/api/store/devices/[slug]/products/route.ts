@@ -9,8 +9,14 @@ import { DeviceProductsRequest } from "../../middlewares"
  */
 export async function GET(req: DeviceProductsRequest, res: MedusaResponse) {
   const json = res.json.bind(res)
-  res.json = (body: HttpTypes.StoreProductListResponse) =>
-    json({ ...body, notes: req.deviceProductNotes ?? {} })
+  // Only expose notes for products actually in this (filtered) page.
+  res.json = (body: HttpTypes.StoreProductListResponse) => {
+    const allNotes = req.deviceProductNotes ?? {}
+    const notes = Object.fromEntries(
+      body.products.filter((p) => allNotes[p.id]).map((p) => [p.id, allNotes[p.id]])
+    )
+    return json({ ...body, notes })
+  }
 
   await listStoreProducts(
     req as unknown as Parameters<typeof listStoreProducts>[0],
