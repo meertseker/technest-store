@@ -1,6 +1,9 @@
+// @medusajs/payment-stripe has no public export for the provider class or its
+// amount helper; subclassing it is the point of this module (ADR 0002).
+// eslint-disable-next-line @medusajs/import-from-framework-not-internal
 import StripeProviderService from "@medusajs/payment-stripe/dist/services/stripe-provider"
+// eslint-disable-next-line @medusajs/import-from-framework-not-internal
 import { getSmallestUnit } from "@medusajs/payment-stripe/dist/utils/get-smallest-unit"
-import type { StripeOptions } from "@medusajs/payment-stripe/dist/types"
 import { isPresent } from "@medusajs/framework/utils"
 import type {
   InitiatePaymentInput,
@@ -9,7 +12,12 @@ import type {
   UpdatePaymentOutput,
 } from "@medusajs/framework/types"
 
-export type TechNestStripeOptions = StripeOptions & {
+export type TechNestStripeOptions = {
+  apiKey: string
+  webhookSecret?: string
+  capture?: boolean
+  automaticPaymentMethods?: boolean
+  paymentDescription?: string
   /** Baskets below this (in pence) never see Klarna. */
   klarnaMinBasketPence?: number | string
 }
@@ -37,7 +45,7 @@ class TechNestStripeService extends StripeProviderService {
   }
 
   protected get klarnaMinPence_(): number {
-    const value = Number((this.options_ as TechNestStripeOptions).klarnaMinBasketPence ?? 3000)
+    const value = Number((this.options_ as unknown as TechNestStripeOptions).klarnaMinBasketPence ?? 3000)
     return Number.isFinite(value) ? value : 3000
   }
 

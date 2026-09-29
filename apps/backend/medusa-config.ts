@@ -1,4 +1,4 @@
-import { loadEnv, defineConfig } from "@medusajs/framework/utils"
+import { loadEnv, defineConfig, MedusaError } from "@medusajs/framework/utils"
 
 loadEnv(process.env.NODE_ENV || "development", process.cwd())
 
@@ -71,7 +71,10 @@ const fileModule = {
 // Without STRIPE_API_KEY (dev/test) the module is left out so the app boots;
 // production refuses to start without it.
 if (isProduction && !process.env.STRIPE_API_KEY) {
-  throw new Error("STRIPE_API_KEY is required in production")
+  throw new MedusaError(
+    MedusaError.Types.INVALID_DATA,
+    "STRIPE_API_KEY is required in production"
+  )
 }
 const paymentModules = process.env.STRIPE_API_KEY
   ? [
