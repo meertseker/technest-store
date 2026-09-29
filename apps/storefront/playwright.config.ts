@@ -1,4 +1,13 @@
 import { defineConfig, devices } from "@playwright/test"
+import { existsSync, readFileSync } from "node:fs"
+
+// Tests that talk to the backend need the same env as `next dev` (.env.local)
+if (existsSync(".env.local")) {
+  for (const line of readFileSync(".env.local", "utf8").split(/\r?\n/)) {
+    const m = line.match(/^([A-Z0-9_]+)=(.*)$/)
+    if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2]
+  }
+}
 
 const PORT = 8003
 
