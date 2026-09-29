@@ -1,5 +1,5 @@
 {
-  "name": "dtc-starter-monorepo",
+  "name": "technest",
   "private": false,
   "packageManager": "pnpm@10.11.1",
   "engines": {
@@ -11,9 +11,9 @@
     "start": "turbo start",
     "lint": "turbo lint",
     "test": "turbo test",
-    "backend:seed": "turbo seed --filter=@dtc/backend",
-    "backend:dev": "turbo dev --filter=@dtc/backend",
-    "storefront:dev": "turbo dev --filter=@dtc/storefront"
+    "backend:seed": "turbo seed --filter=@technest/backend",
+    "backend:dev": "turbo dev --filter=@technest/backend",
+    "storefront:dev": "turbo dev --filter=@technest/storefront"
   },
   "pnpm": {
     "overrides": {
