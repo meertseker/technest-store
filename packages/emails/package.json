@@ -1,0 +1,30 @@
+{
+  "name": "@technest/emails",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Tech Nest email templates (React Email): HTML + plain text",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "test": "tsc -p tsconfig.json && node --test \"dist/**/*.test.js\"",
+    "preview": "tsc -p tsconfig.json && node dist/preview.js",
+    "prepare": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "typescript": "^5.9.3"
+  }
+}

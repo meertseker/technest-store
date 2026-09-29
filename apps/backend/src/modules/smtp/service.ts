@@ -5,6 +5,7 @@ import type {
   ProviderSendNotificationResultsDTO,
 } from "@medusajs/framework/types"
 import nodemailer, { type SendMailOptions, type Transporter } from "nodemailer"
+import { hasTemplate, renderEmail } from "@technest/emails"
 
 export type SmtpOptions = {
   host: string
@@ -69,7 +70,10 @@ class SmtpNotificationService extends AbstractNotificationProviderService {
   async send(
     notification: ProviderSendNotificationDTO
   ): Promise<ProviderSendNotificationResultsDTO> {
-    const content = notification.content
+    const content =
+      notification.content?.subject || !hasTemplate(notification.template)
+        ? notification.content
+        : await renderEmail(notification.template, notification.data ?? {})
     if (!content?.subject || !(content.html || content.text)) {
       throw new MedusaError(
         MedusaError.Types.INVALID_DATA,

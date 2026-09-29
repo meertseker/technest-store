@@ -86,6 +86,24 @@ describe("SmtpNotificationService.send", () => {
     expect(Buffer.from(sent.attachments[0].content, "base64").toString()).toBe("%PDF-1.4 test")
   })
 
+  it("renders the template from @technest/emails when no content is given", async () => {
+    const service = makeService()
+    const sendMail = jest.spyOn((service as any).transporter_, "sendMail")
+
+    await service.send({
+      to: "customer@example.com",
+      channel: "email",
+      template: "welcome",
+      data: { first_name: "Sam" },
+    })
+
+    const info: any = await sendMail.mock.results[0].value
+    const sent = JSON.parse(info.message)
+    expect(sent.subject).toBe("Welcome to Tech Nest")
+    expect(sent.html).toContain("Hi Sam,")
+    expect(sent.text).toContain("Hi Sam,")
+  })
+
   it("rejects a notification with no content and no renderer for the template", async () => {
     const service = makeService()
 
