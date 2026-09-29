@@ -10,6 +10,11 @@ export type EmailSend = {
   resource_id: string
   resource_type?: string
   trigger_type?: string
+  /**
+   * Pre-rendered email. Use it for secrets (e.g. reset tokens): the
+   * Notification module stores `data` but not `content`.
+   */
+  content?: { subject: string; html?: string; text?: string }
 }
 
 export type SendEmailOnceResult = { id?: string; skipped?: true }

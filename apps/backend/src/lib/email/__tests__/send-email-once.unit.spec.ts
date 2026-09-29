@@ -69,4 +69,17 @@ describe("sendEmailOnce", () => {
     // Lock errors ("Failed to acquire lock for key …") get logged: no address in the key.
     expect(f.lockKeys[0]).not.toContain("sam@example.com")
   })
+
+  it("passes pre-rendered content through (kept out of the stored data)", async () => {
+    const f = fakes()
+    await sendEmailOnce(f as any, {
+      ...input,
+      template: "password-reset",
+      data: {},
+      content: { subject: "Reset", html: "<p>x</p>", text: "x" },
+    })
+    expect(f.created[0].content).toEqual({ subject: "Reset", html: "<p>x</p>", text: "x" })
+    expect(f.created[0].data).toEqual({})
+  })
 })
+

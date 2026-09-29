@@ -31,4 +31,8 @@ export const fixtures: Record<TemplateId, Record<string, unknown>> = {
   welcome: { first_name: "Sam" },
   "order-confirmation": order,
   "shop-new-order": collectionOrder,
+  "password-reset": {
+    reset_url: "https://technest.co.uk/account/reset-password?token=example&email=sam%40example.com",
+    actor: "customer",
+  },
 }

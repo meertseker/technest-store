@@ -1,6 +1,7 @@
 import { render } from "@react-email/render"
 import { createElement, type ComponentType } from "react"
 import * as orderConfirmation from "./templates/order-confirmation"
+import * as passwordReset from "./templates/password-reset"
 import * as shopNewOrder from "./templates/shop-new-order"
 import * as welcome from "./templates/welcome"
 
@@ -13,6 +14,7 @@ const templates = {
   welcome,
   "order-confirmation": orderConfirmation,
   "shop-new-order": shopNewOrder,
+  "password-reset": passwordReset,
 } satisfies Record<string, Template<any>>
 
 export type TemplateId = keyof typeof templates
