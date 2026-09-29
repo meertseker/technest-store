@@ -110,3 +110,22 @@ test.describe("footer", () => {
     expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])
   })
 })
+
+test.describe("mobile menu", () => {
+  test.skip(({ viewport }) => (viewport?.width ?? 0) >= 1024, "menu is mobile-only")
+
+  test("close button is named, 44px, and the open menu has no axe violations", async ({ page }) => {
+    await page.goto("/")
+    await page.getByTestId("nav-menu-button").click()
+    const close = page.getByRole("button", { name: "Close menu" })
+    await expect(close).toBeVisible()
+    const box = await close.boundingBox()
+    expect(box!.height).toBeGreaterThanOrEqual(44)
+    expect(box!.width).toBeGreaterThanOrEqual(44)
+    const results = await new AxeBuilder({ page })
+      .withTags(WCAG)
+      .include('[data-testid="nav-menu-popup"]')
+      .analyze()
+    expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])
+  })
+})

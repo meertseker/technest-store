@@ -55,8 +55,14 @@ const SideMenu = () => {
                     className="flex flex-col h-full bg-[rgba(3,7,18,0.5)] rounded-rounded justify-between p-6"
                   >
                     <div className="flex justify-end" id="xmark">
-                      <button data-testid="close-menu-button" onClick={close}>
-                        <XMark />
+                      <button
+                        type="button"
+                        aria-label="Close menu"
+                        data-testid="close-menu-button"
+                        onClick={close}
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded"
+                      >
+                        <XMark aria-hidden />
                       </button>
                     </div>
                     <ul className="flex flex-col gap-6 items-start justify-start">
