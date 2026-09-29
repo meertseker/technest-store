@@ -1,0 +1,165 @@
+# Tech Nest production stack (Hetzner CX43: 8 vCPU, 16 GB). See DEPLOY.md.
+# Images are built by GitHub Actions and pulled from GHCR; nothing is built on the server.
+#   docker compose pull && docker compose run --rm migrate && docker compose up -d --remove-orphans
+# Secrets live in /opt/technest/.env (chmod 600), never in git. See .env.production.template.
+
+name: technest
+
+x-defaults: &defaults
+  restart: unless-stopped
+  networks: [internal]
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "3" }
+
+x-backend-env: &backend-env
+  NODE_ENV: production
+  DATABASE_URL: postgres://technest:${POSTGRES_PASSWORD:?}@postgres:5432/technest?sslmode=disable
+  REDIS_URL: redis://redis:6379
+  JWT_SECRET: ${JWT_SECRET:?}
+  COOKIE_SECRET: ${COOKIE_SECRET:?}
+  STORE_CORS: https://${SHOP_DOMAIN:-technest.co.uk}
+  ADMIN_CORS: https://admin.${SHOP_DOMAIN:-technest.co.uk}
+  AUTH_CORS: https://${SHOP_DOMAIN:-technest.co.uk},https://admin.${SHOP_DOMAIN:-technest.co.uk}
+  MEDUSA_BACKEND_URL: https://api.${SHOP_DOMAIN:-technest.co.uk}
+  S3_FILE_URL: ${S3_FILE_URL:?}
+  S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?}
+  S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?}
+  S3_BUCKET: ${S3_BUCKET:?}
+  S3_ENDPOINT: ${S3_ENDPOINT:?}
+  S3_REGION: auto
+  PHOTO_WORKER_URL: http://photo-worker:7000
+  PHOTO_MODEL: ${PHOTO_MODEL:-birefnet-general}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  SENTRY_DSN: ${SENTRY_DSN_BACKEND:-}
+  # Payments and email (E2)
+  STRIPE_API_KEY: ${STRIPE_API_KEY:-}
+  STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+  SMTP_HOST: ${SMTP_HOST:-mailserver}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASS: ${SMTP_PASS:-}
+  SMTP_FROM: ${SMTP_FROM:-Tech Nest <hello@technest.co.uk>}
+
+services:
+  caddy:
+    <<: *defaults
+    image: caddy:2.10-alpine
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      SHOP_DOMAIN: ${SHOP_DOMAIN:-technest.co.uk}
+      ACME_EMAIL: ${ACME_EMAIL:-hello@technest.co.uk}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      server: { condition: service_healthy }
+      storefront: { condition: service_started }
+    deploy: { resources: { limits: { cpus: "0.5", memory: 256m } } }
+
+  server:
+    <<: *defaults
+    image: ghcr.io/${GHCR_OWNER:?}/technest-backend:${IMAGE_TAG:-main}
+    environment:
+      <<: *backend-env
+      MEDUSA_WORKER_MODE: server
+      DISABLE_MEDUSA_ADMIN: "false"
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    deploy: { resources: { limits: { cpus: "2", memory: 2g } } }
+
+  worker:
+    <<: *defaults
+    image: ghcr.io/${GHCR_OWNER:?}/technest-backend:${IMAGE_TAG:-main}
+    environment:
+      <<: *backend-env
+      MEDUSA_WORKER_MODE: worker
+      DISABLE_MEDUSA_ADMIN: "true"
+    # Worker mode has no /health route (medusajs/medusa#8825): check that the HTTP port is open.
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(9000,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 90s
+      retries: 3
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    deploy: { resources: { limits: { cpus: "2", memory: 2g } } }
+
+  # One-shot: docker compose run --rm migrate (deploy.yml runs it before `up -d`).
+  migrate:
+    image: ghcr.io/${GHCR_OWNER:?}/technest-backend:${IMAGE_TAG:-main}
+    profiles: [ops]
+    networks: [internal]
+    environment:
+      <<: *backend-env
+    command: ["/app/apps/backend/node_modules/.bin/medusa", "db:migrate"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  storefront:
+    <<: *defaults
+    image: ghcr.io/${GHCR_OWNER:?}/technest-storefront:${IMAGE_TAG:-main}
+    environment:
+      MEDUSA_BACKEND_URL: http://server:9000
+      SENTRY_DSN: ${SENTRY_DSN_STOREFRONT:-}
+    depends_on:
+      server: { condition: service_healthy }
+    deploy: { resources: { limits: { cpus: "1.5", memory: 1g } } }
+
+  postgres:
+    <<: *defaults
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: technest
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: technest
+    volumes: [pg_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U technest -d technest"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    shm_size: 256m
+    deploy: { resources: { limits: { memory: 2g } } }
+
+  redis:
+    <<: *defaults
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "384mb", "--maxmemory-policy", "noeviction"]
+    volumes: [redis_data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy: { resources: { limits: { memory: 512m } } }
+
+  # Background removal. Internal only: no ports, never exposed to the internet.
+  photo-worker:
+    <<: *defaults
+    image: ghcr.io/${GHCR_OWNER:?}/technest-photo-worker:${IMAGE_TAG:-main}
+    environment:
+      OMP_NUM_THREADS: "2"
+    deploy: { resources: { limits: { cpus: "2", memory: 4g } } }
+
+  # Placeholder: E2 fills in docker-mailserver (Postfix + OpenDKIM). Start with --profile mail.
+  mailserver:
+    <<: *defaults
+    image: ghcr.io/docker-mailserver/docker-mailserver:15
+    profiles: [mail]
+    hostname: mail.${SHOP_DOMAIN:-technest.co.uk}
+    deploy: { resources: { limits: { memory: 1g } } }
+
+networks:
+  internal: {}
+
+volumes:
+  pg_data: {}
+  redis_data: {}
+  caddy_data: {}
+  caddy_config: {}

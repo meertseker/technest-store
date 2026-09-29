@@ -19,6 +19,9 @@ const MONOREPO_ROOT = path.join(__dirname, "../..")
  * @type {import('next').NextConfig}
  */
 const nextConfig = {
+  // Self-contained server bundle for the Docker image (apps/storefront/Dockerfile).
+  output: "standalone",
+  outputFileTracingRoot: path.join(__dirname, "../../"),
   reactStrictMode: true,
   poweredByHeader: false,
   turbopack: { root: MONOREPO_ROOT },
