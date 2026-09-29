@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto"
 import type { ILockingModule, INotificationModuleService } from "@medusajs/framework/types"
 
 export type EmailSend = {
@@ -29,7 +30,10 @@ export async function sendEmailOnce(
   },
   send: EmailSend
 ): Promise<SendEmailOnceResult> {
-  const lockKey = `email:${send.template}:${send.resource_id}:${send.to}`
+  // Hash the recipient: lock errors ("Failed to acquire lock for key …") are
+  // logged and lock keys sit in Redis, so they must not contain an address.
+  const recipient = createHash("sha256").update(send.to.toLowerCase()).digest("hex").slice(0, 16)
+  const lockKey = `email:${send.template}:${send.resource_id}:${recipient}`
   return deps.locking.execute(lockKey, async () => {
     const earlier = await deps.notifications.listNotifications({
       to: send.to,

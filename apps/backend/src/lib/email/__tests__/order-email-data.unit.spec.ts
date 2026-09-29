@@ -62,4 +62,26 @@ describe("toOrderEmailData", () => {
     expect(d.fulfilment).toEqual({ type: "collection", method_name: "Click & Collect" })
     expect(d.shipping_address).toBeNull()
   })
+
+  it.each([
+    "Verify your account at evil.example/login",
+    "http://evil.example",
+    "www.evil.example",
+    "admin@evil.example",
+    "x".repeat(41),
+  ])("drops a first name that could carry a link or message: %j", (name) => {
+    const d = toOrderEmailData(
+      { ...base, customer: { first_name: name }, item_total: 1, total: 1, items: [] },
+      false
+    )
+    expect(d.first_name).toBeNull()
+  })
+
+  it("keeps a normal first name", () => {
+    const d = toOrderEmailData(
+      { ...base, customer: { first_name: "Mary-Jane O'Neil" }, item_total: 1, total: 1, items: [] },
+      false
+    )
+    expect(d.first_name).toBe("Mary-Jane O'Neil")
+  })
 })

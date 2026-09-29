@@ -14,6 +14,9 @@ const sendEmailStep = createStep(
     name: "technest-send-email",
     // SMTP hiccups retry every 60 s, up to 5 times. Each attempt first checks
     // for an earlier successful send, so a retry never emails twice.
+    // While retrying, the workflow engine checkpoints this input (which holds
+    // order details); completed executions aren't retained (no retentionTime),
+    // so that copy lives only for the retry window. Security review, accepted.
     maxRetries: 5,
     retryInterval: 60,
   },

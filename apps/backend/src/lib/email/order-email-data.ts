@@ -87,6 +87,19 @@ type OrderRow = {
 }
 
 /**
+ * Guests type their own name, and it appears in the greeting of a genuine
+ * Tech Nest email. Drop anything that could smuggle in a link, address or
+ * message (security review), falling back to "Hi there".
+ */
+export function safeFirstName(name?: string | null): string | null {
+  const n = name?.trim()
+  if (!n || n.length > 40) return null
+  // Slashes, @, colons, angle brackets, backslashes, "www." or ".tld"-like text.
+  if (/[/@:<>\\]|www\.|\.[a-z]{2,}/i.test(n)) return null
+  return n
+}
+
+/**
  * Lines shown: items at their pre-discount price, one "Discount" line for
  * item promotions, delivery after any shipping promotion, then the total.
  * Those always add up: original_item_total - (original_item_total -
@@ -99,7 +112,7 @@ export function toOrderEmailData(order: OrderRow, pickup: boolean): OrderEmailDa
   const subtotal = toPence(order.original_item_total ?? order.item_total)
   return {
     display_id: order.display_id ?? order.id,
-    first_name: order.customer?.first_name || a?.first_name || null,
+    first_name: safeFirstName(order.customer?.first_name || a?.first_name),
     items: (order.items ?? []).filter((i): i is NonNullable<typeof i> => !!i).map((item) => ({
       title: item.product_title || item.title,
       variant_title: item.variant_title,

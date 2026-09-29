@@ -64,6 +64,9 @@ describe("sendEmailOnce", () => {
   it("checks and sends under one lock per email so concurrent duplicates can't both send", async () => {
     const f = fakes()
     await sendEmailOnce(f as any, input)
-    expect(f.lockKeys).toEqual(["email:order-confirmation:order_1:sam@example.com"])
+    expect(f.lockKeys).toHaveLength(1)
+    expect(f.lockKeys[0]).toMatch(/^email:order-confirmation:order_1:[0-9a-f]{16}$/)
+    // Lock errors ("Failed to acquire lock for key …") get logged: no address in the key.
+    expect(f.lockKeys[0]).not.toContain("sam@example.com")
   })
 })
