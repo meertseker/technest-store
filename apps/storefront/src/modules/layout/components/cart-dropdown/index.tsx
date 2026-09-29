@@ -1,5 +1,6 @@
 "use client"
 
+import { ShoppingBag } from "lucide-react"
 import {
   Popover,
   PopoverButton,
@@ -75,18 +76,29 @@ const CartDropdown = ({
 
   return (
     <div
-      className="h-full z-50"
+      className="z-50"
       onMouseEnter={openAndCancel}
       onMouseLeave={close}
     >
       <Popover className="relative h-full">
-        <PopoverButton className="h-full">
-          <LocalizedClientLink
-            className="hover:text-ui-fg-base"
-            href="/cart"
-            data-testid="nav-cart-link"
-          >{`Cart (${totalItems})`}</LocalizedClientLink>
+        <PopoverButton
+          as={LocalizedClientLink}
+          href="/cart"
+          className="inline-flex min-h-11 items-center gap-1.5 px-1.5 hover:underline sm:gap-2 sm:px-2"
+          data-testid="nav-cart-link"
+        >
+          <ShoppingBag aria-hidden className="size-5" />
+          <span>Basket</span>
+          <span
+            aria-hidden
+            className="min-w-6 rounded-full bg-foreground px-1.5 text-center text-sm font-semibold leading-6 text-background tabular-nums"
+          >
+            {totalItems}
+          </span>
         </PopoverButton>
+        <span role="status" aria-atomic="true" className="sr-only">
+          {`${totalItems} ${totalItems === 1 ? "item" : "items"} in your basket`}
+        </span>
         <Transition
           show={cartDropdownOpen}
           as={Fragment}

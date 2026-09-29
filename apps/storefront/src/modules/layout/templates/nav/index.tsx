@@ -1,58 +1,49 @@
 import { Suspense } from "react"
-
-import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import Link from "next/link"
+import { User } from "lucide-react"
 import CartButton from "@modules/layout/components/cart-button"
+import DeviceChip from "@modules/layout/components/device-chip"
+import Logo from "@modules/layout/components/logo"
 import Search from "@modules/layout/components/search"
 import SideMenu from "@modules/layout/components/side-menu"
 
 export default async function Nav() {
+  const device = null // device-picker story: read the tn_device cookie here
+
   return (
-    <div className="sticky top-0 inset-x-0 z-50 group">
-      <header className="relative h-16 mx-auto border-b duration-200 bg-white border-ui-border-base">
-        <nav className="content-container txt-xsmall-plus text-ui-fg-subtle flex items-center justify-between w-full h-full text-small-regular">
-          <div className="flex-1 basis-0 h-full flex items-center">
-            <div className="h-full">
-              <SideMenu />
-            </div>
-          </div>
-
-          <div className="flex items-center h-full">
-            <LocalizedClientLink
-              href="/"
-              className="txt-compact-xlarge-plus hover:text-ui-fg-base uppercase"
-              data-testid="nav-store-link"
-            >
-              Medusa Store
-            </LocalizedClientLink>
-          </div>
-
-          <div className="flex items-center gap-x-6 h-full flex-1 basis-0 justify-end">
-            <Search />
-            <div className="hidden small:flex items-center gap-x-6 h-full">
-              <LocalizedClientLink
-                className="hover:text-ui-fg-base"
-                href="/account"
-                data-testid="nav-account-link"
-              >
-                Account
-              </LocalizedClientLink>
-            </div>
-            <Suspense
-              fallback={
-                <LocalizedClientLink
-                  className="hover:text-ui-fg-base flex gap-2"
-                  href="/cart"
-                  data-testid="nav-cart-link"
-                >
-                  Cart (0)
-                </LocalizedClientLink>
-              }
-            >
-              <CartButton />
-            </Suspense>
-          </div>
-        </nav>
-      </header>
-    </div>
+    <header className="sticky inset-x-0 top-0 z-50 border-b border-border bg-background">
+      <nav
+        aria-label="Main"
+        className="content-container flex h-[var(--header-h)] items-center gap-1 sm:gap-2 lg:gap-6"
+      >
+        <div className="lg:hidden">
+          <SideMenu />
+        </div>
+        <Logo />
+        <DeviceChip device={device} className="hidden lg:inline-flex" />
+        <div className="ml-auto flex items-center gap-0 sm:gap-2">
+          <Search />
+          <Link
+            href="/account"
+            className="hidden min-h-11 items-center gap-2 px-2 hover:underline lg:inline-flex"
+          >
+            <User aria-hidden className="size-5" />
+            Account
+          </Link>
+          <Suspense
+            fallback={
+              <Link href="/cart" className="inline-flex min-h-11 items-center px-2">
+                Basket
+              </Link>
+            }
+          >
+            <CartButton />
+          </Suspense>
+        </div>
+      </nav>
+      <div className="border-t border-border bg-surface px-4 py-1 lg:hidden">
+        <DeviceChip device={device} className="w-full justify-center bg-transparent" />
+      </div>
+    </header>
   )
 }

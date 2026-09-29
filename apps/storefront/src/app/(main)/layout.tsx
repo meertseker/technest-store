@@ -42,7 +42,9 @@ export default async function PageLayout(props: { children: React.ReactNode }) {
           shippingOptions={shippingOptions}
         />
       )}
-      {props.children}
+      <main id="main" tabIndex={-1} className="relative outline-none">
+        {props.children}
+      </main>
       <Footer />
     </>
   )

@@ -55,6 +55,13 @@
   }
 }
 
+@layer components {
+  /* Spec gutters: 16px mobile, 24px tablet, 32px desktop; 1280px max */
+  .content-container {
+    @apply mx-auto w-full max-w-[1280px] px-4 md:px-6 xl:px-8;
+  }
+}
+
 @layer utilities {
   /* Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar {

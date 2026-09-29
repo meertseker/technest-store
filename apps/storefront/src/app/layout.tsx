@@ -27,9 +27,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         >
           Skip to content
         </a>
-        <main id="main" className="relative">
-          {props.children}
-        </main>
+        {props.children}
       </body>
     </html>
   )

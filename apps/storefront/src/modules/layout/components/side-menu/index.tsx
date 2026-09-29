@@ -25,7 +25,7 @@ const SideMenu = () => {
               <div className="relative flex h-full">
                 <Popover.Button
                   data-testid="nav-menu-button"
-                  className="relative h-full flex items-center transition-all ease-out duration-200 focus:outline-none hover:text-ui-fg-base"
+                  className="relative inline-flex min-h-11 min-w-11 items-center px-1 transition-colors duration-150 hover:underline"
                 >
                   Menu
                 </Popover.Button>

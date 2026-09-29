@@ -122,7 +122,7 @@ const Search = () => {
         type="button"
         onClick={open}
         aria-label="Search products"
-        className="flex items-center hover:text-ui-fg-base"
+        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded hover:bg-surface"
         data-testid="nav-search-button"
       >
         <MagnifyingGlass />
