@@ -30,6 +30,8 @@ test.describe("site shell", () => {
 
   test("header tap targets are at least 44px tall", async ({ page }) => {
     await page.goto("/")
+    // wait for the streamed basket to replace its Suspense fallback
+    await expect(page.getByRole("banner").getByRole("status")).toHaveCount(1)
     const boxes = await page
       .getByRole("banner")
       .locator("a:visible, button:visible")
