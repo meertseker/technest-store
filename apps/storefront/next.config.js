@@ -1,6 +1,6 @@
 const path = require("path")
 const checkEnvVariables = require("./check-env-variables")
-const { securityHeaders, loadCheckoutCsp } = require("./security-headers")
+const { securityHeaders } = require("./security-headers")
 
 checkEnvVariables()
 
@@ -47,16 +47,8 @@ const nextConfig = {
     ],
   },
   async headers() {
-    const rules = [{ source: "/:path*", headers: securityHeaders }]
-    // E2 owns checkout-csp.js (agreed in TEAM_CHAT 2026-09-29); applied once it exists
-    const checkoutCsp = loadCheckoutCsp(require)
-    if (checkoutCsp) {
-      rules.push({
-        source: "/checkout/:path*",
-        headers: [{ key: "Content-Security-Policy", value: checkoutCsp }],
-      })
-    }
-    return rules
+    // The /checkout CSP is per-request (nonce) and set in src/middleware.ts (E2).
+    return [{ source: "/:path*", headers: securityHeaders }]
   },
 }
 

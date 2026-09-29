@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { buildCheckoutCsp, checkoutCsp } = require("../../checkout-csp.js")
+import { buildCheckoutCsp } from "./checkout-csp"
 
 const prod = buildCheckoutCsp({
   isDev: false,
   backendUrl: "https://api.technest.co.uk",
   imageHost: "images.technest.co.uk",
+  nonce: "bm9uY2U",
 })
 
 function directive(csp: string, name: string): string[] {
@@ -24,6 +24,13 @@ describe("checkout CSP", () => {
     )
     const thirdParty = scripts.filter((s) => s.startsWith("https://"))
     expect(thirdParty.every((s) => /^https:\/\/(\*\.)?js\.stripe\.com$/.test(s))).toBe(true)
+  })
+
+  it("trusts scripts by per-request nonce, not 'unsafe-inline'", () => {
+    const scripts = directive(prod, "script-src")
+    expect(scripts).toContain("'nonce-bm9uY2U'")
+    expect(scripts).toContain("'strict-dynamic'")
+    expect(scripts).not.toContain("'unsafe-inline'")
   })
 
   it("never allows eval in production", () => {
@@ -63,31 +70,25 @@ describe("checkout CSP", () => {
   })
 
   it("permits eval only in dev (React Refresh) and no insecure upgrade there", () => {
-    const dev = buildCheckoutCsp({ isDev: true, backendUrl: "http://localhost:9002" })
+    const dev = buildCheckoutCsp({ isDev: true, backendUrl: "http://localhost:9002", nonce: "n" })
     expect(directive(dev, "script-src")).toContain("'unsafe-eval'")
     expect(dev).not.toContain("upgrade-insecure-requests")
     expect(prod).toContain("upgrade-insecure-requests")
   })
 
-  it("exports a non-empty policy string for next.config.js", () => {
-    expect(typeof checkoutCsp).toBe("string")
-    expect(checkoutCsp.length).toBeGreaterThan(0)
-  })
 })
 
-describe("next.config.js wiring", () => {
+describe("next.config.js", () => {
   afterEach(() => vi.unstubAllEnvs())
 
-  it("serves the checkout CSP on /checkout and its sub-paths", async () => {
+  it("no longer sets a static /checkout CSP (the middleware owns it)", async () => {
     vi.stubEnv("NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY", "pk_test")
     const path = require.resolve("../../next.config.js")
     delete require.cache[path]
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const nextConfig = require(path)
-    const rules: { source: string; headers: { key: string; value: string }[] }[] =
-      await nextConfig.headers()
-    const rule = rules.find((r) => r.source === "/checkout/:path*")
-    const csp = rule?.headers.find((h) => h.key === "Content-Security-Policy")?.value
-    expect(csp).toBe(checkoutCsp)
+    const rules: { source: string; headers: { key: string }[] }[] = await nextConfig.headers()
+    const csp = rules.flatMap((r) => r.headers).filter((h) => h.key === "Content-Security-Policy")
+    expect(csp).toEqual([])
   })
 })

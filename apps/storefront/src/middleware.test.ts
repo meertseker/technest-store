@@ -62,3 +62,37 @@ describe("middleware matcher", () => {
     }
   )
 })
+
+describe("middleware: /checkout Content-Security-Policy", () => {
+  const cspOf = (res: Response) => res.headers.get("content-security-policy") ?? ""
+  const nonceOf = (csp: string) => /'nonce-([^']+)'/.exec(csp)?.[1]
+
+  it("sends a nonce-based CSP on /checkout and forwards it to Next for its own scripts", async () => {
+    const res = await middleware(req("/checkout?step=payment"))
+    const csp = cspOf(res)
+    expect(csp).toContain("script-src")
+    expect(csp).toContain("https://js.stripe.com")
+    expect(nonceOf(csp)).toBeTruthy()
+    expect(res.headers.get("x-middleware-request-content-security-policy")).toBe(csp)
+    expect(res.headers.get("x-middleware-request-x-nonce")).toBe(nonceOf(csp))
+  })
+
+  it("uses a fresh nonce for every request", async () => {
+    const a = nonceOf(cspOf(await middleware(req("/checkout"))))
+    const b = nonceOf(cspOf(await middleware(req("/checkout"))))
+    expect(a).toBeTruthy()
+    expect(a).not.toBe(b)
+  })
+
+  it("covers checkout sub-paths but not look-alikes or other pages", async () => {
+    expect(cspOf(await middleware(req("/checkout/review")))).toContain("script-src")
+    expect(cspOf(await middleware(req("/checkouts")))).toBe("")
+    expect(cspOf(await middleware(req("/cart")))).toBe("")
+  })
+
+  it("still sets the cache cookie on /checkout", async () => {
+    const res = await middleware(req("/checkout"))
+    expect(res.cookies.get("_medusa_cache_id")?.value).toBeTruthy()
+  })
+})
+
