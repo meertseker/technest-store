@@ -3,6 +3,9 @@ import { Metadata } from "next"
 import { listCartOptions, retrieveCart } from "@lib/data/cart"
 import { retrieveCustomer } from "@lib/data/customer"
 import { getBaseURL } from "@lib/util/env"
+import { JsonLd } from "@/lib/seo/json-ld"
+import { buildLocalBusinessJsonLd } from "@/lib/seo/local-business"
+import { siteConfig } from "@/lib/site-config"
 import { StoreCartShippingOption } from "@medusajs/types"
 import CartMismatchBanner from "@modules/layout/components/cart-mismatch-banner"
 import Footer from "@modules/layout/templates/footer"
@@ -26,6 +29,7 @@ export default async function PageLayout(props: { children: React.ReactNode }) {
 
   return (
     <>
+      <JsonLd data={buildLocalBusinessJsonLd(siteConfig, getBaseURL())} />
       <Nav />
       {customer && cart && (
         <CartMismatchBanner customer={customer} cart={cart} />
