@@ -16,6 +16,7 @@ import { seedTechNest } from "../../src/scripts/seed"
 import { mailTo, ORDER_CONFIRMED, settle, textOf } from "../utils/mailpit"
 import { orderPayment, placeStoreOrder } from "../utils/store-order"
 import { warmDb } from "../utils/warm-db"
+import { waitForBackgroundWork } from "../helpers/background"
 
 jest.setTimeout(300 * 1000)
 
@@ -99,7 +100,14 @@ medusaIntegrationTestRunner({
         const email = `e2-refund-${RUN}@example.com`
         const order = await placeStoreOrder(api, getContainer(), { email, shipping: "standard" })
         const payment = await orderPayment(getContainer(), order.id)
-        await capturePaymentWorkflow(getContainer()).run({ input: { payment_id: payment.id } })
+        // The order.placed subscriber captures delivery orders in the background. Let it finish
+        // first, and only capture here if it did not (two captures would race and one would fail).
+        await waitForBackgroundWork(getContainer())
+        const paymentModule = getContainer().resolve(Modules.PAYMENT)
+        const [current] = await paymentModule.listPayments({ id: [payment.id] })
+        if (!current.captured_at) {
+          await capturePaymentWorkflow(getContainer()).run({ input: { payment_id: payment.id } })
+        }
 
         await refundPaymentWorkflow(getContainer()).run({ input: { payment_id: payment.id, amount: 1 } })
         await run(refundIssuedEmail, "payment.refunded", { id: payment.id })
