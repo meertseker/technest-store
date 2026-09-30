@@ -120,11 +120,18 @@ medusaIntegrationTestRunner({
         const { data: regions } = await api.get("/store/regions", headers)
         const regionId = regions.regions[0].id
 
+        // Below the £20 free-delivery threshold (technest-settings.spec.ts
+        // covers the free Standard price above it).
         const { data: products } = await api.get(
-          "/store/products?limit=1&fields=*variants",
+          `/store/products?limit=100&region_id=${regionId}&fields=*variants.calculated_price`,
           headers
         )
-        const variantId = products.products[0].variants[0].id
+        const variantId = products.products
+          .flatMap((p: { variants: { id: string; calculated_price: { calculated_amount: number } }[] }) => p.variants)
+          .find(
+            (v: { calculated_price: { calculated_amount: number } }) =>
+              v.calculated_price.calculated_amount < 20
+          ).id
 
         const { data: cartRes } = await api.post(
           "/store/carts",

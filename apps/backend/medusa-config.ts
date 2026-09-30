@@ -175,6 +175,7 @@ module.exports = defineConfig({
       resolve: "./src/modules/photo",
       options: { workerUrl: process.env.PHOTO_WORKER_URL, defaultModel: process.env.PHOTO_MODEL },
     },
+    { resolve: "./src/modules/settings" },
     fileModule,
     ...redisModules,
     ...paymentModules,

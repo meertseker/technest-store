@@ -33,6 +33,8 @@ import {
   SHOP,
 } from "./data"
 import { upsertProductAttributesWorkflow } from "../../workflows/upsert-product-attributes"
+import { applyFreeDeliveryThresholdWorkflow } from "../../workflows/apply-free-delivery-threshold"
+import { getTechnestSettings } from "../../modules/settings/get-settings"
 
 const PRODUCT_BATCH_SIZE = 10
 
@@ -269,6 +271,13 @@ export async function seedTechNest(
       shippingOption(SHIPPING.standard, deliverySet.service_zones[0].id),
       shippingOption(SHIPPING.nextDay, deliverySet.service_zones[0].id),
     ],
+  })
+
+  // Standard delivery is free at or above the threshold setting (contract:
+  // docs/contracts/settings.md); admin saves re-apply it.
+  const { free_delivery_threshold_pence } = await getTechnestSettings(container)
+  await applyFreeDeliveryThresholdWorkflow(container).run({
+    input: { threshold_pence: free_delivery_threshold_pence },
   })
 
   await linkSalesChannelsToStockLocationWorkflow(container).run({

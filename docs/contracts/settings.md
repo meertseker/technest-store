@@ -23,7 +23,8 @@ type TechnestSettings = {
 200 { "settings": { "free_delivery_threshold_pence": 2000, "klarna_min_basket_pence": 3000 } }
 ```
 
-Always returns every key (defaults when the owner never saved). Safe to cache for 60 s.
+Always returns every key (defaults when the owner never saved). Safe to cache for 60 s
+(the route sends `Cache-Control: public, max-age=60`). Without the publishable key: 400.
 
 ## Admin (E4)
 
@@ -37,6 +38,10 @@ Always returns every key (defaults when the owner never saved). Safe to cache fo
 ```
 
 Validation: each value an integer, 0 ..= 100000 (£1000); unknown keys -> 400 `invalid_data`.
+An empty body is also 400 `invalid_data`. Not logged in: 401.
+
+Event: every successful save emits `technest.settings.updated` with `{ keys: string[] }` (the keys in the
+request). Admin page: Settings -> "Shop settings" (`/app/settings/technest`), amounts typed in pounds.
 
 Side effect: saving `free_delivery_threshold_pence` also updates the Standard delivery shipping option,
 so its price is £0 when the basket item total (inc. VAT) is >= the threshold (a Medusa conditional
