@@ -5,6 +5,10 @@ import { rejectClientPaymentData } from './store/payment-collections/reject-clie
 import { storeDeviceMiddlewares } from './store/devices/middlewares'
 import { sentryErrorHandler } from '../lib/monitoring/sentry-error-handler'
 import { storeProductMiddlewares } from './store/products/middlewares'
+import { adminRepairMiddlewares } from './admin/repair-bookings/middlewares'
+import { adminTradeMiddlewares } from './admin/trade-applications/middlewares'
+import { storeRepairMiddlewares } from './store/repair-bookings/middlewares'
+import { storeTradeMiddlewares } from './store/trade-applications/middlewares'
 
 export default defineMiddlewares({
   // E4: Medusa's default error handler + report 5xx to Sentry (no-op without SENTRY_DSN).
@@ -33,5 +37,9 @@ export default defineMiddlewares({
     ...storeDeviceMiddlewares,
     ...adminDeviceMiddlewares,
     ...adminProductAttributesMiddlewares,
+    ...storeTradeMiddlewares,
+    ...adminTradeMiddlewares,
+    ...storeRepairMiddlewares,
+    ...adminRepairMiddlewares,
   ],
 })
