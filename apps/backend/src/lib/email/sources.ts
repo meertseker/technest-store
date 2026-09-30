@@ -1,5 +1,6 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
+import * as lifecycle from "./lifecycle-sources"
 import { loadOrderEmailData, safeFirstName, shopNotifyEmail } from "./order-email-data"
 
 export type EmailRecipient = "customer" | "shop"
@@ -41,6 +42,10 @@ const sources: Record<string, Source> = {
   "order-confirmation": orderEmail,
   "shop-new-order": orderEmail,
   welcome,
+  "order-dispatched": (c, id) => lifecycle.orderDispatched(c, id),
+  "order-cancelled": (c, id) => lifecycle.orderCancelled(c, id),
+  "refund-issued": (c, id) => lifecycle.refundIssued(c, id),
+  "return-received": (c, id) => lifecycle.returnReceived(c, id),
 }
 
 /** null = nothing to send (e.g. guest customer, order without an email). */

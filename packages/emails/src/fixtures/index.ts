@@ -35,4 +35,27 @@ export const fixtures: Record<TemplateId, Record<string, unknown>> = {
     reset_url: "https://technest.co.uk/account/reset-password?token=example&email=sam%40example.com",
     actor: "customer",
   },
+  "order-dispatched": {
+    display_id: 1042,
+    first_name: "Sam",
+    order_url: order.order_url,
+    items: [{ title: "USB-C to USB-C cable", variant_title: "1 m, black", quantity: 2 }],
+    tracking: [{ number: "RM123456789GB", url: "https://www.royalmail.com/track-your-item#/tracking-results/RM123456789GB" }],
+    shipping_address: order.shipping_address,
+  },
+  "order-cancelled": {
+    display_id: 1042,
+    first_name: "Sam",
+    order_url: order.order_url,
+    reason: "uncollected",
+    payment: "released",
+    refunded_pence: 0,
+  },
+  "refund-issued": { display_id: 1042, first_name: "Sam", order_url: order.order_url, amount_pence: 499, full: false },
+  "return-received": {
+    display_id: 1042,
+    first_name: "Sam",
+    order_url: order.order_url,
+    items: [{ title: "Screen protector", quantity: 1 }],
+  },
 }
