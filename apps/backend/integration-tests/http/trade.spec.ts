@@ -9,6 +9,7 @@ import { ensureTradePricing } from "../../src/scripts/seed/trade-pricing"
 import { TRADE_MODULE } from "../../src/modules/trade"
 import TradeModuleService from "../../src/modules/trade/service"
 import { approveTradeApplicationWorkflow } from "../../src/workflows/approve-trade-application"
+import { getProductTradeTiersWorkflow } from "../../src/workflows/get-product-trade-tiers"
 import { rejectTradeApplicationWorkflow } from "../../src/workflows/reject-trade-application"
 import { submitTradeApplicationWorkflow } from "../../src/workflows/submit-trade-application"
 import { adminHeaders, storeHeaders } from "../helpers/auth"
@@ -412,6 +413,32 @@ medusaIntegrationTestRunner({
         for (const other of data.variants.filter((v: any) => v.variant_id !== variants[0].id)) {
           expect(other.tiers).toEqual([])
         }
+      })
+
+      it("enforces the trade-account check in the workflow, not only the route", async () => {
+        const container = getContainer()
+        const { data: channels } = await container
+          .resolve(ContainerRegistrationKeys.QUERY)
+          .graph({ entity: "product_sales_channel", fields: ["sales_channel_id"], filters: { product_id: productId } })
+        const sales_channel_ids = channels.map((c) => c.sales_channel_id as string)
+
+        const denied = await getProductTradeTiersWorkflow(container).run({
+          input: { customer_id: customers.carol.customerId, product_id: productId, sales_channel_ids },
+          throwOnError: false,
+        })
+        expect(denied.errors[0].error.message).toBe("Trade pricing is only available to approved trade accounts")
+
+        const hidden = await getProductTradeTiersWorkflow(container).run({
+          input: { customer_id: customers.trader.customerId, product_id: productId, sales_channel_ids: [] },
+          throwOnError: false,
+        })
+        expect(hidden.errors[0].error.message).toBe(`Product with id: ${productId} was not found`)
+
+        const { result } = await getProductTradeTiersWorkflow(container).run({
+          input: { customer_id: customers.trader.customerId, product_id: productId, sales_channel_ids },
+        })
+        expect(result.product_id).toBe(productId)
+        expect(result.variants).toHaveLength(variants.length)
       })
 
       it("returns 404 for an unknown product", async () => {

@@ -171,6 +171,28 @@ medusaIntegrationTestRunner({
         expect(other.status).toBe(200)
       })
 
+      it("verifies Turnstile inside the workflow before storing anything", async () => {
+        const container = getContainer()
+        const { errors } = await createRepairBookingWorkflow(container).run({
+          input: {
+            name: "Bot",
+            phone: "07700 900001",
+            email: "bot@example.com",
+            device: "Pixel 8",
+            fault: "Spam",
+            preferred_time: "Any",
+            turnstile_token: "bad",
+            remote_ip: "203.0.113.9",
+          },
+          throwOnError: false,
+        })
+        expect(errors[0].error).toMatchObject({ type: "not_allowed", message: "Turnstile verification failed" })
+        expect(verifier).toHaveBeenCalledWith("bad", "203.0.113.9")
+        const repairService: RepairModuleService = container.resolve(REPAIR_MODULE)
+        expect(await repairService.listRepairBookings({ name: "Bot" })).toHaveLength(0)
+        expect(events.emitted("technest.repair_booking.created")).toEqual([])
+      })
+
       it("rolls back the booking when a later step fails", async () => {
         const container = getContainer()
         events.failNext("technest.repair_booking.created")
@@ -182,6 +204,7 @@ medusaIntegrationTestRunner({
             device: "Pixel 8",
             fault: "Battery",
             preferred_time: "Any",
+            turnstile_token: "good-token",
           },
           throwOnError: false,
         })

@@ -36,7 +36,11 @@ www.{$SHOP_DOMAIN} {
 api.{$SHOP_DOMAIN} {
 	import common
 	redir /app* https://admin.{$SHOP_DOMAIN}{uri} permanent
-	reverse_proxy server:9000
+	reverse_proxy server:9000 {
+		# The API rate limits by CF-Connecting-IP. Overwrite it with the client IP Caddy
+		# resolved (trusted_proxies above), so a request that bypasses Cloudflare can't spoof it.
+		header_up CF-Connecting-IP {client_ip}
+	}
 }
 
 # Admin dashboard, same origin as /admin and /auth, so session cookies need no cross-site setup.

@@ -1,5 +1,5 @@
 import { MedusaContainer } from "@medusajs/framework/types"
-import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import {
   REPAIR_BOOKING_FIELDS,
   RepairBookingDTO,
@@ -36,17 +36,11 @@ export async function retrieveRepairBookingDTO(
   scope: MedusaContainer,
   id: string
 ): Promise<RepairBookingDTO> {
-  const { bookings } = await listRepairBookingDTOs(scope, {
-    filters: { id },
-    order: "created_at",
-    limit: 1,
-    offset: 0,
-  })
-  if (!bookings.length) {
-    throw new MedusaError(
-      MedusaError.Types.NOT_FOUND,
-      `Repair booking with id: ${id} was not found`
-    )
-  }
-  return bookings[0]
+  const query = scope.resolve(ContainerRegistrationKeys.QUERY)
+  // throwIfKeyNotFound turns an unknown id into a 404 (MedusaError NOT_FOUND).
+  const { data } = await query.graph(
+    { entity: "repair_booking", fields: REPAIR_BOOKING_FIELDS, filters: { id } },
+    { throwIfKeyNotFound: true }
+  )
+  return toRepairBookingDTO(data[0] as Record<string, unknown>)
 }

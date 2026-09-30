@@ -66,7 +66,7 @@ export class SlidingWindowRateLimiter {
 
 /**
  * The client IP. Behind Cloudflare the real address is in CF-Connecting-IP
- * (Caddy must only accept traffic from Cloudflare, or the header is spoofable).
+ * (Caddy overwrites it with its trusted {client_ip} on the api. site, so it cannot be spoofed).
  */
 export function clientIp(req: MedusaRequest): string {
   const cf = req.headers["cf-connecting-ip"]
