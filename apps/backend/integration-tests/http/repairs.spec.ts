@@ -8,6 +8,7 @@ import RepairModuleService from "../../src/modules/repair/service"
 import { updateRepairBookingStep } from "../../src/workflows/steps/repair-booking-steps"
 import { createRepairBookingWorkflow } from "../../src/workflows/create-repair-booking"
 import { adminHeaders, storeHeaders } from "../helpers/auth"
+import { waitForBackgroundWork } from "../helpers/background"
 import { spyOnEvents } from "../helpers/events"
 
 jest.setTimeout(10 * 60 * 1000)
@@ -83,6 +84,9 @@ medusaIntegrationTestRunner({
       await api.post(`/admin/repair-bookings/${ids.second}`, { status: "booked" }, admin)
       await api.post(`/admin/repair-bookings/${ids.third}`, { status: "done" }, admin)
 
+      // The fixtures above emit events whose subscribers (emails) run in the
+      // background: let them finish before the runner snapshots the DB.
+      await waitForBackgroundWork(container)
       events = spyOnEvents(container)
     })
 
@@ -90,6 +94,12 @@ medusaIntegrationTestRunner({
       events.spy.mockClear()
       verifier.mockClear()
     })
+
+    // Requests in a test emit events whose subscribers (emails) keep running
+    // after the response. The runner's own afterEach only waits for workflows
+    // that have already started, so wait for those still to come too before
+    // the next restore cuts their DB connections.
+    afterEach(() => waitForBackgroundWork(getContainer()))
 
     describe("store: POST /store/repair-bookings", () => {
       it("creates a booking without echoing personal data and emits created", async () => {

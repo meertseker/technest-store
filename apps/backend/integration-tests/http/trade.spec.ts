@@ -14,6 +14,7 @@ import { rejectTradeApplicationWorkflow } from "../../src/workflows/reject-trade
 import { submitTradeApplicationWorkflow } from "../../src/workflows/submit-trade-application"
 import { adminHeaders, storeHeaders } from "../helpers/auth"
 import { customerHeaders } from "../helpers/customer"
+import { waitForBackgroundWork } from "../helpers/background"
 import { spyOnEvents } from "../helpers/events"
 
 jest.setTimeout(10 * 60 * 1000)
@@ -104,12 +105,21 @@ medusaIntegrationTestRunner({
       )
       pendingId = bobApp.trade_application.id
 
+      // The fixtures above emit events whose subscribers (emails) run in the
+      // background: let them finish before the runner snapshots the DB.
+      await waitForBackgroundWork(container)
       events = spyOnEvents(container)
     })
 
     beforeEach(() => {
       events.spy.mockClear()
     })
+
+    // Requests in a test emit events whose subscribers (emails) keep running
+    // after the response. The runner's own afterEach only waits for workflows
+    // that have already started, so wait for those still to come too before
+    // the next restore cuts their DB connections.
+    afterEach(() => waitForBackgroundWork(getContainer()))
 
     describe("store: submit and status", () => {
       it("requires a logged-in customer", async () => {

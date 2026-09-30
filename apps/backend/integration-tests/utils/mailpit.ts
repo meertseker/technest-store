@@ -31,6 +31,21 @@ export async function textOf(id: string): Promise<string> {
   return ((await res.json()) as { Text: string }).Text
 }
 
+/**
+ * Polls until `to` has a message with exactly `subject` (or ~10 s pass) and
+ * returns every such message. Use it for shared mailboxes (e.g. the shop's),
+ * where other mail already sitting there would satisfy `mailTo(to, 1)`.
+ */
+export async function mailWithSubject(to: string, subject: string): Promise<MailpitMessage[]> {
+  let matching: MailpitMessage[] = []
+  for (let i = 0; i < 40; i++) {
+    matching = (await mailTo(to, 0)).filter((m) => m.Subject === subject)
+    if (matching.length) break
+    await new Promise((r) => setTimeout(r, 250))
+  }
+  return matching
+}
+
 /** Waits long enough for an email that should NOT arrive, then returns what did. */
 export async function settle(to: string, ms = 2000, opts: { ignore?: RegExp } = {}) {
   await new Promise((r) => setTimeout(r, ms))
