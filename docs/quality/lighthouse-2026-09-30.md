@@ -54,6 +54,11 @@ were running tests, so single runs swing by up to 10 points; see "Reading the nu
 | | after | 92 (83, 92, 93) | 100 | 96 | **63** | 2.9 s | 0 | 210 ms |
 | Checkout `/checkout` (no redirect now) | after | 98 (96, 99, 98) | 100 | 96 | **63** | 2.3 s | 0 | 110 ms |
 
+Final check after rebasing on `main` with E2's payment step merged (`9f32631`, load average about
+1.2, quieter than the runs above): home 94 (94, 94, 97), category 96 (95, 96, 98), product 97
+(96, 97, 97), `/checkout` 97 (98, 96, 97); accessibility 100, best practices 100 (checkout 96),
+SEO 100 (checkout 63) on every run; LCP 2.2 to 2.8 s, CLS <= 0.001, TBT 70 to 190 ms.
+
 Earlier "before" runs taken while the container was busier (load average 3.5 to 4.5) scored lower:
 home 81 to 89, category 84 to 97, product 88 to 98.
 
