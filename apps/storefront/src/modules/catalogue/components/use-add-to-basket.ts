@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useRef, useState, useTransition } from "react"
+import { announceAddedToBasket } from "@lib/basket/events"
 import { addToCart } from "@lib/data/cart"
 import { STORE_COUNTRY } from "@lib/constants/store"
 
@@ -9,8 +10,10 @@ export type AddState = "idle" | "pending" | "added" | "error"
 
 /**
  * Adds a variant with the existing cart server action (lib/data/cart.ts), then
- * refreshes the server components so the header basket count updates. The
- * shopper stays on the page. "added" falls back to idle after a few seconds.
+ * refreshes the server components so the header basket count updates, and
+ * announces it so the header opens the basket drawer with the "Added to basket"
+ * toast (spec 7.4). The shopper stays on the page. "added" falls back to idle
+ * after a few seconds.
  */
 export function useAddToBasket() {
   const router = useRouter()
@@ -29,6 +32,7 @@ export function useAddToBasket() {
       try {
         await addToCart({ variantId, quantity, countryCode: STORE_COUNTRY })
         setState("added")
+        announceAddedToBasket()
         startTransition(() => router.refresh())
         timer.current = window.setTimeout(() => setState("idle"), 4000)
       } catch (e) {

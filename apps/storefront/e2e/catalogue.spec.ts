@@ -121,7 +121,9 @@ test.describe("product page /p/[handle]", () => {
     await expect(page.getByRole("group", { name: /Colour/ })).toHaveCount(0)
     await buttons.first().click()
     await page.getByRole("button", { name: "Add to basket" }).first().click()
-    await expect(page.getByRole("status").filter({ hasText: "to your basket" })).toBeVisible()
+    // the basket drawer opens over the page (spec 7.4); the inline note stays behind it
+    await expect(page.getByRole("dialog", { name: /Your basket/ })).toBeVisible()
+    await expect(page.getByText(/USB-C to Lightning.* to your basket\./i)).toBeVisible()
     await expect(page).toHaveURL(/\/p\/usb-c-to-lightning-cable/)
   })
 

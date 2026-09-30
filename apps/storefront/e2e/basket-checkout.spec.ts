@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
-import { BACKEND, KEY, seedCart, storeHeaders as h } from "./cart-helpers"
+import { BACKEND, inStock, KEY, seedCart, storeHeaders as h } from "./cart-helpers"
 import { expectNoAxeViolations } from "./helpers"
 
 /**
@@ -15,10 +15,15 @@ async function shot(page: Page, name: string, width: number, fullPage = true) {
   await page.screenshot({ path: `${SCREENS}/checkout-${name}-${width}.png`, fullPage })
 }
 
-type Product = { id: string; handle: string; metadata: Record<string, unknown> | null; variants: { id: string }[] }
+type Product = {
+  id: string
+  handle: string
+  metadata: Record<string, unknown> | null
+  variants: { id: string; inventory_quantity?: number | null; manage_inventory?: boolean | null }[]
+}
 
 async function listProducts(page: Page): Promise<Product[]> {
-  const res = await page.request.get(`${BACKEND}/store/products?limit=100&fields=id,handle,metadata,*variants`, { headers: h })
+  const res = await page.request.get(`${BACKEND}/store/products?limit=100&fields=id,handle,metadata,*variants,+variants.inventory_quantity`, { headers: h })
   return (await res.json()).products
 }
 
@@ -31,19 +36,20 @@ test.describe("basket and checkout", () => {
   test("add to basket -> drawer -> checkout sections up to payment", async ({ page }, info) => {
     const width = page.viewportSize()!.width
     const products = await listProducts(page)
-    const single = products.find((p) => p.variants.length === 1 && !isAddon(p))!
+    const single = products.find((p) => p.variants.length === 1 && !isAddon(p) && inStock(p.variants[0]))!
 
     await page.goto(`/products/${single.handle}`)
     const status = page.getByTestId("basket-status")
     await expect(status).toHaveText("0 items in your basket")
 
-    // the PDP preselects the only variant after hydration
-    const add = page.getByTestId("product-container").getByTestId("add-product-button")
+    // the PDP preselects the only variant after hydration (the sticky bar repeats the button)
+    const add = page.getByRole("main").getByRole("button", { name: "Add to basket", exact: true }).first()
     await expect(add).toBeEnabled()
     await add.click()
 
     // toast + drawer + one live status phrase
-    await expect(page.getByText("Added to basket")).toBeVisible()
+    // the sonner toast (the PDP button also reads "Added to basket" for a moment)
+    await expect(page.locator("[data-sonner-toast]").getByText("Added to basket")).toBeVisible()
     const drawer = page.getByRole("dialog", { name: /Your basket \(1\)/ })
     await expect(drawer).toBeVisible()
     await expect(status).toHaveText("1 item in your basket")
@@ -84,7 +90,7 @@ test.describe("basket and checkout", () => {
 
     // checkout: a full page load (CSP), section 1 open
     await page.getByTestId("checkout-button").click()
-    await page.waitForURL(/\/checkout\?step=contact/)
+    await page.waitForURL(/\/checkout(\?step=contact)?$/)
     await expect(page.getByRole("heading", { level: 1, name: "Checkout" })).toBeVisible()
     await expect(page.getByRole("link", { name: /Back to basket|Back/ }).first()).toBeVisible()
 
@@ -170,8 +176,8 @@ test.describe("basket and checkout", () => {
       !payment_providers.some((p: { id: string }) => p.id === "pp_system_default"),
       "needs the manual provider (dev); Stripe orders are covered by E2"
     )
-    const product = (await listProducts(page)).find((p) => !isAddon(p))!
-    await seedCart(page, [product.variants[0].id])
+    const variant = (await listProducts(page)).filter((p) => !isAddon(p)).flatMap((p) => p.variants).find(inStock)!
+    await seedCart(page, [variant.id])
 
     await page.goto("/checkout")
     await page.getByLabel("Email address").fill(`collect-${Date.now()}@example.com`)
