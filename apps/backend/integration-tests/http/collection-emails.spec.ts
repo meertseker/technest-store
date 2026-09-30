@@ -3,7 +3,7 @@ import { Modules } from "@medusajs/framework/utils"
 import collectionEmails from "../../src/subscribers/collection-emails"
 import paymentFailedEmail from "../../src/subscribers/payment-failed-email"
 import { seedTechNest } from "../../src/scripts/seed"
-import { mailTo, textOf } from "../utils/mailpit"
+import { mailTo, ORDER_CONFIRMED, textOf } from "../utils/mailpit"
 import { placeStoreOrder } from "../utils/store-order"
 import { warmDb } from "../utils/warm-db"
 
@@ -34,13 +34,13 @@ medusaIntegrationTestRunner({
           .updateOrders([
             {
               id: order.id,
-              metadata: { technest_collection_code: "K7QX4M", technest_ready_at: "2026-10-02T10:00:00.000Z" },
+              metadata: { collection_code: "K7QX4M", ready_for_collection_at: "2026-10-02T10:00:00.000Z" },
             },
           ])
 
         await emit(collectionEmails, "technest.order.ready_for_collection", order.id)
         await emit(collectionEmails, "technest.order.ready_for_collection", order.id) // duplicate event
-        const [ready] = await mailTo(email, 1)
+        const [ready] = await mailTo(email, 1, { ignore: ORDER_CONFIRMED })
         expect(ready.Subject).toBe(`Your order #${order.display_id} is ready to collect`)
         const text = await textOf(ready.ID)
         expect(text).toContain("K7QX4M")
@@ -49,7 +49,7 @@ medusaIntegrationTestRunner({
         expect(text).toContain("Friday 9 October")
 
         await emit(collectionEmails, "technest.order.collection_reminder", order.id)
-        const subjects = (await mailTo(email, 2)).map((m) => m.Subject)
+        const subjects = (await mailTo(email, 2, { ignore: ORDER_CONFIRMED })).map((m) => m.Subject)
         expect(subjects).toHaveLength(2)
         expect(subjects).toContain(`Reminder: order #${order.display_id} is waiting for you`)
       })
@@ -58,7 +58,7 @@ medusaIntegrationTestRunner({
         const email = `e2-ready-nocode-${RUN}@example.com`
         const order = await placeStoreOrder(api, getContainer(), { email, shipping: "click-collect" })
         await emit(collectionEmails, "technest.order.ready_for_collection", order.id)
-        const [ready] = await mailTo(email, 1)
+        const [ready] = await mailTo(email, 1, { ignore: ORDER_CONFIRMED })
         expect(await textOf(ready.ID)).toContain(`#${order.display_id}`)
       })
 
@@ -67,9 +67,9 @@ medusaIntegrationTestRunner({
         const order = await placeStoreOrder(api, getContainer(), { email, shipping: "standard" })
         await emit(paymentFailedEmail, "technest.payment.capture_failed", order.id)
 
-        const [customer] = await mailTo(email, 1)
+        const [customer] = await mailTo(email, 1, { ignore: ORDER_CONFIRMED })
         expect(customer.Subject).toBe(`We couldn't take payment for order #${order.display_id}`)
-        const [shop] = await mailTo(process.env.SHOP_NOTIFY_EMAIL!, 1)
+        const [shop] = await mailTo(process.env.SHOP_NOTIFY_EMAIL!, 1, { ignore: /^New order / })
         expect(shop.Subject).toMatch(new RegExp(`^Payment capture FAILED: order #${order.display_id}`))
         expect(await textOf(shop.ID)).toContain("Don't ship")
       })

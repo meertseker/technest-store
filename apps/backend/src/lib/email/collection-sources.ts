@@ -4,9 +4,9 @@ import { todaysHours, type CollectionData, type PaymentFailedData } from "@techn
 import { safeFirstName, shopNotifyEmail, storefrontUrl, toPence } from "./order-email-data"
 import type { EmailRecipient, ResolvedEmail } from "./sources"
 
-/** Order metadata set by the collection workflows (C3; docs/contracts/emails.md). */
-export const COLLECTION_CODE_KEY = "technest_collection_code"
-export const READY_AT_KEY = "technest_ready_at"
+/** Order metadata written by the Click & Collect workflows (docs/contracts/click-collect.md). */
+export const COLLECTION_CODE_KEY = "collection_code"
+export const READY_AT_KEY = "ready_for_collection_at"
 /** Uncollected orders are held this long after "ready" before the auto-cancel. */
 export const HOLD_DAYS = 7
 

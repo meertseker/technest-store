@@ -30,7 +30,7 @@ Every email goes through the Medusa Notification module (`channel: "email"`, pro
 | 15 | `technest.repair_booking.created` (E1) | `{ id }` | `shop-repair-booking` | shop |
 | 16 | `technest.stock.low_digest` (E1 job, 08:00) | `{ variant_ids: string[] }` | `shop-low-stock-digest` | shop; skipped when empty |
 
-**Order metadata the collection/capture code sets (C3, see TEAM_CHAT 01:58):** `technest_collection_code` (shown in "Ready for collection"; falls back to the order number), `technest_ready_at` (ISO time), and `technest_cancel_reason: "uncollected"` set before the day-7 auto-cancel.
+**Order metadata the emails read (written by the Click & Collect code, docs/contracts/click-collect.md):** `collection_code` (shown in "Ready for collection"; falls back to the order number), `ready_for_collection_at` (ISO time; "we'll hold it until" = +7 days), and `collection_expired_at` (set by the day-7 job just before it cancels, so the `order-cancelled` email says "not collected").
 
 `technest.order.collected` sends no email at launch (the customer has the goods in hand). It is kept for analytics and the audit trail.
 

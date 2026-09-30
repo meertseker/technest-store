@@ -11,8 +11,11 @@ import type {
 import { safeFirstName, storefrontUrl, toPence } from "./order-email-data"
 import type { ResolvedEmail } from "./sources"
 
-/** Order metadata key set by the day-7 Click & Collect auto-cancel job. */
-export const CANCEL_REASON_KEY = "technest_cancel_reason"
+/**
+ * Order metadata the day-7 Click & Collect job sets just before it cancels an
+ * uncollected order (docs/contracts/click-collect.md).
+ */
+export const COLLECTION_EXPIRED_KEY = "collection_expired_at"
 
 type Row = Record<string, any>
 
@@ -108,7 +111,7 @@ export async function orderCancelled(container: MedusaContainer, orderId: string
   const { email, ref } = toRef(order)
   const payload: OrderCancelledData = {
     ...ref,
-    reason: order.metadata?.[CANCEL_REASON_KEY] === "uncollected" ? "uncollected" : "other",
+    reason: order.metadata?.[COLLECTION_EXPIRED_KEY] ? "uncollected" : "other",
     payment: refunded > 0 ? "refunded" : payments.some((p) => p?.canceled_at) ? "released" : "none",
     refunded_pence: refunded,
   }
