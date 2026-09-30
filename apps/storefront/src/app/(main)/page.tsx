@@ -2,6 +2,7 @@ import { Metadata } from "next"
 import { STORE_COUNTRY } from "@lib/constants/store"
 
 import FeaturedProducts from "@modules/home/components/featured-products"
+import GoogleReviews from "@modules/home/components/google-reviews"
 import Hero from "@modules/home/components/hero"
 import { listCollections } from "@lib/data/collections"
 import { getRegion } from "@lib/data/regions"
@@ -27,6 +28,7 @@ export default async function Home() {
         <p className="content-container py-12 text-center text-muted-foreground">
           We can&apos;t show products right now. Please try again in a moment.
         </p>
+        <GoogleReviews />
       </>
     )
   }
@@ -39,6 +41,7 @@ export default async function Home() {
           <FeaturedProducts collections={collections} region={region} />
         </ul>
       </div>
+      <GoogleReviews />
     </>
   )
 }
