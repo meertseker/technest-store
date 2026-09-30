@@ -209,6 +209,9 @@ importers:
       pg:
         specifier: ^8.11.3
         version: 8.23.0
+      qrcode:
+        specifier: 1.5.4
+        version: 1.5.4
       qs:
         specifier: ^6.12.1
         version: 6.15.3

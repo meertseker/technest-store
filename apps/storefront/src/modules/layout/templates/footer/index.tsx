@@ -16,6 +16,8 @@ const LEGAL = [
   { href: "/legal/privacy", label: "Privacy" },
   { href: "/legal/cookies", label: "Cookies" },
   { href: "/legal/accessibility", label: "Accessibility" },
+  { href: "/legal/weee", label: "Recycling (WEEE)" },
+  { href: "/legal/repair-terms", label: "Repair terms" },
 ]
 
 const linkClass = "inline-flex min-h-11 items-center hover:underline"
