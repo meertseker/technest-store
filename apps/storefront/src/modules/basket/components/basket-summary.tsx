@@ -56,7 +56,10 @@ export default function BasketSummary({
       <p className="text-center text-muted-foreground">
         Secure card payment by Stripe · 14-day returns
       </p>
-      <KlarnaBasketHint total_pence={toPence(cart.total ?? cart.item_total)} min_pence={view.klarna_min_basket_pence} />
+      {/* E2's payment footnote: 14px small print (spec 3), marked for the quality-gate e2e */}
+      <div data-small-text className="empty:hidden">
+        <KlarnaBasketHint total_pence={toPence(cart.total ?? cart.item_total)} min_pence={view.klarna_min_basket_pence} />
+      </div>
     </div>
   )
 }
