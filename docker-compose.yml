@@ -30,8 +30,9 @@ x-backend-env: &backend-env
   S3_ENDPOINT: ${S3_ENDPOINT:?}
   S3_REGION: auto
   PHOTO_WORKER_URL: http://photo-worker:7000
-  # isnet-general-use fits the 4 GB limit; birefnet-general was OOM-killed at 4 GB (see docs/plans).
-  PHOTO_MODEL: ${PHOTO_MODEL:-isnet-general-use}
+  # birefnet-general is the default (lead's decision); it needs the 6 GB photo-worker limit below.
+  # Fallback on a smaller box: PHOTO_MODEL=isnet-general-use (fits 4 GB). See infra/photo-worker/README.md.
+  PHOTO_MODEL: ${PHOTO_MODEL:-birefnet-general}
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
   SENTRY_DSN: ${SENTRY_DSN_BACKEND:-}
   # Payments and email (E2)
@@ -149,7 +150,11 @@ services:
     image: ghcr.io/${GHCR_OWNER:?}/technest-photo-worker:${IMAGE_TAG:-main}
     environment:
       OMP_NUM_THREADS: "2"
-    deploy: { resources: { limits: { cpus: "2", memory: 4g } } }
+      # Keep in step with PHOTO_MODEL above (the backend always names the model; this is the preload).
+      PHOTO_WORKER_DEFAULT_MODEL: ${PHOTO_MODEL:-birefnet-general}
+    # 6 GB: birefnet-general was OOM-killed at 4 GB (docs/plans/2026-09-29-e4-photo-pipeline.md).
+    # Fallback: set PHOTO_MODEL=isnet-general-use in .env and lower this to 4g if the server is short of RAM.
+    deploy: { resources: { limits: { cpus: "2", memory: 6g } } }
 
   # Nightly pg_dump -> R2 (technest-backups), 30-day retention. See infra/backup and DEPLOY.md.
   #   docker compose run --rm backup backup.sh          take a backup now

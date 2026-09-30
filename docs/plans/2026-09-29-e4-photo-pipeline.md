@@ -8,12 +8,16 @@ Status: DRAFT. Owner: E4.
 - The provider sits behind an interface (rembg today, swappable later).
 
 ## Licence guard (hard rule)
-- rembg v2.0.85 **defaults to `bria-rmbg`** (non-commercial, gated). Its official Docker image bakes it in. So:
-  - Build our own image, pinned to `rembg[cpu,cli]==2.0.85` on `python:3.11-slim`, and download **only** the named models: `rembg d birefnet-general isnet-general-use` (a bare `rembg d` downloads everything, bria included).
+- rembg v2.0.85 **defaults to BRIA's RMBG model** (non-commercial, gated). Its official Docker image bakes it in. So:
+  - Build our own image, pinned to `rembg[cpu]==2.0.85` on `python:3.11-slim`, and download **only** the named models (`bake_models.py`; a bare `rembg d` downloads everything, the default model included).
   - Every request sends `model=` explicitly. The Node client refuses to send without a model from an allow-list (`birefnet-general`, `birefnet-general-lite`, `isnet-general-use`).
-  - CI step `licence-guard`: `git grep -nI -i -E 'bria|rmbg' -- . ':!docs/**'` fails the build on any match. After the image is built, also check `ls /models/models/` contains only the allowed models.
+  - CI step `licence-guard` runs `scripts/check-no-bria.sh` (and its tests): it fails the build if the default model's name or Hugging Face id appears anywhere in the repo, docs included. The image build itself fails if the model directory holds anything but the two allowed models.
 
 ## photo-worker container
+
+> Superseded: the image now runs our own FastAPI server (`infra/photo-worker/server.py`) instead of
+> `rembg s`, with an allow-list, input limits and a real `/health`. See ADR 0003 and `infra/photo-worker/README.md`.
+> The sketch below is kept for history.
 ```Dockerfile
 FROM python:3.11-slim
 RUN pip install --no-cache-dir "rembg[cpu,cli]==2.0.85" \
@@ -71,3 +75,10 @@ CMD ["rembg","s","--host","0.0.0.0","--port","7000","--no-ui","-t","1","-l","war
 Early isnet runs (40–88 s) overlapped with a pnpm install on the same host and are discarded.
 Decision pending with the lead ([LEAD?] in TEAM_CHAT, 2026-09-29): default `PHOTO_MODEL=isnet-general-use`.
 Re-test BiRefNet at 6 GB on a real CX-class staging box in week 2, with side-by-side quality images.
+
+Update 2026-09-30: the lead requires `birefnet-general` as the default. Production compose now defaults
+`PHOTO_MODEL=birefnet-general` and gives photo-worker **6 GB** (was 4 GB). Fallback if the server can't
+spare 6 GB: `PHOTO_MODEL=isnet-general-use` + `PHOTO_WORKER_DEFAULT_MODEL=isnet-general-use` and 4 GB.
+The worker now keeps only one model in memory and downscales inputs to 2048 px before inference.
+Open lead question: server size (6 GB for photo-worker plus Postgres, Redis,
+backend, worker and storefront must fit).

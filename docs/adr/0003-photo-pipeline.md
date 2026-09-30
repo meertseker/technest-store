@@ -13,14 +13,19 @@ itself: only the background may change, and the original must be kept.
 ## Decision
 
 1. **Background removal runs in our own `photo-worker` container** (`infra/photo-worker/`): the `rembg`
-   Python library behind a ~100-line FastAPI server. Internal network only, 2 CPUs / 4 GB, one job at a time.
-2. **Model: `birefnet-general`** (BiRefNet, MIT) baked into the image; **`isnet-general-use`** (IS-Net / DIS,
-   MIT) baked in as a faster fallback. The server has an allow-list of exactly these two and every request
-   names the model explicitly.
+   Python library behind a small FastAPI server. Internal network only, 2 CPUs / 6 GB, one job at a time,
+   one model in memory at a time, inputs capped (30 MB, 60 MP) and downscaled to 2048 px before inference.
+   The server never fetches URLs (uploaded bytes only).
+2. **Model: `birefnet-general`** (BiRefNet, MIT) baked into the image and the default (the lead's decision);
+   **`isnet-general-use`** baked in as the documented fallback, selected with `PHOTO_MODEL=isnet-general-use`.
+   BiRefNet was OOM-killed at 4 GB in the spike, so the container gets 6 GB; isnet fits 4 GB. The server has
+   an allow-list of exactly these two and every request names the model explicitly. An unknown `PHOTO_MODEL`
+   switches photo processing off with a reason instead of stopping the backend.
 3. **Never rembg's default model.** rembg 2.0.8x defaults to BRIA's RMBG model, whose licence does not allow
    commercial use without a separate agreement. It is never downloaded into the image, the server refuses any
-   model outside the allow-list, and `scripts/check-no-bria.sh` (tested by `scripts/check-no-bria.test.sh`)
-   fails CI if its name appears anywhere in the repo.
+   model outside the allow-list, and `scripts/check-no-bria.sh` (tested by `scripts/check-no-bria.test.sh`;
+   both run in the CI `licence-guard` job, the guard also before image builds) fails if its name or Hugging
+   Face id appears anywhere in the repo, docs included. The image build also fails if any other model file is present.
 4. **Provider interface in a custom Medusa module `photo`** (`apps/backend/src/modules/photo`):
 
    ```ts
@@ -37,11 +42,14 @@ itself: only the background may change, and the original must be kept.
      the rest of the backend boots and works normally.
 5. **Only the provider's alpha channel is used.** The rendered product pixels always come from the original
    photo. A provider (today's or a future one) therefore cannot alter, "enhance" or generate product pixels.
-6. **Everything else is deterministic `sharp`** (`apps/backend/src/lib/photo/render.ts`): conservative global
-   per-channel gains (white balance from the removed backdrop, each channel within +/-8%; exposure
-   brighten-only, at most +15%), crop to the mask's bounding box, 1:1 canvas with 8% padding, soft blurred
-   drop shadow, `#FFFFFF` background, 2000 x 2000 px, WebP (q90) + AVIF (q60). Resampling is Lanczos.
-   No generative fill, no AI upscaling, no local retouching.
+6. **Everything else is deterministic `sharp`** (`apps/backend/src/lib/photo/render.ts`): crop to the mask's
+   bounding box, 1:1 canvas with 8% padding, soft blurred drop shadow, `#FFFFFF` background, WebP (q90) +
+   AVIF (q60). Only the background changes: the product's pixels are the original's, only ever
+   **downscaled** (Lanczos) to fit a 2000 x 2000 canvas; a smaller product keeps its native size and gets a
+   smaller canvas (never upscaled), and a product under 600 px is rejected ("retake closer").
+   No colour correction by default: a clamped global white-balance/exposure correction exists in code
+   (`colourCorrection` option) but is off, because it would change the product's colours; turning it on
+   is the lead's call. No generative fill, no AI upscaling, no local retouching.
 7. Inputs whose shorter side (after EXIF rotation) is under 1000 px are rejected:
    "Photo too small, please retake closer".
 8. The workflow `process-product-photo` stores the original first (File Module), then renders and stores the
