@@ -151,6 +151,32 @@ services:
       OMP_NUM_THREADS: "2"
     deploy: { resources: { limits: { cpus: "2", memory: 4g } } }
 
+  # Nightly pg_dump -> R2 (technest-backups), 30-day retention. See infra/backup and DEPLOY.md.
+  #   docker compose run --rm backup backup.sh          take a backup now
+  #   docker compose run --rm backup restore.sh --list  list backups
+  backup:
+    <<: *defaults
+    image: ghcr.io/${GHCR_OWNER:?}/technest-backup:${IMAGE_TAG:-main}
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: technest
+      PGPASSWORD: ${POSTGRES_PASSWORD:?}
+      PGDATABASE: technest
+      BACKUP_AT: ${BACKUP_AT:-03:15}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+      BACKUP_REMOTE: r2:${BACKUP_BUCKET:-technest-backups}/db
+      RCLONE_CONFIG_R2_TYPE: s3
+      RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+      RCLONE_CONFIG_R2_ENDPOINT: ${S3_ENDPOINT:?}
+      RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${BACKUP_S3_ACCESS_KEY_ID:-}
+      RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${BACKUP_S3_SECRET_ACCESS_KEY:-}
+      RCLONE_CONFIG_R2_REGION: auto
+      RCLONE_CONFIG_R2_NO_CHECK_BUCKET: "true"
+    depends_on:
+      postgres: { condition: service_healthy }
+    deploy: { resources: { limits: { cpus: "0.5", memory: 256m } } }
+
   # Placeholder: E2 fills in docker-mailserver (Postfix + OpenDKIM). Start with --profile mail.
   mailserver:
     <<: *defaults

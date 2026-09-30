@@ -50,6 +50,9 @@ jobs:
           - name: technest-photo-worker
             file: infra/photo-worker/Dockerfile
             context: infra/photo-worker
+          - name: technest-backup
+            file: infra/backup/Dockerfile
+            context: infra/backup
     steps:
       - uses: actions/checkout@v4
       - name: Licence guard
@@ -95,6 +98,7 @@ jobs:
           sparse-checkout: |
             docker-compose.yml
             Caddyfile
+            infra/staging/docker-compose.staging.yml
           sparse-checkout-cone-mode: false
       - name: SSH key
         run: |
@@ -105,7 +109,8 @@ jobs:
       - name: Copy compose files
         env:
           TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
-        run: scp -q docker-compose.yml Caddyfile "$TARGET:/opt/technest/"
+        # The staging override is only used where .env sets COMPOSE_FILE to include it.
+        run: scp -q docker-compose.yml Caddyfile infra/staging/docker-compose.staging.yml "$TARGET:/opt/technest/"
       - name: Pull, migrate, start
         env:
           TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
