@@ -48,5 +48,9 @@ with 400 `invalid_data` and a readable message:
 
 Owner flow: create as draft -> set attributes (widget) -> publish. CSV import (E4b): create drafts,
 POST attributes, then publish (or set status in a second update).
-Known gap: adding an already-published product to a guarded category from the category page
-(batch link) is not checked; the next product save is.
+Also covered: adding products from the category page (`POST /admin/product-categories/:id/products`
+is overridden to run `link-products-to-category`: the native link, then the guard; a failure moves the
+products back out).
+Vapes: the attributes have no vape flag, so the guard reads title, handle, tags and category names/handles.
+Known gap: moving a whole category under a guarded parent (category edit) is not checked; the next save of
+each product is.

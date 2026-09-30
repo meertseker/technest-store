@@ -1,8 +1,10 @@
 import { configureStoreSearch, defineMiddlewares } from '@medusajs/framework/http'
 import { adminDeviceMiddlewares } from './admin/devices/middlewares'
+import { adminProductAttributesMiddlewares } from './admin/products/[id]/attributes/middlewares'
 import { rejectClientPaymentData } from './store/payment-collections/reject-client-payment-data'
 import { storeDeviceMiddlewares } from './store/devices/middlewares'
 import { sentryErrorHandler } from '../lib/monitoring/sentry-error-handler'
+import { storeProductMiddlewares } from './store/products/middlewares'
 
 export default defineMiddlewares({
   // E4: Medusa's default error handler + report 5xx to Sentry (no-op without SENTRY_DSN).
@@ -27,7 +29,9 @@ export default defineMiddlewares({
         }),
       ],
     },
+    ...storeProductMiddlewares,
     ...storeDeviceMiddlewares,
     ...adminDeviceMiddlewares,
+    ...adminProductAttributesMiddlewares,
   ],
 })

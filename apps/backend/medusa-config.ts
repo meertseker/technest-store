@@ -157,6 +157,7 @@ module.exports = defineConfig({
   },
   modules: [
     { resolve: "./src/modules/device" },
+    { resolve: "./src/modules/product-attributes" },
     fileModule,
     ...redisModules,
     ...paymentModules,
