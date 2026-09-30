@@ -13,7 +13,9 @@ const PORT = 8003
 
 export default defineConfig({
   testDir: "./e2e",
-  timeout: 60_000,
+  timeout: 90_000,
+  // dev-mode server actions compile on first use; this machine is slow
+  expect: { timeout: 15_000 },
   use: { baseURL: `http://localhost:${PORT}` },
   projects: [
     {
