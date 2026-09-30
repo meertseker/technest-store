@@ -81,7 +81,7 @@ jobs:
       - name: Module integration tests
         run: pnpm --filter @technest/backend test:integration:modules -- --passWithNoTests
       - name: HTTP integration tests
-        run: pnpm --filter @technest/backend test:integration:http
+        run: pnpm --filter @technest/backend test:integration:http:split
       - name: Build (typecheck + admin bundle)
         run: pnpm --filter @technest/backend build
 
