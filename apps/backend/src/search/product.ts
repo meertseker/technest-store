@@ -9,6 +9,7 @@ import {
 import { ProductOptionRow, toOptionValues } from "./helpers/option-values";
 import { loadPricing, priceFields, toProductPricing } from "./helpers/pricing";
 import { resolveProductIds } from "./helpers/resolve-product-ids";
+import { synonymsFor } from "./helpers/synonyms";
 
 const PRODUCT_GRAPH_FIELDS = [
   "id",
@@ -47,6 +48,9 @@ const productFields = search.define({
   sales_channel_ids: search.keyword().array().filterable().retrievable(false),
   title: search.text().searchable({ weight: 3 }).sortable().retrievable(),
   description: search.text().searchable({ weight: 1 }),
+  // Words shoppers use for what the product text says ("lead" for a cable,
+  // "type c" for USB-C): helpers/synonyms.ts. Searched, never returned.
+  synonyms: search.text().searchable({ weight: 1 }).retrievable(false),
   handle: search.keyword().retrievable(),
   // Returned on hits only: never filtered, sorted or faceted on.
   thumbnail: search.keyword().retrievable(),
@@ -77,6 +81,7 @@ function toDocument(
   const labels = (product.tags ?? [])
     .map((tag) => tag?.value?.trim())
     .filter((value): value is string => Boolean(value));
+  const optionValues = toOptionValues(product.options);
   const salesChannelIds = (product.sales_channels ?? [])
     .map((salesChannel) => salesChannel?.id?.trim())
     .filter((id): id is string => Boolean(id));
@@ -92,7 +97,12 @@ function toDocument(
     created_at: product.created_at ?? null,
     category,
     labels,
-    option_values: toOptionValues(product.options),
+    synonyms:
+      synonymsFor(
+        [product.title, product.description, ...optionValues],
+        [...category, ...labels],
+      ).join(" ") || null,
+    option_values: optionValues,
     ...toProductPricing(pricing),
   };
 }
