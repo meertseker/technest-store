@@ -1,6 +1,6 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import type { MedusaContainer } from "@medusajs/framework/types"
-import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys, MedusaError, Modules } from "@medusajs/framework/utils"
 import { renderEmail } from "@technest/emails"
 import { createHash } from "node:crypto"
 import { storefrontUrl } from "../lib/email/order-email-data"
@@ -31,7 +31,10 @@ export function adminUrl(env: NodeJS.ProcessEnv = process.env): string {
   if (env.ADMIN_URL) return env.ADMIN_URL.replace(/\/$/, "")
   if (env.MEDUSA_BACKEND_URL) return `${env.MEDUSA_BACKEND_URL.replace(/\/$/, "")}/app`
   if (env.NODE_ENV === "production") {
-    throw new Error("ADMIN_URL (or MEDUSA_BACKEND_URL) must be set for staff password resets")
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "ADMIN_URL (or MEDUSA_BACKEND_URL) must be set for staff password resets"
+    )
   }
   return "http://localhost:9000/app"
 }
