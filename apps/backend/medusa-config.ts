@@ -77,30 +77,33 @@ for (const name of ["STRIPE_API_KEY", "STRIPE_WEBHOOK_SECRET"]) {
     throw new MedusaError(MedusaError.Types.INVALID_DATA, `${name} is required in production`)
   }
 }
-const paymentModules = process.env.STRIPE_API_KEY
-  ? [
-      {
-        resolve: "@medusajs/medusa/payment",
-        options: {
-          providers: [
-            {
-              resolve: "./src/modules/stripe",
-              id: "stripe",
-              options: {
-                apiKey: process.env.STRIPE_API_KEY,
-                webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
-                capture: false,
-                // Option name per @medusajs/payment-stripe 2.21 source
-                // (the docs' "automatic_payment_methods" is not read).
-                automaticPaymentMethods: true,
-                paymentDescription: "Tech Nest order",
-                klarnaMinBasketPence: process.env.KLARNA_MIN_BASKET_PENCE || 3000,
-              },
-            },
-          ],
+const paymentProviders = [
+  ...(process.env.STRIPE_API_KEY
+    ? [
+        {
+          resolve: "./src/modules/stripe",
+          id: "stripe",
+          options: {
+            apiKey: process.env.STRIPE_API_KEY,
+            webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+            capture: false,
+            // Option name per @medusajs/payment-stripe 2.21 source
+            // (the docs' "automatic_payment_methods" is not read).
+            automaticPaymentMethods: true,
+            paymentDescription: "Tech Nest order",
+            klarnaMinBasketPence: process.env.KLARNA_MIN_BASKET_PENCE || 3000,
+          },
         },
-      },
-    ]
+      ]
+    : []),
+  // Integration tests only: a Stripe stand-in that records authorize/capture/
+  // cancel/refund calls (pp_recording_test). Never in production.
+  ...(!isProduction && process.env.TECHNEST_TEST_PAYMENT_PROVIDER === "true"
+    ? [{ resolve: "./integration-tests/helpers/recording-payment-provider", id: "test" }]
+    : []),
+]
+const paymentModules = paymentProviders.length
+  ? [{ resolve: "@medusajs/medusa/payment", options: { providers: paymentProviders } }]
   : []
 
 // Email (E2): our own SMTP provider. Dev/test default to Mailpit on

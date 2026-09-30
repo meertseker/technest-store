@@ -1,4 +1,5 @@
 import { configureStoreSearch, defineMiddlewares } from '@medusajs/framework/http'
+import { adminClickCollectMiddlewares } from './admin/click-collect/middlewares'
 import { adminDeviceMiddlewares } from './admin/devices/middlewares'
 import { rejectClientPaymentData } from './store/payment-collections/reject-client-payment-data'
 import { storeDeviceMiddlewares } from './store/devices/middlewares'
@@ -26,5 +27,6 @@ export default defineMiddlewares({
     },
     ...storeDeviceMiddlewares,
     ...adminDeviceMiddlewares,
+    ...adminClickCollectMiddlewares,
   ],
 })
