@@ -40,8 +40,7 @@ COPY --from=build --chown=medusa:medusa /repo/apps/backend/.medusa/server ./apps
 WORKDIR /app/apps/backend/.medusa/server
 USER medusa
 EXPOSE 9000
-# Server answers /health. Worker mode has no /health route (medusajs/medusa#8825), so the
-# worker service overrides this with a TCP check in docker-compose.yml.
+# `medusa start` answers GET /health in server and worker mode alike (Medusa 2.21).
 HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||9000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 ENTRYPOINT ["/usr/bin/tini", "--"]

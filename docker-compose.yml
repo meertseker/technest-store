@@ -84,13 +84,8 @@ services:
       <<: *backend-env
       MEDUSA_WORKER_MODE: worker
       DISABLE_MEDUSA_ADMIN: "true"
-    # Worker mode has no /health route (medusajs/medusa#8825): check that the HTTP port is open.
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('net').connect(9000,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
-      interval: 30s
-      timeout: 5s
-      start_period: 90s
-      retries: 3
+    # Medusa 2.21 `medusa start` serves GET /health in every worker mode, so the image's
+    # HEALTHCHECK applies here too (checked in @medusajs/medusa dist/commands/start.js).
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
