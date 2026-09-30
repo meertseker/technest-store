@@ -65,11 +65,28 @@ function skuFor(handle: string, combination: Record<string, string>) {
     .replace(/(^-|-$)/g, "")
 }
 
+export type SeedOptions = {
+  /** Also create the sample products and their stock. Never in production. */
+  demo?: boolean
+}
+
 /**
- * Seeds Tech Nest's store configuration, categories and sample products into an
- * empty database. Used by the initial migration script and integration tests.
+ * `db:migrate` runs the initial seed on every new database, production included,
+ * so the sample catalogue is opt-in: SEED_DEMO_DATA=true (set in dev .env files).
  */
-export async function seedTechNest(container: MedusaContainer) {
+export function demoDataEnabled(env: NodeJS.ProcessEnv = process.env) {
+  return env.SEED_DEMO_DATA === "true"
+}
+
+/**
+ * Seeds Tech Nest's store configuration and categories into an empty database,
+ * plus the sample products when `demo` is set (the default, for tests).
+ * Used by the initial migration script and integration tests.
+ */
+export async function seedTechNest(
+  container: MedusaContainer,
+  { demo = true }: SeedOptions = {}
+) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   const link = container.resolve(ContainerRegistrationKeys.LINK)
   const query = container.resolve(ContainerRegistrationKeys.QUERY)
@@ -287,6 +304,12 @@ export async function seedTechNest(container: MedusaContainer) {
   const categoryIdByHandle = new Map(
     [...topCategories, ...childCategories].map((c) => [c.handle, c.id])
   )
+
+  if (!demo) {
+    logger.info("Skipping sample products (SEED_DEMO_DATA is not \"true\").")
+    logger.info("Finished seeding Tech Nest data.")
+    return { publishableApiKey, region, stockLocation, salesChannelId }
+  }
 
   // ---- Shared options ------------------------------------------------------
   const { result: optionResult } = await createProductOptionsWorkflow(
