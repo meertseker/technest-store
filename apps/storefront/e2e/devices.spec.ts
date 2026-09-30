@@ -36,14 +36,14 @@ test.describe("device picker", () => {
 
   test("browse brand -> series -> model, then return to where I was", async ({ page, context }) => {
     await context.clearCookies()
-    await page.goto("/cart")
+    await page.goto("/basket")
     await deviceChip(page).click()
-    await expect(page).toHaveURL(/\/devices\?returnTo=%2Fcart/)
+    await expect(page).toHaveURL(/\/devices\?returnTo=%2Fbasket/)
     await page.getByRole("link", { name: "Apple", exact: true }).click()
     await page.getByRole("link", { name: "iPhone 15", exact: true }).click()
     await expectNoAxeViolations(page)
     await page.getByRole("button", { name: "iPhone 15 Pro", exact: true }).click()
-    await expect(page).toHaveURL(/\/cart$/)
+    await expect(page).toHaveURL(/\/basket$/)
     await expect(deviceChip(page)).toHaveText(/iPhone 15 Pro/)
   })
 
@@ -78,12 +78,12 @@ test.describe("device picker", () => {
   test("the chip keeps the query string and returns to the exact page", async ({ page, context }) => {
     await context.clearCookies()
     // (not /store: its search UI rewrites its own query string after hydration)
-    await page.goto("/cart?ref=e2e&x=1")
-    await expect(deviceChip(page)).toHaveAttribute("href", "/devices?returnTo=%2Fcart%3Fref%3De2e%26x%3D1")
+    await page.goto("/basket?ref=e2e&x=1")
+    await expect(deviceChip(page)).toHaveAttribute("href", "/devices?returnTo=%2Fbasket%3Fref%3De2e%26x%3D1")
     await deviceChip(page).click()
     await page.getByLabel("Search for your phone or console").fill("ps5")
     await page.getByRole("button", { name: /PlayStation 5/ }).first().click()
-    await expect(page).toHaveURL(`${BASE}/cart?ref=e2e&x=1`)
+    await expect(page).toHaveURL(`${BASE}/basket?ref=e2e&x=1`)
   })
 
   test("returnTo is the exact page, never a trailing-slash /devices/", async ({ page, context }) => {

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import { KEY, seedCart } from "./cart-helpers"
 import { expectNoAxeViolations, expectNoHorizontalScroll, expectTapTargets } from "./content-helpers"
 
 const LEGAL = [
@@ -94,8 +95,11 @@ test.describe("cookie banner", () => {
   })
 
   test("the banner is not shown on checkout", async ({ page, context }) => {
+    test.skip(!KEY, "needs NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: an empty basket redirects /checkout to /basket")
     await context.clearCookies()
+    await seedCart(page)
     await page.goto("/checkout")
+    await expect(page).toHaveURL(/\/checkout/)
     await expect(page.getByRole("region", { name: "Cookies on Tech Nest" })).toHaveCount(0)
   })
 })
