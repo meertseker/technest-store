@@ -81,12 +81,8 @@ jobs:
             NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY }}
             NEXT_PUBLIC_STRIPE_KEY=${{ secrets.NEXT_PUBLIC_STRIPE_KEY }}
             NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
-      - name: The photo-worker image holds only the allowed models
-        if: matrix.name == 'technest-photo-worker'
-        run: |
-          models=$(docker run --rm --entrypoint ls "$REGISTRY/$OWNER_LC/${{ matrix.name }}:${{ inputs.environment }}-${{ github.sha }}" /models/models | sort | xargs)
-          echo "models: $models"
-          test "$models" = "birefnet-general isnet-general-use"
+      # The photo-worker Dockerfile itself fails the build if any model other than
+      # birefnet-general and isnet-general-use ends up in the image, so a bad image is never pushed.
 
   deploy:
     needs: images
@@ -99,7 +95,6 @@ jobs:
           sparse-checkout: |
             docker-compose.yml
             Caddyfile
-            infra/staging
           sparse-checkout-cone-mode: false
       - name: SSH key
         run: |

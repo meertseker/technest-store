@@ -6,8 +6,12 @@
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 pattern='bria-rmbg|briaai|rmbg-?1\.4|rmbg-?2\.0|rmbg_?1_?4'
-if git grep -nI -i -E "$pattern" -- . ':!docs/**' ':!*.md' ':!scripts/licence-guard.sh'; then
-  echo "licence-guard: forbidden model reference found (see above). Use birefnet-general or isnet-general-use." >&2
-  exit 1
-fi
-echo "licence-guard: OK"
+status=0
+git grep -nI -i -E "$pattern" -- . ':!docs/**' ':!*.md' ':!scripts/licence-guard.sh' || status=$?
+case "$status" in
+  0) echo "licence-guard: forbidden model reference found (see above). Use birefnet-general or isnet-general-use." >&2
+     exit 1 ;;
+  1) echo "licence-guard: OK" ;;
+  *) echo "licence-guard: git grep failed (exit $status)" >&2
+     exit "$status" ;;
+esac
