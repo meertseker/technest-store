@@ -8,9 +8,13 @@ Step-by-step setup in Turkish: `DEPLOY.md` section 9.
 | # | Name | Type | URL | "Up" means | Why |
 |---|---|---|---|---|---|
 | 1 | Shop home | HTTP(s) GET | `https://technest.co.uk/` | 200 | Storefront + Caddy + Cloudflare |
-| 2 | Checkout | HTTP(s) GET | `https://technest.co.uk/checkout` | 200 | The page that earns money; also catches CSP/middleware crashes |
+| 2 | Checkout | HTTP(s) GET | `https://technest.co.uk/checkout` | status `404` (set "Up HTTP status codes" to `200-299,404`) | Without a cart the page answers 404 from inside the checkout layout, so middleware + CSP + render all ran; 5xx = broken |
 | 3 | API health | Keyword GET | `https://api.technest.co.uk/health` | body contains `OK` | Medusa server process |
-| 4 | Stripe webhook | HTTP(s) POST, empty body | `https://api.technest.co.uk/hooks/payment/stripe_stripe` | status `400` (set "Up HTTP status codes" to `200-299,400`) | An unsigned POST must be rejected by signature checks, never 5xx or 404 |
+
+No monitor on the Stripe webhook URL: Medusa answers any POST to `/hooks/payment/stripe_stripe`
+with 200 and checks the signature later in the worker, so a probe proves nothing and every probe
+would queue a failing webhook event. Stripe itself emails the account owner when webhook
+deliveries keep failing (Stripe Dashboard -> Developers -> Webhooks shows each attempt).
 
 Alert contacts: the lead's email + the UptimeRobot mobile app. Alert after 2 failed checks
 (10 minutes), so a deploy's restart doesn't page anyone.
@@ -27,21 +31,42 @@ Not covered by UptimeRobot (weekly manual check, `docker compose ps`):
 | Backend (server + worker) | `technest-backend` (Node.js) | `SENTRY_DSN_BACKEND` → `SENTRY_DSN` in the container | Uncaught exceptions, unhandled rejections, API 5xx (via the error handler in `src/api/middlewares.ts`) |
 | Storefront | `technest-storefront` (Next.js) | `SENTRY_DSN_STOREFRONT` (server), `NEXT_PUBLIC_SENTRY_DSN` (browser, build arg) | Server render / route handler errors (`onRequestError`), browser errors |
 
-Privacy (defence in depth):
-1. `sendDefaultPii: false` in both SDKs; no performance tracing, no session replay.
-2. Our `beforeSend` / `beforeBreadcrumb` scrubbers (`apps/backend/src/lib/monitoring/sentry-scrub.ts`,
-   storefront copy in `apps/storefront/src/lib/monitoring/sentry-scrub.ts`) remove cookies, request bodies,
-   query strings, auth / publishable-key / Stripe-signature / client-IP headers, and user fields other than `id`, and
-   redact emails, UK phone numbers, UK postcodes, card-like numbers and Stripe secrets in messages,
-   exception values, breadcrumbs, extra/contexts/tags.
-3. The browser SDK is **not** initialised on `/checkout` (only Stripe's script is allowed there).
-4. Sentry project settings: Data Scrubber on, "Scrub IP addresses" on.
+Off switch: `SENTRY_DSN` (backend, storefront server) or `NEXT_PUBLIC_SENTRY_DSN` (browser, build time)
+unset or empty = the SDK is not even loaded (`require` / `import()` only after the DSN check). Dev and tests
+never send anything. Unit tests prove it (`apps/backend/src/lib/monitoring/__tests__/sentry-init.unit.spec.ts`,
+`apps/storefront/src/instrumentation.test.ts`).
 
-Empty DSN = SDK not loaded at all. Dev and tests never send anything.
+Privacy (defence in depth):
+1. Sentry v11 `dataCollection` (`SENTRY_DATA_COLLECTION`): no user info, cookies, bodies, query params,
+   DB query data or stack-frame local variables; request headers limited to user-agent / content-type / accept.
+   No `tracesSampleRate` (tracing off), no session replay.
+2. Our `beforeSend` / `beforeBreadcrumb` scrubber `sentry-scrub.ts` (identical copies in
+   `apps/backend/src/lib/monitoring/` and `apps/storefront/src/lib/monitoring/`; a backend unit test fails if they differ):
+   - drops `request.cookies`, `request.data`, `request.query_string`, `request.env`, stack-frame `vars`,
+     every request header except user-agent / content-type / accept / content-length / host, and user fields other than `id`;
+   - filters values under sensitive keys anywhere in extra / contexts / tags / breadcrumb data
+     (email, phone, names, company, address fields, postcode, city, card / cvc / expiry, password, token, secret,
+     authorization, cookie, session, IP ...);
+   - redacts in any text (messages, exception values, breadcrumbs, log params): emails, UK and international
+     phone numbers, UK postcodes, Luhn-valid card numbers, Stripe `sk_` / `rk_` / `whsec_` / `*_secret_*` /
+     `cs_` values, Bearer / Basic credentials, JWTs, session cookies, every query-string value, IPv4 addresses and
+     `"first_name": "..."`-style fields in serialised JSON;
+   - strips query strings and fragments from request URLs, transactions and navigation breadcrumbs.
+   Each category has a unit test (`sentry-scrub.unit.spec.ts`).
+3. `/checkout` (only Stripe may run there, and its CSP allows only `'self'` + Stripe in `connect-src`):
+   the browser SDK is never initialised on a document loaded at `/checkout`, and if a page that started elsewhere
+   ever reaches `/checkout` client-side, every event and breadcrumb is dropped there, so no request goes to
+   Sentry from checkout. Entering and leaving checkout are full page loads by design. The SDK itself is a
+   lazily loaded first-party chunk from our own origin, never a third-party script. We chose this over a
+   same-origin tunnel route: a tunnel would add a public endpoint to maintain, and there is nothing to report
+   from checkout that Stripe and the backend don't already see.
+4. Sentry project settings: Data Scrubber on, "Prevent Storing of IP Addresses" on.
 
 ## Smoke test after enabling (lead, on staging)
 
 - [ ] Backend: `docker compose exec server node -e "fetch('http://127.0.0.1:9000/health').then(r=>console.log(r.status))"` → 200
-- [ ] Trigger a test error: in Sentry → Project → "Send a test event" (or temporarily call an unknown admin route with a malformed body; 4xx is *not* reported by design)
+- [ ] Trigger a test error (connectivity only, bypasses our hooks):
+      `docker compose exec server node -e "const S=require('@sentry/node');S.init({dsn:process.env.SENTRY_DSN});S.captureException(new Error('technest smoke test'));S.flush(5000)"`
+      → the issue appears in `technest-backend`. 4xx responses are *not* reported by design.
 - [ ] Check an event in Sentry: no email, phone, cookie or IP visible
-- [ ] UptimeRobot: all 4 monitors green for 1 hour
+- [ ] UptimeRobot: all 3 monitors green for 1 hour

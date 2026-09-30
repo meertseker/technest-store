@@ -2,8 +2,11 @@ import { configureStoreSearch, defineMiddlewares } from '@medusajs/framework/htt
 import { adminDeviceMiddlewares } from './admin/devices/middlewares'
 import { rejectClientPaymentData } from './store/payment-collections/reject-client-payment-data'
 import { storeDeviceMiddlewares } from './store/devices/middlewares'
+import { sentryErrorHandler } from '../lib/monitoring/sentry-error-handler'
 
 export default defineMiddlewares({
+  // E4: Medusa's default error handler + report 5xx to Sentry (no-op without SENTRY_DSN).
+  errorHandler: sentryErrorHandler,
   routes: [
     {
       // E2 / ADR 0002: payment session data is server-side only.
