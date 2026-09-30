@@ -1,5 +1,6 @@
 import { medusaIntegrationTestRunner } from "@medusajs/test-utils"
-import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { warmDb } from "../utils/warm-db"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { createOrderWorkflow } from "@medusajs/medusa/core-flows"
 import orderPlacedEmails from "../../src/subscribers/order-placed-emails"
 import { seedTechNest } from "../../src/scripts/seed"
@@ -35,6 +36,8 @@ medusaIntegrationTestRunner({
     describe("order.placed emails", () => {
       let regionId: string
       const optionIds: Record<string, string> = {}
+
+      beforeEach(() => warmDb(getContainer()))
 
       beforeAll(async () => {
         await seedTechNest(getContainer())
@@ -100,6 +103,12 @@ medusaIntegrationTestRunner({
 
         const shop = await mailTo(process.env.SHOP_NOTIFY_EMAIL!, 1)
         expect(shop.map((m) => m.Subject)).toContain(`New order #${order.display_id} · Delivery · £13.47`)
+
+        // Workflow executions persist their input: IDs only, never customer PII.
+        const executions = await getContainer().resolve(Modules.WORKFLOW_ENGINE).listWorkflowExecutions({})
+        const stored = JSON.stringify(executions)
+        expect(stored).not.toContain(email)
+        expect(stored).not.toContain("1 High St")
       })
 
       it("flags Click & Collect orders and tells the customer to bring the order number", async () => {
