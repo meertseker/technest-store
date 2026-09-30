@@ -38,7 +38,7 @@ export function SummaryBody({
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-semibold leading-snug">{item.product_title ?? item.title}</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground">
                 {item.variant_title && item.variant_title !== "Default variant" ? `${item.variant_title} · ` : ""}
                 Qty {item.quantity}
               </p>
@@ -74,7 +74,7 @@ export function SummaryBody({
             {formatGbp(totals.total)}
           </dd>
         </div>
-        <div className="flex justify-between gap-4 text-sm text-muted-foreground">
+        <div className="flex justify-between gap-4 text-sm text-muted-foreground" data-small-text>
           <dt>Includes VAT</dt>
           <dd className="tabular-nums">{formatGbp(totals.tax_total)}</dd>
         </div>

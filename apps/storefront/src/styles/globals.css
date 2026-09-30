@@ -86,12 +86,14 @@
     scrollbar-width: none; /* Firefox */
   }
 
-  input:focus ~ label,
-  input:not(:placeholder-shown) ~ label {
+  /* the starter's floating-label Input only (its label has .origin-0); unscoped,
+     this shrank any label that follows a hidden input, like the /search "Sort" label */
+  input:focus ~ label.origin-0,
+  input:not(:placeholder-shown) ~ label.origin-0 {
     @apply -translate-y-2 text-xsmall-regular;
   }
 
-  input:focus ~ label {
+  input:focus ~ label.origin-0 {
     @apply left-0;
   }
 

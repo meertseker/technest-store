@@ -55,7 +55,7 @@ export default async function AddressesPage({ searchParams }: Props) {
             return (
               <li key={a.id} className="flex flex-col rounded border border-border p-4" data-testid="address-card">
                 {a.is_default_shipping && (
-                  <p className="mb-2 self-start rounded-full bg-surface-2 px-3 py-0.5 text-sm font-semibold">Main delivery address</p>
+                  <p className="mb-2 self-start rounded-full bg-surface-2 px-3 py-0.5 text-sm font-semibold" data-small-text>Main delivery address</p>
                 )}
                 <address className="not-italic">
                   {name && (

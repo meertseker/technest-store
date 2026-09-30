@@ -29,7 +29,7 @@ export default function TextField({
         {optional && <span className="font-normal text-muted-foreground"> (optional)</span>}
       </label>
       {hint && (
-        <p id={hintId} className="text-sm text-muted-foreground">
+        <p id={hintId} className="text-base text-muted-foreground">
           {hint}
         </p>
       )}

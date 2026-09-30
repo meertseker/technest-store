@@ -34,7 +34,7 @@ export default function QuickAdd({ variantId, title }: { variantId: string; titl
         {state === "added" ? `${title} added to your basket` : ""}
       </p>
       {error && (
-        <p role="alert" className="mt-1 text-sm text-destructive">
+        <p role="alert" className="mt-1 text-destructive">
           {error}
         </p>
       )}

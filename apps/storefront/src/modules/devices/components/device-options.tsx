@@ -34,7 +34,7 @@ export default function DeviceOptions({ devices, returnTo, currentSlug, showBran
                   <span className="font-semibold">{d.model}</span>
                 </span>
                 {current ? (
-                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-success">
+                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-success" data-small-text>
                     <Check aria-hidden className="size-4" />
                     Selected
                   </span>

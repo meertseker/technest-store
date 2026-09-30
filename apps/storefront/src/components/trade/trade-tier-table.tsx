@@ -31,7 +31,7 @@ export default function TradeTierTable({ data, variantId, className }: Props) {
       <h2 id="trade-prices-title" className="flex items-center gap-2 text-lg font-semibold">
         <BadgeCheck aria-hidden className="size-5 text-success" />
         Your trade prices
-        <span className="rounded-full bg-background px-2 py-0.5 text-sm font-semibold text-foreground ring-1 ring-border-strong">
+        <span className="rounded-full bg-background px-2 py-0.5 text-sm font-semibold text-foreground ring-1 ring-border-strong" data-small-text>
           {data.price_label}
         </span>
       </h2>
@@ -74,7 +74,7 @@ function VariantTiers({ variant, label, showTitle }: { variant: TradeTierVariant
               </th>
               <td className="py-2 pr-4 align-top">
                 <span className="block font-bold">{formatUnitPence(t.unit_price_ex_vat_pence)}</span>
-                <span className="block text-sm text-muted-foreground">
+                <span className="block text-sm text-muted-foreground" data-small-text>
                   {formatUnitPence(t.unit_price_inc_vat_pence)} inc VAT
                 </span>
               </td>

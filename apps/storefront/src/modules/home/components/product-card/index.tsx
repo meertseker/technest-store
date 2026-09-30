@@ -45,7 +45,7 @@ export default function ProductCard({ product, fitsDevice, eager }: Props) {
           </div>
         )}
         {addOn && (
-          <span className="absolute left-2 top-2 rounded-full bg-brand-subtle px-2 py-0.5 text-sm font-semibold text-brand">
+          <span className="absolute left-2 top-2 rounded-full bg-brand-subtle px-2 py-0.5 text-sm font-semibold text-brand" data-small-text>
             £1 add-on
           </span>
         )}
@@ -60,7 +60,7 @@ export default function ProductCard({ product, fitsDevice, eager }: Props) {
         </p>
       )}
       {fitsDevice && (
-        <p className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-success">
+        <p className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-success" data-small-text>
           <CircleCheck aria-hidden className="size-4 shrink-0" />
           Fits your {fitsDevice}
         </p>

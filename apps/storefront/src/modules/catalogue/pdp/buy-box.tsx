@@ -142,7 +142,7 @@ export default function BuyBox({ product, initial, fitBox, addOnNote }: Props) {
               <span className="sr-only">Was </span>
               <s>{formatGbp(was)}</s>
             </p>
-            <span className="rounded-full bg-brand-subtle px-2 py-0.5 text-sm font-semibold text-brand">
+            <span className="rounded-full bg-brand-subtle px-2 py-0.5 text-sm font-semibold text-brand" data-small-text>
               Sale
             </span>
           </>
@@ -318,7 +318,7 @@ export default function BuyBox({ product, initial, fitBox, addOnNote }: Props) {
       >
         <div className="flex items-center gap-3">
           <p className="min-w-0 flex-1">
-            <span className="block truncate text-sm text-muted-foreground">{product.title}</span>
+            <span className="block truncate text-sm text-muted-foreground" data-small-text>{product.title}</span>
             {priceText && <span className="text-lg font-bold tabular-nums">{priceText}</span>}
           </p>
           <Button type="button" onClick={onAdd} disabled={pending || outOfStock} className="shrink-0">

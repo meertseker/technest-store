@@ -53,7 +53,7 @@ export default function BasketSummary({
         <Lock aria-hidden />
         Checkout securely
       </a>
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="text-center text-muted-foreground">
         Secure card payment by Stripe · 14-day returns
       </p>
       <KlarnaBasketHint total_pence={toPence(cart.total ?? cart.item_total)} min_pence={view.klarna_min_basket_pence} />

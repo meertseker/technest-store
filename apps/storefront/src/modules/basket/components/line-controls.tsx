@@ -95,7 +95,7 @@ export default function LineControls({
         </form>
       </div>
       {error && (
-        <p role="alert" className="text-sm font-medium text-destructive">
+        <p role="alert" className="font-medium text-destructive">
           {error}
         </p>
       )}

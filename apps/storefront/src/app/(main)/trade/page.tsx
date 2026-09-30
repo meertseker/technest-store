@@ -145,7 +145,7 @@ export default async function TradePage() {
                   </tr>
                 </tbody>
               </table>
-              <p className="mt-2 text-sm text-muted-foreground">An example only, not the price of a real product.</p>
+              <p className="mt-2 text-sm text-muted-foreground" data-small-text>An example only, not the price of a real product.</p>
             </figure>
           </div>
         </div>

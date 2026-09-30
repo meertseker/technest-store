@@ -50,7 +50,7 @@ export default function DeviceSearch({
         <label htmlFor={`${id}-q`} className="block font-semibold">
           {label}
         </label>
-        <p id={`${id}-hint`} className="text-sm text-muted-foreground">
+        <p id={`${id}-hint`} className="text-base text-muted-foreground">
           For example: iPhone 15 Pro, S24, PS5 or a model number
         </p>
         <div className="mt-2 flex gap-2">

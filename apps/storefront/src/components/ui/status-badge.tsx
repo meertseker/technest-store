@@ -13,7 +13,7 @@ const TONES: Record<StatusTone, { cls: string; Icon: typeof Clock }> = {
 export default function StatusBadge({ tone, children, className }: { tone: StatusTone; children: React.ReactNode; className?: string }) {
   const { cls, Icon } = TONES[tone]
   return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold", cls, className)}>
+    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold", cls, className)} data-small-text>
       <Icon aria-hidden className="size-4" />
       {children}
     </span>

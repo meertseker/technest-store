@@ -37,12 +37,12 @@ export default function BasketLines({ items }: { items: HttpTypes.StoreCartLineI
                   ) : (
                     <p className="font-semibold leading-snug">{title}</p>
                   )}
-                  {variant && <p className="text-sm text-muted-foreground">{variant}</p>}
+                  {variant && <p className="text-muted-foreground">{variant}</p>}
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="font-semibold tabular-nums">{formatGbp(item.total)}</p>
                   {item.quantity > 1 && (
-                    <p className="text-sm text-muted-foreground tabular-nums">
+                    <p className="text-sm text-muted-foreground tabular-nums" data-small-text>
                       {formatGbp(item.unit_price)} each
                     </p>
                   )}

@@ -86,7 +86,7 @@ export function DeliveryBox({ lines, fallbackNote }: { lines: DeliveryLine[]; fa
         })}
       </ul>
       {fallbackNote && (
-        <p className="mt-3 text-sm text-muted-foreground">
+        <p className="mt-3 text-muted-foreground">
           Your basket shows the exact delivery price before you pay.
         </p>
       )}

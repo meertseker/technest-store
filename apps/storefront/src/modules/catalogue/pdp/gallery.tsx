@@ -78,7 +78,7 @@ export default function Gallery({ images, title }: { images: GalleryImage[]; tit
                 />
               ))}
             </div>
-            <span className="text-sm tabular-nums text-muted-foreground">
+            <span className="text-sm tabular-nums text-muted-foreground" data-small-text>
               {active + 1} / {images.length}
             </span>
           </div>

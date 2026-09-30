@@ -65,7 +65,7 @@ export default function GoogleReviews({ count = 3 }: { count?: number }) {
                 <blockquote className="max-w-[68ch] whitespace-pre-line break-words">
                   {r.text}
                 </blockquote>
-                <figcaption className="mt-auto text-sm text-muted-foreground">
+                <figcaption className="mt-auto text-sm text-muted-foreground" data-small-text>
                   <span className="font-semibold text-foreground">{displayAuthor(r.author)}</span>
                   {month && <> · {month}</>} · Google review
                 </figcaption>
