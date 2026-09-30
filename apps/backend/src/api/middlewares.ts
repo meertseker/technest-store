@@ -6,6 +6,7 @@ import { adminPhotoMiddlewares } from './admin/photos/middlewares'
 import { adminProductImportMiddlewares } from './admin/product-import/middlewares'
 import { adminTechnestSettingsMiddlewares } from './admin/technest-settings/middlewares'
 import { verifyStripeWebhookSignature } from './hooks/payment/verify-stripe-signature'
+import { adminQuickAddMiddlewares } from './admin/quick-add/middlewares'
 import { rejectClientPaymentData } from './store/payment-collections/reject-client-payment-data'
 import { storeDeviceMiddlewares } from './store/devices/middlewares'
 import { sentryErrorHandler } from '../lib/monitoring/sentry-error-handler'
@@ -58,5 +59,6 @@ export default defineMiddlewares({
     ...adminProductImportMiddlewares,
     ...adminClickCollectMiddlewares,
     ...adminTechnestSettingsMiddlewares,
+    ...adminQuickAddMiddlewares,
   ],
 })

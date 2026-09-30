@@ -33,7 +33,10 @@ x-backend-env: &backend-env
   # birefnet-general is the default (lead's decision); it needs the 6 GB photo-worker limit below.
   # Fallback on a smaller box: PHOTO_MODEL=isnet-general-use (fits 4 GB). See infra/photo-worker/README.md.
   PHOTO_MODEL: ${PHOTO_MODEL:-birefnet-general}
+  # Quick Add (E4): Claude vision suggestions, server-side only (never sent to the browser or logged).
+  # Empty = Quick Add without AI suggestions. Optional per-admin limit (default 60 analyses/hour).
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  QUICK_ADD_AI_LIMIT_PER_HOUR: ${QUICK_ADD_AI_LIMIT_PER_HOUR:-60}
   SENTRY_DSN: ${SENTRY_DSN_BACKEND:-}
   # Payments and email (E2)
   STRIPE_API_KEY: ${STRIPE_API_KEY:-}

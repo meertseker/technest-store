@@ -28,7 +28,7 @@ type Query = {
   graph: (config: Record<string, unknown>) => Promise<{ data: any[] }>
 }
 
-async function loadDefaults(query: Query): Promise<ImportDefaults> {
+export async function loadDefaults(query: Query): Promise<ImportDefaults> {
   const [{ data: locations }, { data: stores }, { data: profiles }] = await Promise.all([
     query.graph({
       entity: "stock_location",
