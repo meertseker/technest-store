@@ -7,10 +7,10 @@ const withEmail = { email: "a@b.co" }
 const done = { email: "a@b.co", shipping_address: { first_name: "Sam" }, shipping_methods: [{}] }
 
 describe("checkout steps", () => {
-  it("renders a bare /checkout in place for our own sections, redirects for E2's", () => {
+  it("renders a bare /checkout in place for contact and delivery, redirects otherwise", () => {
     expect(needsStepRedirect(undefined, "contact")).toBe(false)
     expect(needsStepRedirect(undefined, "delivery")).toBe(false)
-    // payment/review read ?step= in the browser
+    // the payment step keeps its ?step=payment URL
     expect(needsStepRedirect(undefined, "payment")).toBe(true)
     expect(needsStepRedirect("payment", "payment")).toBe(false)
     // a step that isn't allowed yet, or junk, goes to the right URL

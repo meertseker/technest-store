@@ -91,8 +91,8 @@ home 81 to 89, category 84 to 97, product 88 to 98.
 - Mobile search dialog: moved to Radix Dialog too, so Headless UI and Floating UI no longer ship on
   every page. The search field still gets focus on open.
 - `/checkout` without `?step=` renders the contact or delivery section in place instead of
-  redirecting (`needsStepRedirect` in `src/lib/checkout/steps.ts`). The payment and review steps
-  still redirect, because E2's components read `?step=` in the browser.
+  redirecting (`needsStepRedirect` in `src/lib/checkout/steps.ts`). The payment step keeps its
+  explicit `?step=payment` URL, which E2's payment return and error links use.
 - Checkout has a meta description.
 - 404: all three not-found boundaries share one Tech Nest 404 with the header and footer: one h1,
   16px text and 44px links to home, search, devices and contact. The starter page failed colour
@@ -103,7 +103,9 @@ home 81 to 89, category 84 to 97, product 88 to 98.
   `/search` "Sort" label to 12px because hidden inputs come before it; it now applies only to the
   starter input's own label.
 - 14px stays only where spec 3 allows it (captions, badges, legal footnotes), and those elements now
-  carry `data-small-text`, so the e2e gate can tell small print from body text.
+  carry `data-small-text`, so the e2e gate can tell small print from body text. E2's Klarna hint under the
+  basket's checkout button ("Klarna is available on orders over £30", 14px) is wrapped as small
+  print in `basket-summary.tsx`; E2 may prefer 16px instead.
 - Found while testing, fixed: adding to the basket from the product page or a quick-add button now
   opens the basket drawer with the "Added to basket" toast (spec 7.4). The catalogue hook never
   sent the `technest:basket-added` browser event the drawer listens for.
