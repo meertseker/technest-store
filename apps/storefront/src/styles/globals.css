@@ -175,3 +175,13 @@
     @apply text-[32px] leading-[44px] font-semibold;
   }
 }
+
+/* Basket drawer (Sheet): 200ms ease-out, switched off by prefers-reduced-motion above */
+@keyframes tn-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes tn-slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}

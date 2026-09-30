@@ -34,7 +34,7 @@ export default async function Nav() {
           </Link>
           <Suspense
             fallback={
-              <Link href="/cart" className="inline-flex min-h-11 items-center px-2">
+              <Link href="/basket" className="inline-flex min-h-11 items-center px-2">
                 Basket
               </Link>
             }

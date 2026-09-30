@@ -12,7 +12,7 @@ const SideMenuItems = {
   Repairs: "/repairs",
   Trade: "/trade",
   Account: "/account",
-  Basket: "/cart",
+  Basket: "/basket",
 }
 
 const SideMenu = () => {

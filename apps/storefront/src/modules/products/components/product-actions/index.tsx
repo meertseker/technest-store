@@ -1,6 +1,7 @@
 "use client"
 
 import { addToCart } from "@lib/data/cart"
+import { announceAddedToBasket } from "@lib/basket/events"
 import { STORE_COUNTRY } from "@lib/constants/store"
 import { useIntersection } from "@lib/hooks/use-in-view"
 import { HttpTypes } from "@medusajs/types"
@@ -127,13 +128,17 @@ export default function ProductActions({
 
     setIsAdding(true)
 
-    await addToCart({
-      variantId: selectedVariant.id,
-      quantity: 1,
-      countryCode,
-    })
-
-    setIsAdding(false)
+    try {
+      await addToCart({
+        variantId: selectedVariant.id,
+        quantity: 1,
+        countryCode,
+      })
+      // opens the basket drawer + "Added to basket" toast (modules/basket)
+      announceAddedToBasket({ title: product.title })
+    } finally {
+      setIsAdding(false)
+    }
   }
 
   return (
