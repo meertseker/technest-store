@@ -5,12 +5,14 @@
 #
 # Usage: bash scripts/check-no-bria.sh [repo-root]
 # Exit 0 = clean, 1 = found (matching files are listed). This script is the only
-# file allowed to contain the name. Variants (underscore, no dash, any case) count too.
+# file allowed to contain the name. Variants (underscore, no dash, any case) count too,
+# and so do docs: explain the rule without spelling the name (say "rembg's default model").
 set -euo pipefail
 
 SELF_NAME="scripts/check-no-bria.sh"
 ROOT="${1:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-PATTERN='bria[-_ ]?rmbg'
+# The model name and its Hugging Face ids (briaai/RMBG-1.4, RMBG-2.0), in any case.
+PATTERN='bria[-_ ]?rmbg|briaai|rmbg[-_ ]?[12][._]?[04]'
 
 cd "$ROOT"
 

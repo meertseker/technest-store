@@ -44,6 +44,14 @@ for mode in git plain; do
   echo "BRIA""_RMBG = 1" > "$r/src/const.ts"
   expect "$mode: underscore / upper-case variants fail" 1 "$r"
 
+  r="$tmp/$mode-hf-id"; new_repo "$r" "$mode"
+  echo "repo_id = \"bria""ai/RM""BG-1.4\"" > "$r/src/hf.py"
+  expect "$mode: the Hugging Face model id fails" 1 "$r"
+
+  r="$tmp/$mode-other-models"; new_repo "$r" "$mode"
+  echo "models: birefnet-general, birefnet-general-lite, isnet-general-use, u2net" > "$r/src/models.txt"
+  expect "$mode: allowed and other non-matching model names pass" 0 "$r"
+
   r="$tmp/$mode-docs"; new_repo "$r" "$mode"
   mkdir -p "$r/docs" && echo "never use $NAME" > "$r/docs/notes.md"
   expect "$mode: a mention in docs fails too" 1 "$r"

@@ -56,7 +56,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Licence guard
-        run: bash scripts/licence-guard.sh
+        run: bash scripts/check-no-bria.sh
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -84,7 +84,7 @@ jobs:
             NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY }}
             NEXT_PUBLIC_STRIPE_KEY=${{ secrets.NEXT_PUBLIC_STRIPE_KEY }}
             NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
-      # The photo-worker Dockerfile itself fails the build if any model other than
+      # The photo-worker build (bake_models.py) itself fails if any model other than
       # birefnet-general and isnet-general-use ends up in the image, so a bad image is never pushed.
 
   deploy:

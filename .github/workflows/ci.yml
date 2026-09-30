@@ -26,7 +26,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: No non-commercial background-removal models
-        run: bash scripts/licence-guard.sh
+        run: bash scripts/check-no-bria.sh
+      - name: Guard script tests
+        run: bash scripts/check-no-bria.test.sh
 
   backend:
     runs-on: ubuntu-latest
