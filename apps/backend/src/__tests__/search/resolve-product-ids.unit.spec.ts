@@ -1,4 +1,6 @@
-import { resolveProductIds } from "../resolve-product-ids"
+// Lives outside src/search: Medusa imports every file under src/search as a
+// search index definition (tests included), which breaks app boot.
+import { resolveProductIds } from "../../search/helpers/resolve-product-ids"
 
 /**
  * A fake `query.graph` that answers like Medusa 2.21: product options are shared
