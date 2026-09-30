@@ -26,7 +26,7 @@ export type TechNestStripeOptions = {
 
 /**
  * Server-side payment session context key carrying the admin-set Klarna
- * minimum (integer pence). Set only by the `technest-create-payment-sessions`
+ * minimum (integer pence). Set only by the `create-technest-payment-sessions`
  * workflow from the settings module; payment session `context` never comes
  * from the client. See docs/contracts/payments.md.
  */

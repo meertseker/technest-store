@@ -7,7 +7,7 @@ import { getTechnestSettings } from "../../modules/settings/get-settings"
  * inside `getTechnestSettings`. Read-only, so no compensation.
  */
 export const getKlarnaMinBasketStep = createStep(
-  "technest-get-klarna-min-basket",
+  "get-klarna-min-basket",
   async (_: void, { container }) => {
     const settings = await getTechnestSettings(container)
     return new StepResponse(settings.klarna_min_basket_pence)

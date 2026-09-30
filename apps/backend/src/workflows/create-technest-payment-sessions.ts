@@ -18,7 +18,7 @@ export type CreateTechnestPaymentSessionsInput = {
  * workflow's: the session is deleted if a later step fails.
  */
 export const createTechnestPaymentSessionsWorkflow = createWorkflow(
-  "technest-create-payment-sessions",
+  "create-technest-payment-sessions",
   function (input: CreateTechnestPaymentSessionsInput) {
     const klarnaMin = getKlarnaMinBasketStep()
 

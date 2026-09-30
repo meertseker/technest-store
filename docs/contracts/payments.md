@@ -89,6 +89,6 @@ the Stripe dashboard are **not** synced back to Medusa: always refund from the a
 ## 4. Server-side notes (backend)
 
 - Session context key `technest_klarna_min_basket_pence` is set only by the workflow
-  `technest-create-payment-sessions`. Client input can't reach payment session `context`.
+  `create-technest-payment-sessions`. Client input can't reach payment session `context`.
 - Env: `STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET` (both required in production),
   `KLARNA_MIN_BASKET_PENCE` (fallback only).
