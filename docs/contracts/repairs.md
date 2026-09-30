@@ -1,7 +1,7 @@
 # Contract: repair bookings
 
 Owner: E1. Consumers: E3 (repair booking form), E4 (admin repair queue), E2 (emails, via events).
-Status: **draft v1 (2026-09-30)**. Build against the shapes below. Any change is posted as `[CONTRACT]`.
+Status: **v1 (2026-09-30)**, implemented and covered by `integration-tests/http/repairs.spec.ts`. Any change is posted as `[CONTRACT]`.
 
 Repairs are not products. A customer sends a request and the shop calls them back.
 Store routes need the `x-publishable-api-key` header (use the SDK: `sdk.client.fetch`); no login needed.
@@ -74,6 +74,15 @@ Server side the token is verified against `https://challenges.cloudflare.com/tur
 `TURNSTILE_SECRET_KEY`. Dev uses Cloudflare's always-pass keys (site key `1x00000000000000000000AA`,
 secret `1x0000000000000000000000000000000AA`); with those, any non-empty token such as
 `XXXX.DUMMY.TOKEN.XXXX` passes.
+
+- If `TURNSTILE_SECRET_KEY` is **unset** and `NODE_ENV` is `development` or `test`, the backend skips the
+  Cloudflare call and accepts any non-empty token (a warning is logged once). Any other `NODE_ENV`
+  (including `production`) without a secret fails closed: every booking gets `400 not_allowed`.
+  Production must set `TURNSTILE_SECRET_KEY`.
+- The client IP (rate limit key, and `remoteip` for siteverify) is the `CF-Connecting-IP` header, falling back
+  to the socket address. In production Caddy must overwrite that header with its own `{client_ip}`
+  (which it derives from `CF-Connecting-IP` only for Cloudflare's ranges), so a client that bypasses
+  Cloudflare cannot pick its own IP. The limiter is in memory, per server process.
 
 ## Admin API (E4)
 

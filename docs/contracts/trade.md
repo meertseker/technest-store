@@ -2,12 +2,12 @@
 
 Owner: E1. Consumers: E3 (trade application form, "my trade status", trade tiers on the product page),
 E4 (admin review screen), E2 (trade emails, via events).
-Status: **draft v1 (2026-09-30)**. Build against the shapes below. Any change is posted as `[CONTRACT]`.
+Status: **v1 (2026-09-30)**, implemented and covered by `integration-tests/http/trade.spec.ts`. Any change is posted as `[CONTRACT]`.
 
 All store routes need the `x-publishable-api-key` header (use the SDK: `sdk.client.fetch`).
 Store trade routes also need a **logged-in customer** (session or bearer token). Without one: `401`.
-All admin routes need an admin session or token.
-Errors use Medusa's standard shape: `{ "type": "not_found" | "invalid_data" | "not_allowed" | "unauthorized", "message": string }`.
+All admin routes need an admin session or token (`401` otherwise, also for a logged-in customer).
+Errors use Medusa's standard shape: `{ "type": "not_found" | "invalid_data" | "forbidden" | "unauthorized", "message": string }`.
 Validation errors (bad body/query) are `400` `{ "type": "invalid_data", "message": "..." }`.
 
 ## Types
@@ -52,8 +52,8 @@ Body (unknown keys are rejected with `400`):
 | Field | Rules |
 |---|---|
 | `company_name` | required, 1–200 chars (trimmed) |
-| `vat_number` | optional / `null`. After removing spaces and upper-casing: `^(GB)?(\d{9}\|\d{12})$` |
-| `companies_house_number` | optional / `null`. After removing spaces and upper-casing: `^[A-Z0-9]{8}$` |
+| `vat_number` | optional / `null` / `""` (empty means `null`). After removing spaces and upper-casing: `^(GB)?(\d{9}\|\d{12})$` |
+| `companies_house_number` | optional / `null` / `""`. After removing spaces and upper-casing: `^[A-Z0-9]{8}$` |
 | `business_type` | required, one of `BusinessType` |
 | `contact.name` | required, 1–200 chars |
 | `contact.phone` | required, 5–40 chars, digits, spaces and `+()-` only |
@@ -78,7 +78,8 @@ Response `200`: `{ "trade_application": TradeApplication | null }` (`null` = nev
 
 Trade tier prices for one product, for **approved trade customers only** (customer in the "Trade" group).
 
-- `401` not logged in. `403 not_allowed` "Trade pricing is only available to approved trade accounts".
+- `401` not logged in. `403 forbidden` "Trade pricing is only available to approved trade accounts"
+  (also for customers whose application is still pending).
 - `404 not_found` product missing, unpublished or not in the publishable key's sales channel.
 
 Response `200`:
@@ -108,6 +109,7 @@ Response `200`:
 - Every variant of the product is listed (sorted by `variant_rank`, then title). A variant without trade prices has `tiers: []`
   (show retail only). `retail_inc_vat_pence` is the default GBP retail price, or `null` if the variant has none.
 - `tiers` are sorted by `min_quantity`. `max_quantity: null` means "and above".
+- Tiers come only from the **active** "Trade" price list (a draft list is not applied in the basket, so it is not shown).
 - Show `unit_price_ex_vat_pence` with the label "ex VAT" (`price_label`). The `inc_vat` value is what the basket charges.
 - Money is integer pence. `unit_price_ex_vat_pence = round(unit_price_inc_vat_pence / 1.2)`.
 
@@ -165,5 +167,9 @@ Emits `technest.trade_application.rejected` `{ "id", "customer_id", "reason" }`.
 | `technest.trade_application.created` | `{ id: string, customer_id: string }` |
 | `technest.trade_application.approved` | `{ id: string, customer_id: string }` |
 | `technest.trade_application.rejected` | `{ id: string, customer_id: string, reason: string }` |
+
+Events are emitted only after the workflow succeeds (a rolled-back approval emits nothing).
+Submit, approve and reject are serialised with a lock (per customer / per application), so a double
+click cannot create two pending applications or approve twice.
 
 Load the application (contact email etc.) with `query.graph({ entity: "trade_application", fields: ["*"], filters: { id } })`.
