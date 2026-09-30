@@ -7,6 +7,7 @@ import { JsonLd } from "@/lib/seo/json-ld"
 import { buildLocalBusinessJsonLd } from "@/lib/seo/local-business"
 import { siteConfig } from "@/lib/site-config"
 import { StoreCartShippingOption } from "@medusajs/types"
+import CookieBanner from "@modules/consent/cookie-banner"
 import CartMismatchBanner from "@modules/layout/components/cart-mismatch-banner"
 import Footer from "@modules/layout/templates/footer"
 import Nav from "@modules/layout/templates/nav"
@@ -30,6 +31,7 @@ export default async function PageLayout(props: { children: React.ReactNode }) {
   return (
     <>
       <JsonLd data={buildLocalBusinessJsonLd(siteConfig, getBaseURL())} />
+      <CookieBanner />
       <Nav />
       {customer && cart && (
         <CartMismatchBanner customer={customer} cart={cart} />
