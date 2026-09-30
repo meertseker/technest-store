@@ -1,4 +1,5 @@
 import { configureStoreSearch, defineMiddlewares } from '@medusajs/framework/http'
+import { adminClickCollectMiddlewares } from './admin/click-collect/middlewares'
 import { adminDeviceMiddlewares } from './admin/devices/middlewares'
 import { adminProductAttributesMiddlewares } from './admin/products/[id]/attributes/middlewares'
 import { adminPhotoMiddlewares } from './admin/photos/middlewares'
@@ -45,5 +46,6 @@ export default defineMiddlewares({
     ...adminRepairMiddlewares,
     ...adminPhotoMiddlewares,
     ...adminProductImportMiddlewares,
+    ...adminClickCollectMiddlewares,
   ],
 })
