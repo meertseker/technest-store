@@ -32,8 +32,9 @@ async function relatedProductIds(
     withDeleted,
   });
 
-  return (data as Record<string, any>[])
-    .flatMap(pick)
+  // A row can come back empty (e.g. an option created before it is attached).
+  return ((data ?? []) as (Record<string, any> | null | undefined)[])
+    .flatMap((row) => (row ? pick(row) : []))
     .filter((id): id is string => Boolean(id));
 }
 
@@ -97,22 +98,25 @@ export async function resolveProductIds(
         (row) => [row.product_id],
         deleted,
       );
+    // Medusa 2.21 shares options across products (many-to-many), so an
+    // option has `products`, not `product_id`.
     case "product-option":
       return relatedProductIds(
         query,
         "product_option",
-        ["product_id"],
+        ["products.id"],
         ids,
-        (row) => [row.product_id],
+        (row) => (row.products ?? []).map((product: any) => product?.id),
         deleted,
       );
     case "product-option-value":
       return relatedProductIds(
         query,
         "product_option_value",
-        ["option.product_id"],
+        ["option.products.id"],
         ids,
-        (row) => [row.option?.product_id],
+        (row) =>
+          (row.option?.products ?? []).map((product: any) => product?.id),
         deleted,
       );
     case "product-tag":
