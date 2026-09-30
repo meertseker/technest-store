@@ -27,3 +27,4 @@ Format: `Q<n> (<area>, <date>)`: question. **Default:** what we did.
 - Q13 (photos/E4): Switch on gentle white-balance/brightness correction? **Default:** off, it would change the product's colours.
 - Q14 (photos/E4): Small products are never enlarged (smaller output canvas instead); products under 600 px are rejected with "retake closer". OK? **Default:** yes.
 - Q15 (photos/E4): Unapproved processed images stay in file storage (no cleanup job yet). **Default:** keep them.
+- Q16 (preview): The lead asked for a live Vercel preview. **Default:** storefront on Vercel project `technest-store-preview` (protected by Vercel login), backend in a Vercel Sandbox that stops after <= 45 min on the Hobby plan (see `docs/preview-vercel.md`). For an always-on preview, can we run the Hetzner box as staging now (`docker-compose.staging.yml`)? The GitHub repo is public (the sandbox cloned it without credentials): should it be private?
