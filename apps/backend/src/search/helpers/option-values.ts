@@ -1,29 +1,39 @@
-export type ProductOptionRow = {
-  title?: string | null;
-  values?: ({ value?: string | null } | null)[] | null;
+export type ProductVariantRow = {
+  deleted_at?: string | Date | null;
+  options?:
+    | ({
+        value?: string | null;
+        option?: { title?: string | null } | null;
+      } | null)[]
+    | null;
 } | null;
 
 /**
- * Flattens a product's options into `"<option title>:<value>"` entries, e.g.
- * `["Size:S", "Color:Red"]`. One field keeps the index simple; the storefront
- * splits on the first `:` to group the facet by option name.
+ * Flattens the option values a product's own variants use into
+ * `"<option title>:<value>"` entries, e.g. `["Colour:Clear", "Model:iPhone 15"]`.
+ * One field keeps the index simple; the storefront splits on the first `:` to
+ * group the facet by option name.
+ *
+ * Options are shared across products in Medusa 2.21 (the seed has one "Model"
+ * option holding every model), so `product.options.values` lists every model
+ * in the shop. Only the variants say which ones this product comes in.
+ * Soft-deleted variants (read by the index's catch-up pass) don't count.
  */
 export function toOptionValues(
-  options: ProductOptionRow[] | null | undefined,
+  variants: ProductVariantRow[] | null | undefined,
 ): string[] {
-  const flattened = (options ?? []).flatMap((option) => {
-    const title = option?.title?.trim();
-
-    if (!title) {
+  const flattened = (variants ?? []).flatMap((variant) => {
+    if (!variant || variant.deleted_at) {
       return [];
     }
 
-    return (option?.values ?? [])
-      .map((optionValue) => optionValue?.value?.trim())
-      .filter((value): value is string => Boolean(value))
-      .map((value) => `${title}:${value}`);
+    return (variant.options ?? []).flatMap((optionValue) => {
+      const title = optionValue?.option?.title?.trim();
+      const value = optionValue?.value?.trim();
+      return title && value ? [`${title}:${value}`] : [];
+    });
   });
 
-  // A value shared by several options would otherwise be counted twice.
+  // Every variant repeats the values it shares with its siblings.
   return Array.from(new Set(flattened));
 }

@@ -3,6 +3,8 @@ import type {
   SearchTypes,
 } from "@medusajs/framework/types";
 
+import { DEVICE_EVENTS } from "../../modules/device/constants";
+
 const RESOLVE_BATCH_SIZE = 200;
 
 // Core emits either a single `{ id }` or a batch of them.
@@ -81,6 +83,11 @@ export async function resolveProductIds(
 
   if (!ids.length) {
     return [];
+  }
+
+  // Carries product ids (src/modules/device/constants.ts).
+  if (event.name === DEVICE_EVENTS.PRODUCT_DEVICES_CHANGED) {
+    return ids;
   }
 
   const [entity] = event.name.split(".");

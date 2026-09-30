@@ -3,6 +3,8 @@ import {
   transform,
   WorkflowResponse,
 } from "@medusajs/framework/workflows-sdk"
+import { emitEventStep } from "@medusajs/medusa/core-flows"
+import { DEVICE_EVENTS } from "../modules/device/constants"
 import { replaceDeviceLinksStep } from "./steps/replace-device-links"
 import { validateProductDeviceIdsStep } from "./steps/validate-product-device-ids"
 
@@ -42,6 +44,12 @@ export const setProductDevicesWorkflow = createWorkflow(
       }
     })
     replaceDeviceLinksStep(change)
+    // Re-indexes the product for search (src/search/product.ts).
+    const event = transform({ input }, ({ input }) => ({
+      eventName: DEVICE_EVENTS.PRODUCT_DEVICES_CHANGED,
+      data: { id: input.product_id },
+    }))
+    emitEventStep(event)
     return new WorkflowResponse(input.product_id)
   }
 )

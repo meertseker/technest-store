@@ -3,8 +3,9 @@ import {
   transform,
   WorkflowResponse,
 } from "@medusajs/framework/workflows-sdk"
-import { useQueryGraphStep } from "@medusajs/medusa/core-flows"
+import { emitEventStep, useQueryGraphStep } from "@medusajs/medusa/core-flows"
 import ProductDeviceLink from "../links/product-device"
+import { DEVICE_EVENTS } from "../modules/device/constants"
 import { deleteDevicesStep } from "./steps/delete-devices"
 import { replaceDeviceLinksStep } from "./steps/replace-device-links"
 
@@ -28,6 +29,14 @@ export const deleteDevicesWorkflow = createWorkflow(
     }))
     replaceDeviceLinksStep(linkChange)
     deleteDevicesStep(input.ids)
+    // The products that fitted these devices are re-indexed for search.
+    const event = transform({ links }, ({ links }) => ({
+      eventName: DEVICE_EVENTS.PRODUCT_DEVICES_CHANGED,
+      data: [
+        ...new Set((links as { product_id: string }[]).map((l) => l.product_id)),
+      ].map((id) => ({ id })),
+    }))
+    emitEventStep(event)
     return new WorkflowResponse(input.ids)
   }
 )

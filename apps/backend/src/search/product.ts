@@ -6,8 +6,10 @@ import {
   search,
 } from "@medusajs/framework/utils";
 
-import { ProductOptionRow, toOptionValues } from "./helpers/option-values";
+import { LinkedDeviceRow, toDeviceTerms } from "./helpers/devices";
+import { ProductVariantRow, toOptionValues } from "./helpers/option-values";
 import { loadPricing, priceFields, toProductPricing } from "./helpers/pricing";
+import { DEVICE_EVENTS } from "../modules/device/constants";
 import { resolveProductIds } from "./helpers/resolve-product-ids";
 import { synonymsFor } from "./helpers/synonyms";
 
@@ -22,8 +24,17 @@ const PRODUCT_GRAPH_FIELDS = [
   "sales_channels.id",
   "categories.name",
   "tags.value",
-  "options.title",
-  "options.values.value",
+  // The values this product's own variants use: options are shared across
+  // products, so `options.values` would hold every other product's models too.
+  "variants.deleted_at",
+  "variants.options.value",
+  "variants.options.option.title",
+  // The devices it fits (product-device link, docs/contracts/devices.md).
+  "devices.brand",
+  "devices.series",
+  "devices.model",
+  "devices.aliases",
+  "devices.deleted_at",
 ];
 
 type ProductRow = {
@@ -38,7 +49,8 @@ type ProductRow = {
   sales_channels?: ({ id?: string | null } | null)[] | null;
   categories?: ({ name?: string | null } | null)[] | null;
   tags?: ({ value?: string | null } | null)[] | null;
-  options?: ProductOptionRow[] | null;
+  variants?: ProductVariantRow[] | null;
+  devices?: LinkedDeviceRow[] | null;
 };
 
 const productFields = search.define({
@@ -57,6 +69,9 @@ const productFields = search.define({
   created_at: search.date().sortable().retrievable(),
   category: search.keyword().array().filterable().facetable().retrievable(),
   labels: search.keyword().array().filterable().facetable().retrievable(),
+  // Brand, series, model and aliases of the linked devices, so a case is
+  // found by the phones it fits and no others. Searched, never returned.
+  devices: search.text().searchable({ weight: 2 }).retrievable(false),
   option_values: search
     .keyword()
     .array()
@@ -81,7 +96,8 @@ function toDocument(
   const labels = (product.tags ?? [])
     .map((tag) => tag?.value?.trim())
     .filter((value): value is string => Boolean(value));
-  const optionValues = toOptionValues(product.options);
+  const optionValues = toOptionValues(product.variants);
+  const deviceTerms = toDeviceTerms(product.devices);
   const salesChannelIds = (product.sales_channels ?? [])
     .map((salesChannel) => salesChannel?.id?.trim())
     .filter((id): id is string => Boolean(id));
@@ -99,9 +115,10 @@ function toDocument(
     labels,
     synonyms:
       synonymsFor(
-        [product.title, product.description, ...optionValues],
+        [product.title, product.description, ...optionValues, ...deviceTerms],
         [...category, ...labels],
       ).join(" ") || null,
+    devices: deviceTerms.join(" ") || null,
     option_values: optionValues,
     ...toProductPricing(pricing),
   };
@@ -155,6 +172,8 @@ const PRODUCT_EVENTS = [
   "product-category.updated",
   "product-category.deleted",
   "sales-channel.deleted",
+  // Device links changed, or a linked device was renamed or deleted.
+  DEVICE_EVENTS.PRODUCT_DEVICES_CHANGED,
 ];
 
 export default defineSearchIndex({

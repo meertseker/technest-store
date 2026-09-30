@@ -139,6 +139,15 @@ Links or unlinks devices on a product. Both lists are optional. Adding an existi
 ```
 Response: `{ "devices": LinkedDevice[] }` (the product's full list after the change).
 
+## Search
+
+The product search index (`POST /store/search`, `src/search/product.ts`) makes a product findable by
+the devices it fits: the linked devices' brand, series, model and aliases (searched, never returned),
+and the `Model` values of its own variants in `option_values`. Options are shared across products,
+so the option's full value list is never indexed. Hit documents keep the same fields.
+
 ## Events
 
-None in v1.
+`technest.product.devices_changed` (internal, payload `{ id: <product id> }`, one per product): emitted
+by the link/unlink, device update and device delete workflows so the search index re-reads those products.
+No consumer outside the backend.
