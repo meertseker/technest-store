@@ -29,7 +29,7 @@ export default function BasketLines({ items }: { items: HttpTypes.StoreCartLineI
                 <div className="min-w-0">
                   {item.product_handle ? (
                     <Link
-                      href={`/products/${item.product_handle}`}
+                      href={`/p/${item.product_handle}`}
                       className="font-semibold leading-snug hover:underline"
                     >
                       {title}
