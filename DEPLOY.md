@@ -205,18 +205,14 @@ E-posta kayıtları (MX, SPF, DKIM, DMARC) için bölüm 11'e bakın.
 - **Security → Bots**: "Bot Fight Mode" **kapalı** (Stripe webhook'larını engelleyebilir).
 - **Turnstile** (robot kontrolü, tamir randevu formu): Dashboard → Turnstile → **Add widget** →
   alan adı `technest.co.uk` (staging için staging alan adını da ekleyin), mod **Managed**. İki anahtar verir:
-  - **Site key** → storefront, derleme sırasında: `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (GitHub secret, 5.3).
+  - **Site key** → storefront, derleme sırasında: `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (GitHub **variable**, ortam başına; site key gizli değildir, 5.3).
   - **Secret key** → backend: `TURNSTILE_SECRET_KEY` (sunucu `.env`, 5.1).
 
   Secret key yoksa backend açılır ama **her tamir randevusu reddedilir** ("Turnstile verification
   failed") ve logda hata görünür. Toptan (trade) başvuru formu Turnstile kullanmaz; müşteri girişi ister.
 
-  > ⚠ **Kodda eksik (E4, yayından önce düzeltilmeli) [LEAD?]:** `docker-compose.yml` backend'e
-  > `TURNSTILE_SECRET_KEY` geçirmiyor (`x-backend-env` içinde yok), `deploy.yml` ve
-  > `apps/storefront/Dockerfile` da `NEXT_PUBLIC_TURNSTILE_SITE_KEY`'i derlemeye geçirmiyor. Bu
-  > haliyle `.env`'e yazılan anahtar konteynere ulaşmaz ve formda Turnstile görünmez. Düzeltme:
-  > compose'a `TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}`; Dockerfile'a `ARG`, deploy.yml
-  > `build-args`'a `NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}`.
+  Anahtarlar zaten bağlı: `docker-compose.yml` secret key'i server/worker'a geçirir, `deploy.yml` site
+  key'i storefront imajına derleme argümanı olarak verir.
 
 ### 4.4 R2 (dosya ve yedek depolama)
 
@@ -314,12 +310,10 @@ karşılaştırıldı (2026-09-30). "Zorunlu" = boşsa compose başlamaz ya da �
 | `PHOTO_MODEL` | Hayır | `birefnet-general` (varsayılan, lead kararı, photo-worker'a **6 GB** gerekir) veya `isnet-general-use` (yedek, 4 GB'a sığar, kenarlar biraz daha kaba). Compose aynı değeri photo-worker'a da geçirir |
 | `ANTHROPIC_API_KEY` | Hayır | https://console.anthropic.com → API Keys. Boşsa Hızlı Ekle yapay zekâ önerisi olmadan çalışır. Yalnızca sunucuda; tarayıcıya gitmez, loglanmaz. Console'da aylık harcama sınırı koyun |
 | `QUICK_ADD_AI_LIMIT_PER_HOUR` | Hayır | admin kullanıcısı başına saatte fotoğraf analizi, varsayılan `60` |
-| `QUICK_ADD_AI_TIMEOUT_MS` | Hayır | deneme başına Claude zaman aşımı, varsayılan `60000`. ⚠ Compose bunu geçirmiyor; değiştirmek isterseniz önce `x-backend-env`'e eklenmeli [LEAD?] |
+| `QUICK_ADD_AI_TIMEOUT_MS` | Hayır | deneme başına Claude zaman aşımı, varsayılan `60000` (compose geçirir) |
 
-> ⚠ **Şablonda çelişki [LEAD?]:** `.env.production.template` şu an `PHOTO_MODEL=isnet-general-use`
-> içeriyor; compose ve lead kararı ise `birefnet-general` (6 GB). CX43'te şablondaki satırı
-> **silin** ya da `birefnet-general` yapın. Yalnızca staging (CX23) ve geri yükleme tatbikatında
-> `isnet-general-use` kullanılır.
+> Staging (CX23) ve geri yükleme tatbikatında `PHOTO_MODEL=isnet-general-use` kullanılır; üretimde
+> şablondaki `birefnet-general` kalır.
 
 **Güvenlik ve izleme**
 
@@ -369,7 +363,7 @@ Her ortamda:
 | Secret | `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` | admin'den (5.2) |
 | Secret | `NEXT_PUBLIC_STRIPE_KEY` | Stripe publishable key (`pk_test_…`, canlıda `pk_live_…`) |
 | Secret | `NEXT_PUBLIC_SENTRY_DSN` | storefront Sentry DSN (isteğe bağlı) |
-| Secret | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile site key (4.3). ⚠ deploy.yml henüz geçirmiyor [LEAD?] |
+| Variable | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile site key (4.3), deploy.yml bunu storefront imajına derler |
 | Variable | `SHOP_DOMAIN` | `technest.co.uk` veya staging alan adı |
 | Variable | `NEXT_PUBLIC_IMAGE_HOSTNAME` | `media.technest.co.uk` |
 
@@ -845,9 +839,6 @@ Geçiş gününden **önce**, staging'de ve sonra üretim sunucusunda tek tek i�
 başarısızsa canlıya geçmeyin.
 
 **Kodda bilinen eksikler (önce kapanmalı)** [LEAD?]
-- [ ] Turnstile anahtarları konteynerlere ulaşıyor (4.3'teki not: compose `TURNSTILE_SECRET_KEY`,
-      deploy.yml + Dockerfile `NEXT_PUBLIC_TURNSTILE_SITE_KEY`)
-- [ ] `.env.production.template`'deki `PHOTO_MODEL=isnet-general-use` satırı üretimde silindi / düzeltildi (5.1)
 - [ ] E-posta abonelerini içeren `e2/emails-trade` dalı `main`e birleştirildi (hazır, hatırlatma, trade,
       tamir, düşük stok, iade, kargoya verildi e-postaları)
 
