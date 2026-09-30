@@ -1,23 +1,31 @@
 import { retrieveOrder } from "@lib/data/orders"
-import OrderCompletedTemplate from "@modules/order/templates/order-completed-template"
+import { retrieveCustomer } from "@lib/data/customer"
+import OrderConfirmedTemplate from "@modules/order/templates/order-confirmed-template"
 import { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 type Props = {
   params: Promise<{ id: string }>
 }
+
 export const metadata: Metadata = {
-  title: "Order Confirmed",
-  description: "You purchase was successful",
+  title: "Order placed",
+  robots: { index: false },
 }
+
+// Shows "today's hours" and a per-visitor account offer
+export const dynamic = "force-dynamic"
 
 export default async function OrderConfirmedPage(props: Props) {
   const params = await props.params
-  const order = await retrieveOrder(params.id).catch(() => null)
+  const [order, customer] = await Promise.all([
+    retrieveOrder(params.id).catch(() => null),
+    retrieveCustomer(),
+  ])
 
   if (!order) {
     return notFound()
   }
 
-  return <OrderCompletedTemplate order={order} />
+  return <OrderConfirmedTemplate order={order} isGuest={!customer} />
 }
