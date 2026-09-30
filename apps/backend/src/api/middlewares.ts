@@ -2,6 +2,7 @@ import { configureStoreSearch, defineMiddlewares } from '@medusajs/framework/htt
 import { adminDeviceMiddlewares } from './admin/devices/middlewares'
 import { adminProductAttributesMiddlewares } from './admin/products/[id]/attributes/middlewares'
 import { adminPhotoMiddlewares } from './admin/photos/middlewares'
+import { adminProductImportMiddlewares } from './admin/product-import/middlewares'
 import { rejectClientPaymentData } from './store/payment-collections/reject-client-payment-data'
 import { storeDeviceMiddlewares } from './store/devices/middlewares'
 import { sentryErrorHandler } from '../lib/monitoring/sentry-error-handler'
@@ -43,5 +44,6 @@ export default defineMiddlewares({
     ...storeRepairMiddlewares,
     ...adminRepairMiddlewares,
     ...adminPhotoMiddlewares,
+    ...adminProductImportMiddlewares,
   ],
 })

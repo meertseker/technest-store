@@ -58,6 +58,12 @@ importers:
       '@medusajs/framework':
         specifier: 2.21.2
         version: 2.21.2(@medusajs/cli@2.21.2(@types/node@20.19.43))(@types/node@20.19.43)(ioredis@5.11.1)(vite@7.3.6(@types/node@20.19.43)(jiti@2.7.0)(terser@5.51.0)(yaml@2.9.0))(zod@4.2.0)
+      '@medusajs/icons':
+        specifier: 2.21.2
+        version: 2.21.2(react@18.3.1)
+      '@medusajs/js-sdk':
+        specifier: 2.21.2
+        version: 2.21.2
       '@medusajs/medusa':
         specifier: 2.21.2
         version: 2.21.2(3c518c990e8263c44237d3ad70c868d4)
