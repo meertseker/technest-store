@@ -4,30 +4,14 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { createOrderWorkflow } from "@medusajs/medusa/core-flows"
 import orderPlacedEmails from "../../src/subscribers/order-placed-emails"
 import { seedTechNest } from "../../src/scripts/seed"
+import { mailTo, textOf } from "../utils/mailpit"
 
 jest.setTimeout(300 * 1000)
 
-// Shop alerts go to a unique address so this test only sees its own mail in
-// the shared dev Mailpit (SMTP 1025, API 8025). Never delete the mailbox.
+// Shop alerts go to a unique address so this test only sees its own mail
+// (see ../utils/mailpit).
 const RUN = Date.now()
 process.env.SHOP_NOTIFY_EMAIL = `e2-shop-${RUN}@example.com`
-const MAILPIT_API = process.env.MAILPIT_API_URL || "http://localhost:8025/api/v1"
-
-async function mailTo(to: string, expected: number) {
-  let messages: { Subject: string; ID: string }[] = []
-  for (let i = 0; i < 40; i++) {
-    const res = await fetch(`${MAILPIT_API}/search?query=${encodeURIComponent(`to:"${to}"`)}`)
-    messages = ((await res.json()) as { messages: { Subject: string; ID: string }[] }).messages ?? []
-    if (messages.length >= expected) break
-    await new Promise((r) => setTimeout(r, 250))
-  }
-  return messages
-}
-
-async function textOf(id: string) {
-  const res = await fetch(`${MAILPIT_API}/message/${id}`)
-  return ((await res.json()) as { Text: string }).Text
-}
 
 medusaIntegrationTestRunner({
   inApp: true,

@@ -2,31 +2,15 @@ import { medusaIntegrationTestRunner } from "@medusajs/test-utils"
 import { warmDb } from "../utils/warm-db"
 import { Modules } from "@medusajs/framework/utils"
 import { createCustomersWorkflow } from "@medusajs/medusa/core-flows"
+import { mailTo, textOf } from "../utils/mailpit"
 import customerWelcome from "../../src/subscribers/customer-welcome"
 import passwordResetEmail from "../../src/subscribers/password-reset-email"
 
 jest.setTimeout(300 * 1000)
 
 const RUN = Date.now()
-const MAILPIT_API = process.env.MAILPIT_API_URL || "http://localhost:8025/api/v1"
 process.env.STOREFRONT_URL = "https://technest.co.uk"
 process.env.MEDUSA_BACKEND_URL = "https://admin.technest.co.uk"
-
-async function mailTo(to: string, expected: number) {
-  let messages: { Subject: string; ID: string }[] = []
-  for (let i = 0; i < 40; i++) {
-    const res = await fetch(`${MAILPIT_API}/search?query=${encodeURIComponent(`to:"${to}"`)}`)
-    messages = ((await res.json()) as { messages: { Subject: string; ID: string }[] }).messages ?? []
-    if (messages.length >= expected) break
-    await new Promise((r) => setTimeout(r, 250))
-  }
-  return messages
-}
-
-async function textOf(id: string) {
-  const res = await fetch(`${MAILPIT_API}/message/${id}`)
-  return ((await res.json()) as { Text: string }).Text
-}
 
 medusaIntegrationTestRunner({
   inApp: true,
