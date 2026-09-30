@@ -184,11 +184,8 @@ test.describe("basket and checkout", () => {
     await page.waitForURL(/step=payment/)
     await expect(page.getByTestId("summary-delivery")).toContainText("Collect from shop")
 
-    // E2's payment step, unchanged: choose the provider, review, place order
-    await page.getByText("Manual Payment").click()
-    await page.getByTestId("submit-payment-button").click()
-    await page.waitForURL(/step=review/)
-    await page.getByTestId("submit-order-button").click()
+    // E2's payment step (manual/test provider in dev): one Place order button
+    await page.getByTestId("place-order").click()
     await page.waitForURL(/\/order\/.+\/confirmed/, { timeout: 60_000 })
 
     await expect(page.getByRole("heading", { level: 1, name: "Thanks, your order is placed" })).toBeVisible()

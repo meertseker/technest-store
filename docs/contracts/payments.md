@@ -86,7 +86,26 @@ the Stripe dashboard are **not** synced back to Medusa: always refund from the a
   one is never re-authorised or captured by `amount_capturable_updated`.
 - Cloudflare: keep `/hooks/` out of rate limits and bot challenges (DEPLOY.md section 10, 4.3).
 
-## 4. Server-side notes (backend)
+## 4. Storefront payment step (E2, `apps/storefront/src/modules/checkout/payment/`)
+
+- `payment-step.tsx` (server) resolves the mode with `resolvePaymentMode`: `stripe` when the backend
+  offers `pp_stripe_stripe` and `NEXT_PUBLIC_STRIPE_KEY` is a `pk_` key; `manual` (Medusa's
+  `pp_system_default`, dev notice shown) only when `NODE_ENV !== "production"`; otherwise
+  "Card payments are unavailable". It passes the browser only `client_secret`, `klarna_available`
+  and `klarna_min_basket_pence` from the session data.
+- Session: `sessionDecision` re-initiates when there is no session for the provider or the
+  payment collection/session amount differs from the cart total (e.g. after a delivery change).
+  The server action `preparePaymentSession()` sends only `provider_id`.
+- Place order: `stripe.confirmPayment({ redirect: "if_required", return_url: /api/payment-return?cart_id= })`,
+  then the server action `completeOrder()` completes the cart. Off-site steps (3DS redirect, Klarna)
+  return to `/api/payment-return`, which completes the cart server-side or sends the shopper back to
+  `/checkout?step=payment&payment_error=declined|payment_failed|order_failed` (error summary).
+- Basket drawer and `/basket`: "Klarna is available on orders over £X" / "Pay in 3 with Klarna available
+  at checkout" from `GET /store/technest-settings` (display only).
+- E2E: `apps/storefront/e2e/payment.spec.ts`; how to run the Stripe group with `stripe listen`:
+  `apps/storefront/e2e/README-payment.md`.
+
+## 5. Server-side notes (backend)
 
 - Session context key `technest_klarna_min_basket_pence` is set only by the workflow
   `create-technest-payment-sessions`. Client input can't reach payment session `context`.
