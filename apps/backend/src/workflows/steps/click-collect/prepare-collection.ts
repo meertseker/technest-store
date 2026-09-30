@@ -22,7 +22,7 @@ export type PrepareCollectionOutput = {
  * not cancelled, and paid by an authorised (or already captured) payment.
  */
 export const prepareCollectionStep = createStep(
-  "technest-prepare-collection",
+  "prepare-collection",
   async ({ order_id }: { order_id: string }, { container }) => {
     const order = await loadPickupOrder(container, order_id)
     const status = collectStatusOf(order.metadata)

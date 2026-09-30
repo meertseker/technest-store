@@ -18,7 +18,7 @@ export type CaptureOrderPaymentsInput = {
  * staff the payment was captured.
  */
 export const captureOrderPaymentsStep = createStep(
-  "technest-capture-order-payments",
+  "capture-order-payments",
   async (input: CaptureOrderPaymentsInput, { container }) => {
     const payments = container.resolve(Modules.PAYMENT)
     const captured: string[] = []

@@ -58,6 +58,10 @@ function record(method: string, data: Record<string, unknown> | undefined, amoun
 class RecordingPaymentProvider extends AbstractPaymentProvider<Record<string, unknown>> {
   static identifier = "recording"
 
+  constructor(cradle: Record<string, unknown>, options: Record<string, unknown>) {
+    super(cradle, options)
+  }
+
   async initiatePayment(input: InitiatePaymentInput): Promise<InitiatePaymentOutput> {
     const id = `pi_test_${Math.random().toString(36).slice(2, 10)}`
     record("initiatePayment", { id }, input.amount)

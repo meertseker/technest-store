@@ -15,7 +15,7 @@ export type PrepareUncollectedOutput = {
   patch: Record<string, unknown>
 }
 
-const skip = () => new StepResponse<PrepareUncollectedOutput>({ due: false, patch: {} })
+const NOT_DUE: PrepareUncollectedOutput = { due: false, patch: {} }
 
 function readyAgeMs(metadata: Record<string, unknown> | null | undefined): number | null {
   const readyAt = Date.parse(String(metadata?.[CollectMeta.READY_AT] ?? ""))
@@ -24,7 +24,7 @@ function readyAgeMs(metadata: Record<string, unknown> | null | undefined): numbe
 
 /** Day-3 reminder: due once for a ready, uncollected, uncancelled order. */
 export const prepareCollectionReminderStep = createStep(
-  "technest-prepare-collection-reminder",
+  "prepare-collection-reminder",
   async ({ order_id }: { order_id: string }, { container }) => {
     const order = await loadPickupOrder(container, order_id)
     const meta = order.metadata ?? {}
@@ -37,7 +37,7 @@ export const prepareCollectionReminderStep = createStep(
       age < REMINDER_AFTER_MS ||
       age >= EXPIRE_AFTER_MS
     ) {
-      return skip()
+      return new StepResponse(NOT_DUE)
     }
     return new StepResponse<PrepareUncollectedOutput>({
       due: true,
@@ -52,7 +52,7 @@ export const prepareCollectionReminderStep = createStep(
  * would refund the customer without a human deciding): it is logged instead.
  */
 export const prepareCollectionExpiryStep = createStep(
-  "technest-prepare-collection-expiry",
+  "prepare-collection-expiry",
   async ({ order_id }: { order_id: string }, { container }) => {
     const order = await loadPickupOrder(container, order_id)
     const meta = order.metadata ?? {}
@@ -63,7 +63,7 @@ export const prepareCollectionExpiryStep = createStep(
       age === null ||
       age < EXPIRE_AFTER_MS
     ) {
-      return skip()
+      return new StepResponse(NOT_DUE)
     }
     if (paymentsOf(order).some((p) => p.captured_at)) {
       container
@@ -72,7 +72,7 @@ export const prepareCollectionExpiryStep = createStep(
           `Click & Collect: order ${order_id} is uncollected after 7 days but its payment ` +
             `is already captured, so it was not cancelled automatically. Review it manually.`
         )
-      return skip()
+      return new StepResponse(NOT_DUE)
     }
     return new StepResponse<PrepareUncollectedOutput>({
       due: true,

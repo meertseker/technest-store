@@ -15,7 +15,7 @@ export type PrepareDeliveryCaptureOutput = {
  * payments are skipped, so a duplicate event never captures twice.
  */
 export const prepareDeliveryCaptureStep = createStep(
-  "technest-prepare-delivery-capture",
+  "prepare-delivery-capture",
   async ({ order_id }: { order_id: string }, { container }) => {
     const query = container.resolve(ContainerRegistrationKeys.QUERY)
     const { data } = await query.graph({
@@ -27,18 +27,23 @@ export const prepareDeliveryCaptureStep = createStep(
     if (!order) {
       throw new MedusaError(MedusaError.Types.NOT_FOUND, `Order ${order_id} not found`)
     }
-    const out = (skipped: PrepareDeliveryCaptureOutput["skipped"], payment_ids: string[] = []) =>
-      new StepResponse<PrepareDeliveryCaptureOutput>({ skipped, payment_ids })
-
     const pickup = await isPickupOrder(
       container,
       (order.shipping_methods ?? []).map((m) => m?.shipping_option_id)
     )
-    if (pickup) return out("pickup")
-    if (order.status === "canceled") return out("canceled")
     const ids = paymentsOf(order)
       .filter((p) => !p.captured_at && !p.canceled_at)
       .map((p) => p.id)
-    return ids.length ? out(null, ids) : out("nothing_to_capture")
+    const skipped: PrepareDeliveryCaptureOutput["skipped"] = pickup
+      ? "pickup"
+      : order.status === "canceled"
+        ? "canceled"
+        : ids.length
+          ? null
+          : "nothing_to_capture"
+    return new StepResponse<PrepareDeliveryCaptureOutput>({
+      skipped,
+      payment_ids: skipped ? [] : ids,
+    })
   }
 )

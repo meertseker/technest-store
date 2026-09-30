@@ -18,7 +18,7 @@ export type PrepareReadyForCollectionOutput = {
  * ready, and builds the metadata to write (code kept if it already exists).
  */
 export const prepareReadyForCollectionStep = createStep(
-  "technest-prepare-ready-for-collection",
+  "prepare-ready-for-collection",
   async ({ order_id }: { order_id: string }, { container }) => {
     const order = await loadPickupOrder(container, order_id)
     if (order.status === "canceled") {

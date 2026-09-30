@@ -64,7 +64,7 @@ export async function placeAuthorisedOrder(
     data: {},
   })
   const payment = await payments.authorizePaymentSession(session.id, {})
-  return { order, amount, payment_id: payment.id }
+  return { order, amount, payment_id: payment!.id }
 }
 
 export async function paymentOf(container: MedusaContainer, paymentId: string) {

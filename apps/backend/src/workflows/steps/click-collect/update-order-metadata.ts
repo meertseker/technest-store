@@ -12,7 +12,7 @@ export type UpdateOrderMetadataInput = {
  * metadata back. Callers hold the order's Click & Collect lock.
  */
 export const updateOrderMetadataStep = createStep(
-  "technest-update-order-metadata",
+  "update-order-metadata",
   async (input: UpdateOrderMetadataInput, { container }) => {
     const orders = container.resolve(Modules.ORDER)
     const order = await orders.retrieveOrder(input.order_id, { select: ["id", "metadata"] })
