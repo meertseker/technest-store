@@ -15,3 +15,15 @@ Format: `Q<n> (<area>, <date>)`: question. **Default:** what we did.
   (a fast-forward of `main`).
 - Q3 (tooling): the Medusa skills (`building-with-medusa`, ...) and `ui-ux-pro-max` are not installed in
   the cloud container. **Default:** used docs.medusajs.com and the installed `@medusajs/*` 2.21.2 source.
+- Q4 (process): GitHub push was refused (403) until the lead reconnected the Claude GitHub App mid-session. **Default:** kept committing locally; pushed once access was restored.
+- Q5 (ops/E4): Should browser Sentry run on /checkout through a same-origin tunnel? **Default:** no, Sentry is off on /checkout (CSP allows only Stripe).
+- Q6 (ops/E4): Uptime monitor on the Stripe webhook? **Default:** no (Medusa returns 200 before verifying the signature); rely on Stripe's failure emails.
+- Q7 (ops/E4): Should the restore drill start the worker? **Default:** no, only caddy, server and storefront (the worker's jobs could capture/cancel real payments).
+- Q8 (trade/E1): Should production refuse to start without `TURNSTILE_SECRET_KEY`? **Default:** it starts, but every repair booking is refused and an error is logged.
+- Q9 (trade/E1): Hide a "Trade" price list whose dates have passed? **Default:** only the list's active status is checked (it is created without dates).
+- Q10 (trade/E1): Can a customer who was approved and later removed from the Trade group re-apply? **Default:** no, an approved application blocks new ones until staff change it.
+- Q11 (infra/E4): Caddy `api.` block should overwrite `CF-Connecting-IP` (`header_up CF-Connecting-IP {client_ip}`) or the rate limit can be bypassed by clients that skip Cloudflare. **Default:** to be applied in the Caddyfile (see merge log).
+- Q12 (photos/E4): Can the server give photo-worker 6 GB? **Default:** `birefnet-general` with a 6 GB limit (as required); fallback `PHOTO_MODEL=isnet-general-use` at 4 GB (measured 5-7 s, 2.1 GB).
+- Q13 (photos/E4): Switch on gentle white-balance/brightness correction? **Default:** off, it would change the product's colours.
+- Q14 (photos/E4): Small products are never enlarged (smaller output canvas instead); products under 600 px are rejected with "retake closer". OK? **Default:** yes.
+- Q15 (photos/E4): Unapproved processed images stay in file storage (no cleanup job yet). **Default:** keep them.
