@@ -14,7 +14,7 @@ Format: `Q<n> (<area>, <date>)`: question. **Default:** what we did.
   `claude/peaceful-thompson-0ooaf0`. To publish it: `git push origin origin/claude/peaceful-thompson-0ooaf0:main`
   (a fast-forward of `main`).
 - Q3 (tooling): the Medusa skills (`building-with-medusa`, ...) and `ui-ux-pro-max` are not installed in
-  the cloud container. **Default:** used docs.medusajs.com and the installed `@medusajs/*` 2.21.2 source.
+  the cloud container. **Default:** installed them mid-session from the public repos (medusajs/medusa-agent-skills, nextlevelbuilder/ui-ux-pro-max-skill) into `~/.claude/skills`; every branch after that loaded them. Add them to the repo or a SessionStart hook if future cloud sessions need them.
 - Q4 (process): GitHub push was refused (403) until the lead reconnected the Claude GitHub App mid-session. **Default:** kept committing locally; pushed once access was restored.
 - Q5 (ops/E4): Should browser Sentry run on /checkout through a same-origin tunnel? **Default:** no, Sentry is off on /checkout (CSP allows only Stripe).
 - Q6 (ops/E4): Uptime monitor on the Stripe webhook? **Default:** no (Medusa returns 200 before verifying the signature); rely on Stripe's failure emails.
@@ -70,7 +70,7 @@ Format: `Q<n> (<area>, <date>)`: question. **Default:** what we did.
 - Q56 (accounts/E3): Customers can't change their account email online ("call the shop"); "Change password" sends the reset email. **Default:** yes.
 - Q57 (trade/E3): No Turnstile on the trade application form (applicants must be signed in; the API takes no token). **Default:** no Turnstile there.
 - Q58 (repairs/E3): Repair time preference is an optional date plus morning/afternoon, sent as text (e.g. "Sun 4 Oct, morning"). **Default:** yes.
-- Q59 (infra/E4): The storefront forwards the visitor's `CF-Connecting-IP` to the backend on repair bookings (per-visitor rate limit); Caddy must set that header, never trust the client's. **Default:** Caddy `header_up` (already on the `api.` block; add to the storefront block too).
+- Q59 (infra/E4): The storefront forwards the visitor's `CF-Connecting-IP` to the backend on repair bookings (per-visitor rate limit); Caddy must set that header, never trust the client's. **Default:** Caddy `header_up CF-Connecting-IP {client_ip}` on both the `api.` and the storefront blocks (done).
 - Q60 (search/E1): Products are searchable by the brand, series, model and aliases (e.g. "16 pro", model numbers) of the devices they are linked to, weighted between title and description. **Default:** yes.
 - Q61 (emails/E2): Trade events send the customer email and the shop alert as two separate workflow runs. **Default:** keep one workflow per email (tests wait for background work via `integration-tests/helpers/background.ts`; new suites that trigger emails must use it).
 - Q62 (payments/E2): The order button reads "Place order and pay £X" (UK rule: it must be clear the customer is paying). Click & Collect shows a note about the card hold and the 7-day release. **Default:** yes.
