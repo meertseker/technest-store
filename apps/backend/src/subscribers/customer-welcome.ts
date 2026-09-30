@@ -1,5 +1,6 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { safeErrorMessage } from "../lib/email/safe-error"
 import { sendEmailWorkflow } from "../workflows/send-email"
 
 /** customer.created → "Welcome" (registered customers only; see lib/email/sources). */
@@ -19,7 +20,7 @@ export default async function customerWelcome({
       },
     })
   } catch (e) {
-    logger.error(`welcome email failed for customer ${data.id}: ${(e as Error).message}`)
+    logger.error(`welcome email failed for customer ${data.id}: ${safeErrorMessage(e)}`)
   }
 }
 
