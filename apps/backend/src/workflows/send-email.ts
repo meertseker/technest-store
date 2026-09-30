@@ -5,28 +5,49 @@ import {
   StepResponse,
   WorkflowResponse,
 } from "@medusajs/framework/workflows-sdk"
-import { sendEmailOnce, type EmailSend } from "../lib/email/send-email-once"
+import { sendEmailOnce, type SendEmailOnceResult } from "../lib/email/send-email-once"
+import { resolveEmail, type EmailRecipient } from "../lib/email/sources"
 
-export type SendEmailInput = EmailSend
+/**
+ * IDs only. The workflow engine persists workflow inputs (workflow_execution
+ * table, Redis) because this step retries on an interval, so no addresses,
+ * order contents or secrets may go in here (security review 2026-09-30).
+ * Secrets such as reset tokens never use this workflow at all.
+ */
+export type SendEmailInput = {
+  template: string
+  resource_id: string
+  resource_type: string
+  trigger_type: string
+  recipient: EmailRecipient
+}
 
 const sendEmailStep = createStep(
   {
     name: "technest-send-email",
-    // SMTP hiccups retry every 60 s, up to 5 times. Each attempt first checks
-    // for an earlier successful send, so a retry never emails twice.
-    // While retrying, the workflow engine checkpoints this input (which holds
-    // order details); completed executions aren't retained (no retentionTime),
-    // so that copy lives only for the retry window. Security review, accepted.
+    // SMTP hiccups retry every 60 s, up to 5 times. Each attempt reloads the
+    // data and first checks for an earlier successful send, so a retry never
+    // emails twice.
     maxRetries: 5,
     retryInterval: 60,
   },
-  async (input: SendEmailInput, { container }) => {
+  async (input: SendEmailInput, { container }): Promise<StepResponse<SendEmailOnceResult>> => {
+    const resolved = await resolveEmail(container, input.template, input.resource_id, input.recipient)
+    if (!resolved) {
+      return new StepResponse<SendEmailOnceResult>({ skipped: true })
+    }
     const result = await sendEmailOnce(
       {
         notifications: container.resolve(Modules.NOTIFICATION),
         locking: container.resolve(Modules.LOCKING),
       },
-      input
+      {
+        ...resolved,
+        template: input.template,
+        resource_id: input.resource_id,
+        resource_type: input.resource_type,
+        trigger_type: input.trigger_type,
+      }
     )
     return new StepResponse(result)
   }

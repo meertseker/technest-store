@@ -1,0 +1,57 @@
+import type { MedusaContainer } from "@medusajs/framework/types"
+import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
+import { loadOrderEmailData, safeFirstName, shopNotifyEmail } from "./order-email-data"
+
+export type EmailRecipient = "customer" | "shop"
+
+export type ResolvedEmail = { to: string; data: Record<string, unknown> }
+
+type Source = (
+  container: MedusaContainer,
+  resourceId: string,
+  recipient: EmailRecipient
+) => Promise<ResolvedEmail | null>
+
+const orderEmail: Source = async (container, orderId, recipient) => {
+  const { email, data } = await loadOrderEmailData(container, orderId)
+  const to = recipient === "shop" ? shopNotifyEmail() : email
+  return to ? { to, data: data as unknown as Record<string, unknown> } : null
+}
+
+const welcome: Source = async (container, customerId) => {
+  const query = container.resolve(ContainerRegistrationKeys.QUERY)
+  const { data } = await query.graph({
+    entity: "customer",
+    fields: ["email", "first_name", "has_account"],
+    filters: { id: customerId },
+  })
+  const customer = data[0]
+  // Guest checkouts create customers too; only registered accounts get a welcome.
+  if (!customer?.has_account || !customer.email) return null
+  return { to: customer.email, data: { first_name: safeFirstName(customer.first_name) } }
+}
+
+/**
+ * Template id → how to find its recipient and data from an entity id.
+ * Workflow inputs carry only these ids (they're persisted by the workflow
+ * engine), and each attempt loads fresh data here.
+ */
+const sources: Record<string, Source> = {
+  "order-confirmation": orderEmail,
+  "shop-new-order": orderEmail,
+  welcome,
+}
+
+/** null = nothing to send (e.g. guest customer, order without an email). */
+export async function resolveEmail(
+  container: MedusaContainer,
+  template: string,
+  resourceId: string,
+  recipient: EmailRecipient
+): Promise<ResolvedEmail | null> {
+  const source = sources[template]
+  if (!source) {
+    throw new MedusaError(MedusaError.Types.INVALID_DATA, `No email source for template "${template}"`)
+  }
+  return source(container, resourceId, recipient)
+}
