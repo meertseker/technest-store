@@ -2,6 +2,10 @@ import { configureStoreSearch, defineMiddlewares } from '@medusajs/framework/htt
 import { adminDeviceMiddlewares } from './admin/devices/middlewares'
 import { rejectClientPaymentData } from './store/payment-collections/reject-client-payment-data'
 import { storeDeviceMiddlewares } from './store/devices/middlewares'
+import { adminRepairMiddlewares } from './admin/repair-bookings/middlewares'
+import { adminTradeMiddlewares } from './admin/trade-applications/middlewares'
+import { storeRepairMiddlewares } from './store/repair-bookings/middlewares'
+import { storeTradeMiddlewares } from './store/trade-applications/middlewares'
 
 export default defineMiddlewares({
   routes: [
@@ -26,5 +30,9 @@ export default defineMiddlewares({
     },
     ...storeDeviceMiddlewares,
     ...adminDeviceMiddlewares,
+    ...storeTradeMiddlewares,
+    ...adminTradeMiddlewares,
+    ...storeRepairMiddlewares,
+    ...adminRepairMiddlewares,
   ],
 })

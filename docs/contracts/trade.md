@@ -7,7 +7,7 @@ Status: **draft v1 (2026-09-30)**. Build against the shapes below. Any change is
 All store routes need the `x-publishable-api-key` header (use the SDK: `sdk.client.fetch`).
 Store trade routes also need a **logged-in customer** (session or bearer token). Without one: `401`.
 All admin routes need an admin session or token.
-Errors use Medusa's standard shape: `{ "type": "not_found" | "invalid_data" | "not_allowed" | "unauthorized", "message": string }`.
+Errors use Medusa's standard shape: `{ "type": "not_found" | "invalid_data" | "forbidden" | "unauthorized", "message": string }`.
 Validation errors (bad body/query) are `400` `{ "type": "invalid_data", "message": "..." }`.
 
 ## Types
@@ -52,8 +52,8 @@ Body (unknown keys are rejected with `400`):
 | Field | Rules |
 |---|---|
 | `company_name` | required, 1–200 chars (trimmed) |
-| `vat_number` | optional / `null`. After removing spaces and upper-casing: `^(GB)?(\d{9}\|\d{12})$` |
-| `companies_house_number` | optional / `null`. After removing spaces and upper-casing: `^[A-Z0-9]{8}$` |
+| `vat_number` | optional / `null` / `""` (empty means `null`). After removing spaces and upper-casing: `^(GB)?(\d{9}\|\d{12})$` |
+| `companies_house_number` | optional / `null` / `""`. After removing spaces and upper-casing: `^[A-Z0-9]{8}$` |
 | `business_type` | required, one of `BusinessType` |
 | `contact.name` | required, 1–200 chars |
 | `contact.phone` | required, 5–40 chars, digits, spaces and `+()-` only |
@@ -78,7 +78,8 @@ Response `200`: `{ "trade_application": TradeApplication | null }` (`null` = nev
 
 Trade tier prices for one product, for **approved trade customers only** (customer in the "Trade" group).
 
-- `401` not logged in. `403 not_allowed` "Trade pricing is only available to approved trade accounts".
+- `401` not logged in. `403 forbidden` "Trade pricing is only available to approved trade accounts"
+  (also for customers whose application is still pending).
 - `404 not_found` product missing, unpublished or not in the publishable key's sales channel.
 
 Response `200`:
