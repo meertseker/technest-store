@@ -22,7 +22,7 @@ Alert contacts: the lead's email + the UptimeRobot mobile app. Alert after 2 fai
 Not covered by UptimeRobot (weekly manual check, `docker compose ps`):
 - `worker` (no public URL): healthy = `/health` inside the container.
 - `backup`: turns unhealthy when the last successful dump is older than 26 h.
-- `photo-worker`: internal only; Quick Add shows "background removal unavailable" if it's down.
+- `photo-worker`: internal only; the product "Product photo" box shows "The photo worker is not responding. Try again in a minute." if it's down (and Quick add skips the photo step).
 
 ## Sentry (free plan, errors only)
 

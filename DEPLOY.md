@@ -8,6 +8,13 @@ Kod ve dosya adları İngilizcedir; açıklamalar Türkçedir.
 > UptimeRobot) para veya kalıcı değişiklik içerir. Bunları yalnızca lead yapar. Mühendisler
 > (E1–E4) yalnızca dosyaları hazırlar.
 
+> **Vercel önizlemesi geçicidir, üretim değildir.** Mağazanın şu an Vercel'de gördüğünüz hali
+> (`technest-store-preview` projesi + Vercel Sandbox içindeki backend) yalnızca sahibin geliştirme
+> sırasında siteye tıklayıp bakabilmesi içindir: demo veri, Stripe yok, e-posta gitmez, backend en
+> fazla 45 dakikada bir kapanır. Gerçek müşteri verisi veya canlı anahtar oraya **asla** girilmez.
+> Üretim bu rehberdeki Hetzner + Docker Compose + Caddy + Cloudflare kurulumudur. Ayrıntı:
+> [docs/preview-vercel.md](docs/preview-vercel.md).
+
 ## İçindekiler
 
 1. Genel mimari
@@ -21,7 +28,8 @@ Kod ve dosya adları İngilizcedir; açıklamalar Türkçedir.
 9. İzleme: Sentry ve UptimeRobot
 10. Cloudflare hız sınırı (rate limit) kuralları
 11. Mail (E-posta) sunucusu (E2 bölümü)
-12. Canlıya geçiş (cutover) kontrol listesi
+12. Canlı öncesi kontrol listesi (pre-launch)
+13. Canlıya geçiş (cutover) kontrol listesi
 
 ---
 
@@ -195,8 +203,20 @@ E-posta kayıtları (MX, SPF, DKIM, DMARC) için bölüm 11'e bakın.
 - **Caching → Configuration**: varsayılan. **Cache Rules** ile `api.` ve `admin.` alt alan
   adlarında "Bypass cache" kuralı ekleyin.
 - **Security → Bots**: "Bot Fight Mode" **kapalı** (Stripe webhook'larını engelleyebilir).
-- **Turnstile**: Dashboard → Turnstile → site ekleyin (`technest.co.uk`). Site key
-  storefront'a, secret key backend'e gider (`TURNSTILE_SECRET_KEY`).
+- **Turnstile** (robot kontrolü, tamir randevu formu): Dashboard → Turnstile → **Add widget** →
+  alan adı `technest.co.uk` (staging için staging alan adını da ekleyin), mod **Managed**. İki anahtar verir:
+  - **Site key** → storefront, derleme sırasında: `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (GitHub secret, 5.3).
+  - **Secret key** → backend: `TURNSTILE_SECRET_KEY` (sunucu `.env`, 5.1).
+
+  Secret key yoksa backend açılır ama **her tamir randevusu reddedilir** ("Turnstile verification
+  failed") ve logda hata görünür. Toptan (trade) başvuru formu Turnstile kullanmaz; müşteri girişi ister.
+
+  > ⚠ **Kodda eksik (E4, yayından önce düzeltilmeli) [LEAD?]:** `docker-compose.yml` backend'e
+  > `TURNSTILE_SECRET_KEY` geçirmiyor (`x-backend-env` içinde yok), `deploy.yml` ve
+  > `apps/storefront/Dockerfile` da `NEXT_PUBLIC_TURNSTILE_SITE_KEY`'i derlemeye geçirmiyor. Bu
+  > haliyle `.env`'e yazılan anahtar konteynere ulaşmaz ve formda Turnstile görünmez. Düzeltme:
+  > compose'a `TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}`; Dockerfile'a `ARG`, deploy.yml
+  > `build-args`'a `NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}`.
 
 ### 4.4 R2 (dosya ve yedek depolama)
 
@@ -241,20 +261,78 @@ openssl rand -hex 32
 `POSTGRES_PASSWORD` **yalnızca hex** olmalıdır (yukarıdaki komut hex üretir), çünkü
 bağlantı adresine (`DATABASE_URL`) kodlanmadan yazılır.
 
-| Değişken | Nereden |
-|---|---|
-| `SHOP_DOMAIN` | `technest.co.uk` (staging'de staging alan adı) |
-| `GHCR_OWNER` | GitHub kullanıcı/organizasyon adı, **küçük harf** (`meertseker`) |
-| `IMAGE_TAG` | deploy.yml yazar; elle değiştirmeyin |
-| `POSTGRES_PASSWORD`, `JWT_SECRET`, `COOKIE_SECRET` | `openssl rand -hex 32` |
-| `S3_*` | bölüm 4.4 (media token) |
-| `BACKUP_S3_*` | bölüm 4.4 (backups token) |
-| `STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET` | Stripe Dashboard (E2'nin bölümü; önce test anahtarları) |
-| `SMTP_*`, `MAIL_FROM` | bölüm 11 |
-| `ANTHROPIC_API_KEY` | https://console.anthropic.com → API Keys (Hızlı Ekle için; boş kalırsa özellik kapalı çalışır) |
-| `SENTRY_DSN_BACKEND`, `SENTRY_DSN_STOREFRONT` | bölüm 9.1 |
-| `TURNSTILE_SECRET_KEY` | bölüm 4.3 |
-| `COMPOSE_FILE` | yalnızca staging'de: `docker-compose.yml:docker-compose.staging.yml` |
+Aşağıdaki tablo `.env.production.template`, `docker-compose.yml` ve `apps/backend/.env.template` ile
+karşılaştırıldı (2026-09-30). "Zorunlu" = boşsa compose başlamaz ya da özellik çalışmaz.
+
+**Temel**
+
+| Değişken | Zorunlu mu | Nereden / not |
+|---|---|---|
+| `SHOP_DOMAIN` | Evet | `technest.co.uk` (staging'de staging alan adı). `api.`, `admin.`, `mail.` bundan türetilir |
+| `GHCR_OWNER` | Evet | GitHub kullanıcı/organizasyon adı, **küçük harf** (`meertseker`) |
+| `IMAGE_TAG` | — | deploy.yml yazar; elle değiştirmeyin (yalnızca elle geri alma, bölüm 7) |
+| `ACME_EMAIL` | Hayır | Let's Encrypt bildirimleri; varsayılan `hello@technest.co.uk` |
+| `COMPOSE_FILE` | — | yalnızca staging / tatbikat: `docker-compose.yml:docker-compose.staging.yml` |
+| `POSTGRES_PASSWORD` | Evet | `openssl rand -hex 32` (**yalnızca hex**) |
+| `JWT_SECRET`, `COOKIE_SECRET` | Evet | `openssl rand -hex 32`, ikisi farklı |
+
+**Dosyalar ve yedek (R2, bölüm 4.4)**
+
+| Değişken | Zorunlu mu | Nereden / not |
+|---|---|---|
+| `S3_FILE_URL` | Evet | `https://media.technest.co.uk` |
+| `S3_ENDPOINT` | Evet | `https://HESAP_ID.r2.cloudflarestorage.com` (yedek de aynı endpoint'i kullanır) |
+| `S3_BUCKET` | Evet | `technest-media` |
+| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Evet | `technest-media-rw` token'ı |
+| `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | Yedek için evet | `technest-backups-rw` token'ı. Boşsa yedek alınmaz ve `backup` unhealthy olur |
+| `BACKUP_BUCKET` | Hayır | varsayılan `technest-backups` |
+| `BACKUP_AT`, `BACKUP_RETENTION_DAYS` | Hayır | varsayılan `03:15` (Londra) ve `30` gün |
+
+**Ödeme (E2, bölüm 5.4)**
+
+| Değişken | Zorunlu mu | Nereden / not |
+|---|---|---|
+| `STRIPE_API_KEY` | Evet | staging `sk_test_…`, canlı `sk_live_…`. Üretimde yoksa backend **açılmaz** |
+| `STRIPE_WEBHOOK_SECRET` | Evet | `whsec_…`, Stripe'taki webhook uç noktasından (5.4). Üretimde yoksa backend **açılmaz** |
+| `KLARNA_MIN_BASKET_PENCE` | Hayır | Yalnızca yedek varsayılan (3000). Asıl değer admin → Settings → Shop settings. Compose bunu geçirmez; gerek de yok |
+
+**E-posta (E2, bölüm 11)**
+
+| Değişken | Zorunlu mu | Nereden / not |
+|---|---|---|
+| `SMTP_PASS` | Evet | `orders@` kutusunun parolası (11.4) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_SECURE`, `SMTP_REQUIRE_TLS` | Hayır | Varsayılanlar doğru: `mail.<SHOP_DOMAIN>`, `587`, `orders@<SHOP_DOMAIN>`, `false`, `true` |
+| `MAIL_FROM` | Hayır | `Tech Nest <orders@technest.co.uk>`; **`SMTP_USER` ile aynı adres** olmalı |
+| `MAIL_REPLY_TO`, `SHOP_NOTIFY_EMAIL` | Hayır | ikisi de varsayılan `hello@technest.co.uk`. Dükkan bildirimleri (yeni sipariş, trade, tamir, düşük stok) `SHOP_NOTIFY_EMAIL`'e gider |
+| `MAIL_RELAY_HOST`, `MAIL_RELAY_USER`, `MAIL_RELAY_PASSWORD` | Hayır | yalnızca port 25 kapalıysa (11.7) |
+| `STOREFRONT_URL` | — | compose `https://<SHOP_DOMAIN>` olarak kendisi verir; `.env`'e yazmayın |
+
+**Fotoğraf ve Hızlı Ekle (E4)**
+
+| Değişken | Zorunlu mu | Nereden / not |
+|---|---|---|
+| `PHOTO_MODEL` | Hayır | `birefnet-general` (varsayılan, lead kararı, photo-worker'a **6 GB** gerekir) veya `isnet-general-use` (yedek, 4 GB'a sığar, kenarlar biraz daha kaba). Compose aynı değeri photo-worker'a da geçirir |
+| `ANTHROPIC_API_KEY` | Hayır | https://console.anthropic.com → API Keys. Boşsa Hızlı Ekle yapay zekâ önerisi olmadan çalışır. Yalnızca sunucuda; tarayıcıya gitmez, loglanmaz. Console'da aylık harcama sınırı koyun |
+| `QUICK_ADD_AI_LIMIT_PER_HOUR` | Hayır | admin kullanıcısı başına saatte fotoğraf analizi, varsayılan `60` |
+| `QUICK_ADD_AI_TIMEOUT_MS` | Hayır | deneme başına Claude zaman aşımı, varsayılan `60000`. ⚠ Compose bunu geçirmiyor; değiştirmek isterseniz önce `x-backend-env`'e eklenmeli [LEAD?] |
+
+> ⚠ **Şablonda çelişki [LEAD?]:** `.env.production.template` şu an `PHOTO_MODEL=isnet-general-use`
+> içeriyor; compose ve lead kararı ise `birefnet-general` (6 GB). CX43'te şablondaki satırı
+> **silin** ya da `birefnet-general` yapın. Yalnızca staging (CX23) ve geri yükleme tatbikatında
+> `isnet-general-use` kullanılır.
+
+**Güvenlik ve izleme**
+
+| Değişken | Zorunlu mu | Nereden / not |
+|---|---|---|
+| `TURNSTILE_SECRET_KEY` | Evet | bölüm 4.3. ⚠ Compose şu an bunu backend'e geçirmiyor (4.3'teki not) [LEAD?] |
+| `SENTRY_DSN_BACKEND` | Hayır | bölüm 9.1; compose `server`/`worker`'a `SENTRY_DSN` olarak verir. Boşsa Sentry kapalı |
+| `SENTRY_DSN_STOREFRONT` | Hayır | bölüm 9.1 (sunucu tarafı). Tarayıcı DSN'i ayrı: GitHub secret `NEXT_PUBLIC_SENTRY_DSN` |
+
+**Üretimde asla kullanılmayanlar:** `SEED_DEMO_DATA` (demo ürünler; üretimde tanımsız kalır),
+`LOW_STOCK_THRESHOLD` (yalnızca ürün özelliği olmayan ürünler için yedek; varsayılan 3, compose geçirmez),
+`TECHNEST_TEST_PAYMENT_PROVIDER` (yalnızca testler). Geliştirme değerleri (`supersecret`,
+`1x0000…AA` Turnstile test anahtarı, `preview-only-not-a-secret`) üretime **asla** kopyalanmaz.
 
 GHCR'den imaj çekebilmek için sunucuda bir kez giriş yapın (GitHub → Settings → Developer
 settings → Personal access tokens (classic) → yalnızca `read:packages` yetkisi):
@@ -291,11 +369,38 @@ Her ortamda:
 | Secret | `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` | admin'den (5.2) |
 | Secret | `NEXT_PUBLIC_STRIPE_KEY` | Stripe publishable key (`pk_test_…`, canlıda `pk_live_…`) |
 | Secret | `NEXT_PUBLIC_SENTRY_DSN` | storefront Sentry DSN (isteğe bağlı) |
+| Secret | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile site key (4.3). ⚠ deploy.yml henüz geçirmiyor [LEAD?] |
 | Variable | `SHOP_DOMAIN` | `technest.co.uk` veya staging alan adı |
 | Variable | `NEXT_PUBLIC_IMAGE_HOSTNAME` | `media.technest.co.uk` |
 
 Depo düzeyinde (Settings → Secrets and variables → Actions → **Variables**):
 `DEPLOY_ENABLED` = `true`. **Bu değişken yoksa deploy.yml hiçbir şey yapmaz.**
+
+`NEXT_PUBLIC_…` değerleri storefront imajına **derleme sırasında** gömülür: birini değiştirdikten
+sonra yayını bir kez daha çalıştırın. Staging ve production ayrı imaj alır.
+
+### 5.4 Stripe: canlı anahtarlar ve webhook (E2)
+
+Önce staging'de **test modu** (`sk_test_…`, `pk_test_…`), canlıya geçişte **live mode**.
+Ayrıntılı kurallar: `docs/contracts/payments.md`.
+
+1. https://dashboard.stripe.com → sağ üstte **Test mode** kapalı (canlı için) → **Developers → API keys**:
+   - Publishable key `pk_live_…` → GitHub secret `NEXT_PUBLIC_STRIPE_KEY` (production ortamı)
+   - Secret key `sk_live_…` → sunucu `.env`: `STRIPE_API_KEY`
+2. **Developers → Webhooks → Add endpoint**:
+   - URL: `https://api.technest.co.uk/hooks/payment/stripe_stripe`
+   - Olaylar: `payment_intent.amount_capturable_updated`, `payment_intent.succeeded`,
+     `payment_intent.payment_failed`, `payment_intent.canceled`, `payment_intent.processing`,
+     `payment_intent.requires_action`, `payment_intent.partially_funded`
+   - Kaydedince **Signing secret** (`whsec_…`) → `.env`: `STRIPE_WEBHOOK_SECRET`.
+     Test modu ve canlı mod ayrı uç nokta ve ayrı secret ister.
+3. **Settings → Payment methods**: Kart ve **Klarna** açık. (Klarna'yı sepet tutarına göre kod açıp
+   kapatır; Stripe'ta kapalıysa hiç görünmez.) [LEAD?] Apple Pay / Google Pay de açılsın mı?
+4. `docker compose up -d server worker` → Stripe → Webhooks → uç noktada **Send test webhook**:
+   `200` dönmeli. İmzasız istekler `400 Invalid webhook signature` alır (bu normaldir).
+5. Siparişi "ödendi" yapan **yalnızca** imzalı webhook'tur. İadeler **yalnızca** admin sipariş
+   sayfasından yapılır; Stripe panelinden yapılan iade sisteme geri yansımaz (sahip rehberi,
+   `docs/owner/tr/08-orders-and-refunds.md`).
 
 ---
 
@@ -519,7 +624,8 @@ Pro plan varsa ayrı kurallar (daha sıkı):
 | Toptan başvuru | `POST /store/trade-applications` | 3 / saat / IP | Block, 1 saat |
 | Tamir randevusu | `POST /store/repair-bookings` | 5 / saat / IP | Block, 1 saat |
 
-Uygulama tarafında da koruma var: tamir ve toptan formları Turnstile doğrular (E1).
+Uygulama tarafında da koruma var: tamir randevu formu Turnstile doğrular (E1); toptan başvuru
+müşteri girişi ister ve müşteri başına tek bekleyen başvuruya izin verir.
 
 Test: kuralı kaydettikten sonra kendi bilgisayarınızdan
 `for i in $(seq 1 15); do curl -s -o /dev/null -w "%{http_code}\n" -X POST https://api.technest.co.uk/auth/customer/emailpass; done`
@@ -733,11 +839,78 @@ kutuları yeniden açmak yeterlidir; siparişler etkilenmez.
 
 ---
 
-## 12. Canlıya geçiş (cutover) kontrol listesi (hafta 8)
+## 12. Canlı öncesi kontrol listesi (pre-launch)
+
+Geçiş gününden **önce**, staging'de ve sonra üretim sunucusunda tek tek işaretleyin. Bir madde
+başarısızsa canlıya geçmeyin.
+
+**Kodda bilinen eksikler (önce kapanmalı)** [LEAD?]
+- [ ] Turnstile anahtarları konteynerlere ulaşıyor (4.3'teki not: compose `TURNSTILE_SECRET_KEY`,
+      deploy.yml + Dockerfile `NEXT_PUBLIC_TURNSTILE_SITE_KEY`)
+- [ ] `.env.production.template`'deki `PHOTO_MODEL=isnet-general-use` satırı üretimde silindi / düzeltildi (5.1)
+- [ ] E-posta abonelerini içeren `e2/emails-trade` dalı `main`e birleştirildi (hazır, hatırlatma, trade,
+      tamir, düşük stok, iade, kargoya verildi e-postaları)
+
+**Stripe (5.4)**
+- [ ] `.env`'de `STRIPE_API_KEY=sk_live_…`, GitHub `production` ortamında `NEXT_PUBLIC_STRIPE_KEY=pk_live_…`
+      (canlı anahtarlar yalnızca `production`'da; staging'de test anahtarları)
+- [ ] Canlı webhook uç noktası `https://api.technest.co.uk/hooks/payment/stripe_stripe`, 7 olay seçili,
+      `STRIPE_WEBHOOK_SECRET` canlı uç noktanın `whsec_…` değeri
+- [ ] "Send test webhook" → 200; Cloudflare'de `/hooks/` hız sınırı ve bot kontrolü dışında (bölüm 10)
+- [ ] Stripe'ta Klarna açık; staging'de £30 altı sepette Klarna **görünmüyor**, £30 üstünde görünüyor
+
+**Turnstile (4.3)**
+- [ ] Canlı alan adı için widget var; secret `.env`'de, site key GitHub secret'ında
+- [ ] Sitede tamir formu gönderilebiliyor; admin → Repair bookings'te görünüyor. Backend logunda
+      "TURNSTILE_SECRET_KEY is not set" **yok**
+
+**Hızlı Ekle (Quick add)**
+- [ ] `ANTHROPIC_API_KEY` girildi, Anthropic Console'da aylık harcama sınırı ayarlı
+- [ ] Admin → Quick add'de "AI suggestions are switched off" uyarısı **yok**; telefonla bir fotoğraf
+      çekince öneri 30 saniye içinde geliyor
+
+**E-posta: SMTP ve DNS (bölüm 11)**
+- [ ] Port 25 açık ya da relay ayarlı (11.2, 11.7)
+- [ ] MX, SPF, DKIM, DMARC, PTR kayıtları `dig` ile doğru (11.5)
+- [ ] mail-tester.com **9/10 veya üzeri**; Gmail'de SPF/DKIM/DMARC PASS (11.6)
+- [ ] `hello@technest.co.uk`'a dükkan bildirimleri geliyor (yeni sipariş, trade, tamir, 08:00 düşük stok)
+
+**R2 (4.4)**
+- [ ] `technest-media` herkese açık, `media.technest.co.uk` bağlı; admin'den yüklenen bir fotoğraf
+      bu adresten açılıyor ve storefront'ta görünüyor (`NEXT_PUBLIC_IMAGE_HOSTNAME` doğru)
+- [ ] `technest-backups` **kapalı** (public access yok), 30 gün kuralı var; iki ayrı token
+
+**Sentry (9.1)**
+- [ ] `SENTRY_DSN_BACKEND`, `SENTRY_DSN_STOREFRONT` `.env`'de; `NEXT_PUBLIC_SENTRY_DSN` GitHub'da
+- [ ] Data Scrubber ve "Prevent Storing of IP Addresses" açık; "new issue" uyarısı lead'e gidiyor
+
+**Yedekler (bölüm 8)**
+- [ ] `docker compose run --rm backup backup.sh` → "backup: OK"; `restore.sh --list` dosyayı gösteriyor
+- [ ] Geri yükleme tatbikatı **gerçekten yapıldı** (8.4), süre < 1 saat, sonuç TEAM_CHAT'te
+- [ ] Hetzner Backups açık; `.env` ve `mail-config-*.tar.gz` parola yöneticisinde
+
+**photo-worker belleği**
+- [ ] Üretim CX43 (16 GB): `PHOTO_MODEL=birefnet-general`, photo-worker sınırı **6 GB**. Tüm servis
+      sınırlarının toplamı yaklaşık 15 GB (server 2 + worker 2 + postgres 2 + storefront 1 + mailserver 1
+      + redis 0,5 + caddy 0,25 + backup 0,25 + photo-worker 6); 4 GB swap güvenlik payıdır
+- [ ] Admin'de 3-4 fotoğrafı arka arkaya işleyin; sonra
+      `docker compose ps photo-worker` (healthy, yeniden başlamamış) ve
+      `docker inspect --format '{{.State.OOMKilled}}' technest-photo-worker-1` → `false`
+- [ ] Bellek yetmezse: `.env`'de `PHOTO_MODEL=isnet-general-use`, compose'ta photo-worker sınırı `4g`, `docker compose up -d`
+
+**Genel**
+- [ ] `SEED_DEMO_DATA` üretimde tanımsız; admin'de demo ürün yok
+- [ ] Sahip hesabı açıldı (5.2), sahip parolasını değiştirdi; sahip rehberleri (`docs/owner/tr/`) kendisine verildi
+- [ ] Vercel önizlemesi üretimle karıştırılmıyor: canlı anahtar ya da gerçek veri orada yok ([docs/preview-vercel.md](docs/preview-vercel.md))
+
+---
+
+## 13. Canlıya geçiş (cutover) kontrol listesi (hafta 8)
 
 Lead ve E4 birlikte yapar.
 
 **Bir gün önce**
+- [ ] Bölüm 12'deki canlı öncesi listenin tamamı işaretli
 - [ ] Staging'de tam duman testi geçti (aşağıdaki liste)
 - [ ] Geri yükleme tatbikatı yapıldı, süre < 1 saat (bölüm 8.4)
 - [ ] Stripe **canlı** anahtarlar `.env`'de ve GitHub secret'ında; canlı webhook uç noktası
@@ -753,9 +926,13 @@ Lead ve E4 birlikte yapar.
 - [ ] Duman testi:
   - [ ] Ana sayfa, cihaz seçimi, ürün sayfası, arama ("type c" → USB-C ürünleri)
   - [ ] Sepet: ücretsiz kargo çubuğu, yalnızca £1 ürünle teslimat engelleniyor
-  - [ ] Gerçek kartla küçük bir sipariş (teslimat) → onay e-postası → iade
-  - [ ] Gerçek kartla Click & Collect siparişi → admin panosunda "Hazır" → "Teslim alındı" → ödeme alındı
-  - [ ] Admin: telefondan Hızlı Ekle ile bir ürün (< 60 sn)
+  - [ ] Gerçek kartla küçük bir sipariş (teslimat) → onay e-postası → ödeme otomatik çekildi →
+        **admin sipariş sayfasından** iade → "refund issued" e-postası (Stripe panelinden iade yapmayın)
+  - [ ] Gerçek kartla Click & Collect siparişi → admin → Click & Collect panosu → "Mark ready"
+        (müşteriye kodlu e-posta) → "Collected" → ödeme alındı
+  - [ ] Admin: telefondan "Quick add" ile bir ürün (taslak < 60 sn), fotoğraf onayı, ürün sayfasından yayınla
+  - [ ] Güvenlik işareti olmayan bir şarj aleti yayınlanamıyor; "vape" başlıklı ürün reddediliyor
+  - [ ] Ertesi sabah 08:00'de (düşük stok varsa) düşük stok e-postası geldi
   - [ ] Toptan başvuru → onay e-postası; tamir randevusu → dükkana e-posta
 - [ ] `docker compose ps`: hepsi healthy; `backup` gece çalıştı mı (ertesi sabah)
 - [ ] İlk hafta: her gün Sentry ve UptimeRobot kontrolü
