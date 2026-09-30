@@ -4,6 +4,7 @@ import { ContainerRegistrationKeys, MedusaError, Modules } from "@medusajs/frame
 import { renderEmail } from "@technest/emails"
 import { createHash } from "node:crypto"
 import { storefrontUrl } from "../lib/email/order-email-data"
+import { safeErrorMessage } from "../lib/email/safe-error"
 import { sendEmailOnce } from "../lib/email/send-email-once"
 
 type PasswordResetEvent = {
@@ -46,7 +47,7 @@ export function adminUrl(env: NodeJS.ProcessEnv = process.env): string {
 async function isAccountOfType(container: MedusaContainer, entityId: string, idKey: string) {
   const auth = container.resolve(Modules.AUTH)
   const identities = await auth.listProviderIdentities(
-    { entity_id: entityId },
+    { entity_id: entityId, provider: "emailpass" },
     { relations: ["auth_identity"] }
   )
   return identities.some((i) => !!i.auth_identity?.app_metadata?.[idKey])
@@ -107,7 +108,7 @@ export default async function passwordResetEmail({
       }
     }
   } catch (e) {
-    logger.error(`password reset email failed (request ${requestId}): ${(e as Error).message}`)
+    logger.error(`password reset email failed (request ${requestId}): ${safeErrorMessage(e)}`)
   }
 }
 

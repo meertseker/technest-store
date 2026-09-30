@@ -1,5 +1,6 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { safeErrorMessage } from "../lib/email/safe-error"
 import type { EmailRecipient } from "../lib/email/sources"
 import { sendEmailWorkflow } from "../workflows/send-email"
 
@@ -21,7 +22,7 @@ export default async function orderPlacedEmails({
       })
     } catch (e) {
       // IDs only in logs: never the address or the order contents.
-      logger.error(`order.placed email ${send.template} failed for ${data.id}: ${(e as Error).message}`)
+      logger.error(`order.placed email ${send.template} failed for ${data.id}: ${safeErrorMessage(e)}`)
     }
   }
 }
