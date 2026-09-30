@@ -6,19 +6,29 @@ import { searchDevices } from "@/lib/devices/tree"
 import type { DeviceTree } from "@/lib/devices/types"
 import DeviceOptions from "./device-options"
 
+/** Max results shown, server-rendered or live */
+export const SEARCH_LIMIT = 24
+
 type Props = {
   tree: DeviceTree
   returnTo?: string | null
   currentSlug?: string | null
+  /** The submitted query (?q=), rendered on the server */
   defaultQuery?: string
   /** Visible label; the hero uses a shorter one */
   label?: string
 }
 
+const resultsHeading = (count: number, q: string) =>
+  count
+    ? `${count} ${count === 1 ? "device matches" : "devices match"} “${q}”`
+    : `No device matches “${q}”`
+
 /**
- * Search by model, alias or model number. Without JavaScript the form submits
- * to /devices?q=..., which renders the same results on the server. With
- * JavaScript, results appear as you type.
+ * Search by model, alias or model number. This component owns the one and
+ * only results list: without JavaScript the form submits to /devices?q=...
+ * and the list is server-rendered from `defaultQuery`; with JavaScript the
+ * same list updates as you type (there is never a second, stale list).
  */
 export default function DeviceSearch({
   tree,
@@ -30,8 +40,8 @@ export default function DeviceSearch({
   const id = useId()
   const [q, setQ] = useState(defaultQuery)
   const [typed, setTyped] = useState(false)
-  const results = useMemo(() => searchDevices(tree, q), [tree, q])
-  const showLive = typed && q.trim().length > 0
+  const query = q.trim()
+  const results = useMemo(() => searchDevices(tree, query, SEARCH_LIMIT), [tree, query])
 
   return (
     <div>
@@ -50,6 +60,7 @@ export default function DeviceSearch({
             type="search"
             autoComplete="off"
             enterKeyHint="search"
+            maxLength={60}
             aria-describedby={`${id}-hint`}
             value={q}
             onChange={(e) => {
@@ -67,19 +78,32 @@ export default function DeviceSearch({
           </button>
         </div>
       </form>
+      {/* Announces live results only; a submitted search is read via the heading */}
       <p role="status" className="sr-only">
-        {showLive ? `${results.length} ${results.length === 1 ? "device" : "devices"} found` : ""}
+        {typed && query
+          ? `${results.length} ${results.length === 1 ? "device" : "devices"} found`
+          : ""}
       </p>
-      {showLive && (
-        <div className="mt-3">
-          {results.length ? (
-            <DeviceOptions devices={results} returnTo={returnTo} currentSlug={currentSlug} showBrand />
-          ) : (
-            <p className="rounded bg-surface p-4">
-              No device matches &ldquo;{q.trim()}&rdquo;. Try fewer words, or browse by brand below.
-            </p>
-          )}
-        </div>
+      {query && (
+        <section aria-labelledby={`${id}-results`} className="mt-4" data-testid="device-results">
+          <h2 id={`${id}-results`} className="text-xl font-semibold">
+            {resultsHeading(results.length, query)}
+          </h2>
+          <div className="mt-3">
+            {results.length ? (
+              <DeviceOptions
+                devices={results}
+                returnTo={returnTo}
+                currentSlug={currentSlug}
+                showBrand
+              />
+            ) : (
+              <p className="rounded bg-surface p-4">
+                Try fewer words, or choose your brand below.
+              </p>
+            )}
+          </div>
+        </section>
       )}
     </div>
   )

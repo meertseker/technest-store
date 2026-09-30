@@ -1,5 +1,4 @@
 import { Check, ChevronRight } from "lucide-react"
-import { chooseDevice } from "@lib/data/device-actions"
 import type { Device } from "@/lib/devices/types"
 
 type Props = {
@@ -10,12 +9,13 @@ type Props = {
 }
 
 /**
- * One form, one button per device: works without JavaScript (the server
- * action sets the tn_device cookie and redirects back).
+ * One form, one button per device. A plain POST to /api/device (not a server
+ * action): it sets the tn_device cookie and 303s back to returnTo, the same
+ * with or without JavaScript, and the full page load refreshes the header.
  */
 export default function DeviceOptions({ devices, returnTo, currentSlug, showBrand }: Props) {
   return (
-    <form action={chooseDevice}>
+    <form action="/api/device" method="post">
       {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
       <ul className="grid gap-2 sm:grid-cols-2">
         {devices.map((d) => {

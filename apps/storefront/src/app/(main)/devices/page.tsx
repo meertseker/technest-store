@@ -1,12 +1,9 @@
 import { Metadata } from "next"
 import Link from "next/link"
 import { HelpCircle } from "lucide-react"
-import { clearDevice } from "@lib/data/device-actions"
 import { getCurrentDevice, listDevices } from "@lib/data/devices"
 import { safeReturnPath } from "@/lib/devices/cookie"
-import { searchDevices } from "@/lib/devices/tree"
 import DeviceBrowser from "@modules/devices/components/device-browser"
-import DeviceOptions from "@modules/devices/components/device-options"
 import DeviceSearch from "@modules/devices/components/device-search"
 
 export const metadata: Metadata = {
@@ -24,7 +21,6 @@ export default async function DevicesPage(props: { searchParams: Promise<SP> }) 
   const q = (one(sp.q) ?? "").slice(0, 60)
   const returnTo = safeReturnPath(one(sp.returnTo))
   const [tree, current] = await Promise.all([listDevices(), getCurrentDevice()])
-  const results = q.trim() ? searchDevices(tree, q, 24) : null
 
   return (
     <div className="content-container max-w-3xl py-8 lg:py-12">
@@ -40,7 +36,7 @@ export default async function DevicesPage(props: { searchParams: Promise<SP> }) 
           <p>
             Shopping for: <strong>{current.model}</strong>
           </p>
-          <form action={clearDevice}>
+          <form action="/api/device/clear" method="post">
             {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
             <button
               type="submit"
@@ -59,34 +55,14 @@ export default async function DevicesPage(props: { searchParams: Promise<SP> }) 
         </p>
       ) : (
         <div className="mt-8 grid gap-10">
+          {/* The search owns the results list (server-rendered for ?q=, live when typing) */}
           <DeviceSearch
+            key={q}
             tree={tree}
             returnTo={returnTo}
             currentSlug={current?.slug}
             defaultQuery={q}
           />
-
-          {results && (
-            <section aria-labelledby="search-results">
-              <h2 id="search-results" className="text-xl font-semibold">
-                {results.length
-                  ? `${results.length} ${results.length === 1 ? "device matches" : "devices match"} “${q}”`
-                  : `No device matches “${q}”`}
-              </h2>
-              <div className="mt-3">
-                {results.length ? (
-                  <DeviceOptions
-                    devices={results}
-                    returnTo={returnTo}
-                    currentSlug={current?.slug}
-                    showBrand
-                  />
-                ) : (
-                  <p>Try fewer words, or choose your brand below.</p>
-                )}
-              </div>
-            </section>
-          )}
 
           <DeviceBrowser
             tree={tree}

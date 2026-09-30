@@ -3,7 +3,7 @@ import Link from "next/link"
 import { User } from "lucide-react"
 import { getCurrentDevice } from "@lib/data/devices"
 import CartButton from "@modules/layout/components/cart-button"
-import DeviceChip from "@modules/layout/components/device-chip"
+import DeviceChipSlot from "@modules/layout/components/device-chip/slot"
 import Logo from "@modules/layout/components/logo"
 import Search from "@modules/layout/components/search"
 import SideMenu from "@modules/layout/components/side-menu"
@@ -22,7 +22,7 @@ export default async function Nav() {
           <SideMenu />
         </div>
         <Logo />
-        <DeviceChip device={device} className="hidden lg:inline-flex" />
+        <DeviceChipSlot device={device} className="hidden lg:inline-flex" />
         <div className="ml-auto flex items-center gap-0 sm:gap-2">
           <Search />
           <Link
@@ -44,7 +44,7 @@ export default async function Nav() {
         </div>
       </nav>
       <div className="border-t border-border bg-surface px-4 py-1 lg:hidden">
-        <DeviceChip device={device} className="w-full justify-center bg-transparent" />
+        <DeviceChipSlot device={device} className="w-full justify-center bg-transparent" />
       </div>
     </header>
   )

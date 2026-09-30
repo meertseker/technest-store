@@ -59,6 +59,45 @@ test.describe("device picker", () => {
     await expect(page).toHaveURL("http://localhost:8003/")
   })
 
+  test("a submitted search shows one results list, replaced (not duplicated) when typing", async ({ page, context }) => {
+    await context.clearCookies()
+    await page.goto("/devices?q=15+pro")
+    const lists = page.getByTestId("device-results")
+    await expect(lists).toHaveCount(1)
+    await expect(lists).toContainText("match “15 pro”")
+    await page.getByLabel("Search for your phone or console").fill("s24 ultra")
+    await expect(page.getByRole("status").filter({ hasText: /found/ })).toHaveText(/1 device found/)
+    await expect(lists).toHaveCount(1)
+    await expect(lists).toContainText("1 device matches “s24 ultra”")
+    await expect(page.getByRole("button", { name: /iPhone 15 Pro/ })).toHaveCount(0)
+  })
+
+  test("the chip keeps the query string and returns to the exact page", async ({ page, context }) => {
+    await context.clearCookies()
+    // (not /store: its search UI rewrites its own query string after hydration)
+    await page.goto("/cart?ref=e2e&x=1")
+    await expect(deviceChip(page)).toHaveAttribute("href", "/devices?returnTo=%2Fcart%3Fref%3De2e%26x%3D1")
+    await deviceChip(page).click()
+    await page.getByLabel("Search for your phone or console").fill("ps5")
+    await page.getByRole("button", { name: /PlayStation 5/ }).first().click()
+    await expect(page).toHaveURL("http://localhost:8003/cart?ref=e2e&x=1")
+  })
+
+  test("returnTo is the exact page, never a trailing-slash /devices/", async ({ page, context }) => {
+    await context.clearCookies()
+    await page.goto("/devices/help")
+    await expect(deviceChip(page)).toHaveAttribute("href", "/devices?returnTo=%2Fdevices%2Fhelp")
+    await deviceChip(page).click()
+    await page.getByLabel("Search for your phone or console").fill("ps5")
+    await page.getByRole("button", { name: /PlayStation 5/ }).first().click()
+    await expect(page).toHaveURL("http://localhost:8003/devices/help")
+
+    // the picker itself (with or without a trailing slash) is never a destination
+    await page.goto("/devices?q=ps5&returnTo=%2Fdevices%2F")
+    await page.getByRole("button", { name: /PlayStation 5/ }).first().click()
+    await expect(page).toHaveURL("http://localhost:8003/")
+  })
+
   test("help page has no axe violations", async ({ page }) => {
     await page.goto("/devices/help")
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("How do I find my model?")
