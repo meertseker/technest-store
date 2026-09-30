@@ -107,6 +107,19 @@ medusaIntegrationTestRunner({
         warranty_months: null,
         reorder_level: 3,
       })
+      // The widget's publish check: a draft charger would be refused if published now.
+      expect(data.publish_check.needs_safety_marking).toBe(true)
+      expect(data.publish_check.blocked_reason).toBe(
+        '"65W GaN Charger" is a charger or power product, so it needs a safety marking (UKCA or CE) before it can be published. Set "Safety marking" in the product details, then publish.'
+      )
+
+      // A product outside the charger/power categories needs no marking.
+      const caseId = productId[Object.keys(productId).find((h) => /case/.test(h))!]
+      const other = await api.get(`/admin/products/${caseId}/attributes`, admin)
+      expect(other.data.publish_check).toEqual({
+        needs_safety_marking: false,
+        blocked_reason: null,
+      })
     })
 
     it("upserts attributes partially", async () => {
@@ -152,7 +165,15 @@ medusaIntegrationTestRunner({
       expect(blocked.data.message).toContain("needs a safety marking (UKCA or CE)")
       expect(await getStatus(draftChargerId)).toBe("draft")
 
-      await api.post(`/admin/products/${draftChargerId}/attributes`, { safety_marking: "CE" }, admin)
+      const marked = await api.post(
+        `/admin/products/${draftChargerId}/attributes`,
+        { safety_marking: "CE" },
+        admin
+      )
+      expect(marked.data.publish_check).toEqual({
+        needs_safety_marking: true,
+        blocked_reason: null,
+      })
       const ok = await api.post(`/admin/products/${draftChargerId}`, { status: "published" }, admin)
       expect(ok.status).toBe(200)
       expect(await getStatus(draftChargerId)).toBe("published")
@@ -311,6 +332,8 @@ medusaIntegrationTestRunner({
       expect(publish.status).toBe(400)
       expect(publish.data.message).toContain("Vapes are never sold online")
       expect(await getStatus(id)).toBe("draft")
+      const vapeCheck = await api.get(`/admin/products/${id}/attributes`, admin)
+      expect(vapeCheck.data.publish_check.blocked_reason).toContain("Vapes are never sold online")
 
       // A safety marking doesn't help a vape.
       await api.post(`/admin/products/${id}/attributes`, { safety_marking: "UKCA" }, admin)

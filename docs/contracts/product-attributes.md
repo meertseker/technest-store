@@ -26,8 +26,12 @@ A product with no stored row has all defaults. Responses always contain every ke
 
 ## Admin (E4)
 
-- `GET /admin/products/:id/attributes` -> `200 { "product_attributes": ProductAttributes }`; unknown product -> 404.
-- `POST /admin/products/:id/attributes` (partial; any subset of the keys) -> `200 { "product_attributes": ProductAttributes }`.
+- `GET /admin/products/:id/attributes` -> `200 { "product_attributes": ProductAttributes, "publish_check": PublishCheck }`; unknown product -> 404.
+- `POST /admin/products/:id/attributes` (partial; any subset of the keys) -> `200` with the same body.
+- `PublishCheck` (read-only, v1.1, added for the E4 "Product details for Tech Nest" widget):
+  `{ needs_safety_marking: boolean, blocked_reason: string | null }`. `needs_safety_marking` is true when the
+  product is in a charger/power category (children included); `blocked_reason` is the publish guard's
+  message if the product were published now (safety marking or vape), else null.
   Validation: `wattage`, `cable_length_m` >= 0; `warranty_months`, `reorder_level` integers >= 0; unknown keys -> 400.
   Setting `safety_marking: "none"` on a PUBLISHED charger/power product -> 400 `invalid_data` (rolled back).
 
