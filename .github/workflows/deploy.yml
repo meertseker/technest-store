@@ -7,7 +7,7 @@
 #   secrets per environment: SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, SSH_KNOWN_HOSTS,
 #     NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY, NEXT_PUBLIC_STRIPE_KEY, NEXT_PUBLIC_SENTRY_DSN
 #   variables per environment: SHOP_DOMAIN (technest.co.uk or staging.technest.co.uk),
-#     NEXT_PUBLIC_IMAGE_HOSTNAME
+#     NEXT_PUBLIC_IMAGE_HOSTNAME, NEXT_PUBLIC_TURNSTILE_SITE_KEY (public site key)
 name: Deploy
 
 on:
@@ -84,6 +84,7 @@ jobs:
             NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY }}
             NEXT_PUBLIC_STRIPE_KEY=${{ secrets.NEXT_PUBLIC_STRIPE_KEY }}
             NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+            NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
       # The photo-worker build (bake_models.py) itself fails if any model other than
       # birefnet-general and isnet-general-use ends up in the image, so a bad image is never pushed.
 

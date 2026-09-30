@@ -37,6 +37,9 @@ x-backend-env: &backend-env
   # Empty = Quick Add without AI suggestions. Optional per-admin limit (default 60 analyses/hour).
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
   QUICK_ADD_AI_LIMIT_PER_HOUR: ${QUICK_ADD_AI_LIMIT_PER_HOUR:-60}
+  QUICK_ADD_AI_TIMEOUT_MS: ${QUICK_ADD_AI_TIMEOUT_MS:-60000}
+  # Repair booking form (E1): Cloudflare Turnstile secret. Empty = every booking is refused in production.
+  TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
   SENTRY_DSN: ${SENTRY_DSN_BACKEND:-}
   # Payments and email (E2)
   STRIPE_API_KEY: ${STRIPE_API_KEY:-}

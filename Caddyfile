@@ -25,7 +25,11 @@
 
 {$SHOP_DOMAIN} {
 	import common
-	reverse_proxy storefront:8000
+	# The storefront forwards CF-Connecting-IP to the backend (repair booking rate limit):
+	# always overwrite it so a client that bypasses Cloudflare can't choose its own IP.
+	reverse_proxy storefront:8000 {
+		header_up CF-Connecting-IP {client_ip}
+	}
 }
 
 www.{$SHOP_DOMAIN} {
