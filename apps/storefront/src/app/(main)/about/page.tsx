@@ -21,13 +21,13 @@ const WHAT_WE_DO = [
   {
     title: "Accessories that fit",
     text: "Cases, screen protectors, chargers, cables, audio and gaming accessories. Tell us your device and we only show you what fits it.",
-    href: "/store",
+    href: "/search",
     cta: "Shop accessories",
   },
   {
     title: "The £1 range",
     text: "Everyday essentials for £1 each. Add them to any order, or pick them up in the shop.",
-    href: "/store",
+    href: "/c/1-deals",
     cta: "See the range",
   },
   {
@@ -121,7 +121,7 @@ export default function AboutPage() {
             <Link href="/contact" className={buttonVariants({ variant: "primary" })}>
               Opening hours and directions
             </Link>
-            <Link href="/store" className={buttonVariants({ variant: "secondary" })}>
+            <Link href="/search" className={buttonVariants({ variant: "secondary" })}>
               Shop online
             </Link>
           </div>

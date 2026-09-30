@@ -82,8 +82,8 @@ describe("home page", { timeout: 30_000 }, () => {
 
   it("category tiles come from the backend, without the £1 range", async () => {
     const html = await render()
-    expect(html).toContain('href="/categories/cases"')
-    expect(html).not.toContain('href="/categories/1-deals"><div')
+    expect(html).toContain('href="/c/phone-accessories/cases"')
+    expect(html).not.toContain('href="/c/1-deals"><div')
   })
 
   it("deals tabs: £1 by default, Under £5 from ?deals=under-5, prices not divided", async () => {

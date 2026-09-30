@@ -29,7 +29,7 @@ export default function Deals({ tab, onePound, underFive, onePoundHref }: Props)
       <ProductSection
         id="deals-heading"
         title="£1 Deals and under £5"
-        seeAllHref={isOne ? onePoundHref : "/store?sortBy=price_asc"}
+        seeAllHref={isOne ? onePoundHref : "/search?price=under-5&sort=price-asc"}
         seeAllLabel={isOne ? "See all £1 deals" : "See all by lowest price"}
         products={isOne ? onePound : underFive}
         empty={isOne ? "No £1 deals right now." : "Nothing under £5 right now."}

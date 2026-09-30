@@ -24,11 +24,23 @@ describe("buildSitemap", () => {
       categories: [{ handle: "chargers-cables" }],
       collections: [{ handle: "one-pound-deals", updated_at: null }],
     })
-    const product = map.find((e) => e.url.endsWith("/products/usb-c-cable-1m"))
+    const product = map.find((e) => e.url.endsWith("/p/usb-c-cable-1m"))
     expect(product?.lastModified).toEqual(new Date("2026-09-01T10:00:00Z"))
     expect(product?.priority).toBe(0.8)
-    expect(map.some((e) => e.url === "https://technest.co.uk/categories/chargers-cables")).toBe(true)
+    expect(map.some((e) => e.url === "https://technest.co.uk/c/chargers-cables")).toBe(true)
     expect(map.some((e) => e.url === "https://technest.co.uk/collections/one-pound-deals")).toBe(true)
+  })
+
+  it("uses nested category paths and device pages", () => {
+    const map = buildSitemap("https://technest.co.uk", {
+      ...empty,
+      categories: [{ handle: "phone-accessories/cases" }],
+      devices: [{ handle: "apple/iphone-16" }],
+    })
+    const urls = map.map((e) => e.url)
+    expect(urls).toContain("https://technest.co.uk/c/phone-accessories/cases")
+    expect(urls).toContain("https://technest.co.uk/devices/apple/iphone-16")
+    expect(urls).not.toContain("https://technest.co.uk/store")
   })
 
   it("skips handles that are not URL-safe", () => {
@@ -36,8 +48,8 @@ describe("buildSitemap", () => {
       ...empty,
       products: [{ handle: "" }, { handle: "../x" }, { handle: "<script>" }, { handle: "ok-one" }],
     })
-    expect(map.filter((e) => e.url.includes("/products/")).map((e) => e.url)).toEqual([
-      "https://technest.co.uk/products/ok-one",
+    expect(map.filter((e) => e.url.includes("/p/")).map((e) => e.url)).toEqual([
+      "https://technest.co.uk/p/ok-one",
     ])
   })
 

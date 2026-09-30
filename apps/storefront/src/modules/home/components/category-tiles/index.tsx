@@ -47,8 +47,11 @@ const imageOf = (c: HttpTypes.StoreProductCategory) => {
 
 export default function CategoryTiles({
   categories,
+  hrefFor = (c) => `/c/${c.handle}`,
 }: {
   categories: HttpTypes.StoreProductCategory[]
+  /** canonical /c/parent/child path; the page accepts /c/<handle> too */
+  hrefFor?: (c: HttpTypes.StoreProductCategory) => string
 }) {
   if (!categories.length) return null
   return (
@@ -63,7 +66,7 @@ export default function CategoryTiles({
           return (
             <li key={c.id}>
               <Link
-                href={`/categories/${c.handle}`}
+                href={hrefFor(c)}
                 className="group flex h-full flex-col rounded border border-border bg-background transition-colors duration-150 hover:border-border-strong"
               >
                 <div className="relative flex aspect-[4/3] items-center justify-center rounded-t bg-surface transition-colors duration-150 group-hover:bg-surface-2">

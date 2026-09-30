@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test"
 import { deviceChip, expectNoAxeViolations } from "./helpers"
 
+// Same port as playwright.config.ts
+const BASE = `http://localhost:${Number(process.env.E2E_PORT) || 8003}`
+
 test.describe("device picker", () => {
   test("search, choose, and the header shows the device", async ({ page, context }) => {
     await context.clearCookies()
@@ -45,7 +48,7 @@ test.describe("device picker", () => {
   })
 
   test("the chosen device is marked and can be cleared", async ({ page, context }) => {
-    await context.addCookies([{ name: "tn_device", value: "iphone-15-pro", url: "http://localhost:8003" }])
+    await context.addCookies([{ name: "tn_device", value: "iphone-15-pro", url: BASE }])
     await page.goto("/devices?brand=apple&series=iPhone+15")
     await expect(page.getByRole("button", { name: /iPhone 15 Pro\s*Selected/ })).toHaveAttribute("aria-current", "true")
     await page.getByRole("button", { name: "Show all devices instead" }).click()
@@ -56,7 +59,7 @@ test.describe("device picker", () => {
     await context.clearCookies()
     await page.goto("/devices?q=ps5&returnTo=//evil.example")
     await page.getByRole("button", { name: /PlayStation 5/ }).first().click()
-    await expect(page).toHaveURL("http://localhost:8003/")
+    await expect(page).toHaveURL(`${BASE}/`)
   })
 
   test("a submitted search shows one results list, replaced (not duplicated) when typing", async ({ page, context }) => {
@@ -80,7 +83,7 @@ test.describe("device picker", () => {
     await deviceChip(page).click()
     await page.getByLabel("Search for your phone or console").fill("ps5")
     await page.getByRole("button", { name: /PlayStation 5/ }).first().click()
-    await expect(page).toHaveURL("http://localhost:8003/cart?ref=e2e&x=1")
+    await expect(page).toHaveURL(`${BASE}/cart?ref=e2e&x=1`)
   })
 
   test("returnTo is the exact page, never a trailing-slash /devices/", async ({ page, context }) => {
@@ -90,12 +93,12 @@ test.describe("device picker", () => {
     await deviceChip(page).click()
     await page.getByLabel("Search for your phone or console").fill("ps5")
     await page.getByRole("button", { name: /PlayStation 5/ }).first().click()
-    await expect(page).toHaveURL("http://localhost:8003/devices/help")
+    await expect(page).toHaveURL(`${BASE}/devices/help`)
 
     // the picker itself (with or without a trailing slash) is never a destination
     await page.goto("/devices?q=ps5&returnTo=%2Fdevices%2F")
     await page.getByRole("button", { name: /PlayStation 5/ }).first().click()
-    await expect(page).toHaveURL("http://localhost:8003/")
+    await expect(page).toHaveURL(`${BASE}/`)
   })
 
   test("help page has no axe violations", async ({ page }) => {

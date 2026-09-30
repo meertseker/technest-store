@@ -35,3 +35,17 @@ describe("next.config images", () => {
     expect(hosts(loadConfig())).not.toContain("medusa-public-images.s3.eu-west-1.amazonaws.com")
   })
 })
+
+describe("next.config redirects (old starter routes, 308)", () => {
+  beforeEach(() => vi.stubEnv("NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY", "pk_test"))
+  afterEach(() => vi.unstubAllEnvs())
+
+  it("sends /products, /categories and /store to the new routes permanently", async () => {
+    const redirects = await loadConfig().redirects()
+    expect(redirects).toEqual([
+      { source: "/products/:handle", destination: "/p/:handle", permanent: true },
+      { source: "/categories/:path+", destination: "/c/:path+", permanent: true },
+      { source: "/store", destination: "/search", permanent: true },
+    ])
+  })
+})

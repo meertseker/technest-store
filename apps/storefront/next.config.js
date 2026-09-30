@@ -51,6 +51,15 @@ const nextConfig = {
       ...(IS_PROD ? [] : [{ protocol: "https", hostname: DEMO_IMAGE_HOST }]),
     ],
   },
+  // Old dtc-starter URLs (links, bookmarks, search engines) -> the UK-only
+  // routes (docs/specs/design.md 10). permanent: true sends 308.
+  async redirects() {
+    return [
+      { source: "/products/:handle", destination: "/p/:handle", permanent: true },
+      { source: "/categories/:path+", destination: "/c/:path+", permanent: true },
+      { source: "/store", destination: "/search", permanent: true },
+    ]
+  },
   async headers() {
     // The /checkout CSP is per-request (nonce) and set in src/middleware.ts (E2).
     return [{ source: "/:path*", headers: securityHeaders }]

@@ -11,8 +11,13 @@ test.describe("site shell", () => {
     await expect(
       header.getByRole("link", { name: /choose your device/i }).first()
     ).toBeVisible()
+    // a search button on mobile, the search field itself from 1024px
     await expect(
-      header.getByRole("button", { name: /search/i }).filter({ visible: true }).first()
+      header
+        .getByRole("button", { name: /search/i })
+        .or(header.getByRole("combobox", { name: /search/i }))
+        .filter({ visible: true })
+        .first()
     ).toBeVisible()
     await expect(
       header.getByRole("link", { name: /basket/i }).filter({ visible: true }).first()
@@ -62,7 +67,8 @@ test.describe("site shell", () => {
 
   test("legacy product URL whose slug contains a file-like word redirects", async ({ page }) => {
     await page.goto("/gb/products/silicone-case-magsafe")
-    expect(new URL(page.url()).pathname).toBe("/products/silicone-case-magsafe")
+    // /gb/products/x -> /products/x (middleware) -> /p/x (next.config redirect, 308)
+    expect(new URL(page.url()).pathname).toBe("/p/silicone-case-magsafe")
   })
 
   test("header has no axe violations", async ({ page }) => {

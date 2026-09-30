@@ -6,16 +6,19 @@ export type SitemapEntity = { handle: string; updated_at?: string | Date | null 
 
 export type SitemapData = {
   products: SitemapEntity[]
+  /** handle = the category path below /c ("phone-accessories/cases") */
   categories: SitemapEntity[]
   collections: SitemapEntity[]
+  /** handle = "<brand>/<device slug>" below /devices */
+  devices?: SitemapEntity[]
 }
 
 /**
  * Public, indexable pages that exist today (E3 [CONTRACT] 2026-09-30).
- * Add /repairs, /trade, /devices/... and the /p, /c canonical paths here
- * when those routes ship. /welcome (till poster) is noindex on purpose.
+ * Add /repairs and /trade here when those routes ship. /search is noindex
+ * (result pages) and /welcome (till poster) is noindex on purpose.
  */
-export const STATIC_PATHS = ["/", "/store", "/about", "/contact"] as const
+export const STATIC_PATHS = ["/", "/devices", "/about", "/contact"] as const
 
 /** Paths search engines must not crawl: basket, checkout, accounts, orders, APIs */
 export const PRIVATE_PATHS = [
@@ -50,8 +53,9 @@ export function buildSitemap(baseUrl: string, data: SitemapData): MetadataRoute.
     ...STATIC_PATHS.filter((p) => p !== "/").map((p) => ({ url: url(p), priority: 0.5 })),
     // Legal drafts are noindex, so they stay out until the lead signs them off
     ...(LEGAL_DRAFT ? [] : LEGAL_PAGES.map((p) => ({ url: url(`/legal/${p.slug}`), priority: 0.2 }))),
-    ...entities("/products", data.products, 0.8),
-    ...entities("/categories", data.categories, 0.6),
+    ...entities("/p", data.products, 0.8),
+    ...entities("/c", data.categories, 0.6),
     ...entities("/collections", data.collections, 0.6),
+    ...entities("/devices", data.devices ?? [], 0.6),
   ]
 }

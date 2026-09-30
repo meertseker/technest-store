@@ -14,6 +14,7 @@ import {
   pickOnePound,
   pickUnderFive,
 } from "@/lib/home/select"
+import { categoryPath } from "@/lib/catalogue/categories"
 import CategoryTiles from "@modules/home/components/category-tiles"
 import Deals from "@modules/home/components/deals"
 import GoogleReviews from "@modules/home/components/google-reviews"
@@ -78,12 +79,15 @@ export default async function Home(props: { searchParams?: SP }) {
 
       {products ? (
         <>
-          <CategoryTiles categories={tiles} />
+          <CategoryTiles
+            categories={tiles}
+            hrefFor={(c) => categoryPath(categories ?? [], c)}
+          />
           <Deals
             tab={tab}
             onePound={pickOnePound(all)}
             underFive={pickUnderFive(all)}
-            onePoundHref={`/categories/${ONE_POUND_CATEGORY}`}
+            onePoundHref={`/c/${ONE_POUND_CATEGORY}`}
           />
           {curated.length ? (
             <ProductSection
@@ -97,7 +101,7 @@ export default async function Home(props: { searchParams?: SP }) {
             <ProductSection
               id="new-in-heading"
               title="New in"
-              seeAllHref="/store"
+              seeAllHref="/search"
               seeAllLabel="See all products"
               products={pickNewIn(all)}
             />
