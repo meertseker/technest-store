@@ -23,8 +23,9 @@ export const styles = {
     color: "#FFFFFF",
     fontSize: "16px",
     fontWeight: 600,
-    padding: "12px 20px",
-    borderRadius: "6px",
+    padding: "14px 24px",
+    lineHeight: "20px",
+    borderRadius: "8px",
     textDecoration: "none",
     display: "inline-block",
   },
@@ -36,7 +37,7 @@ export function Layout({ preview, children }: { preview: string; children: React
     <Html lang="en">
       <Head />
       <Preview>{preview}</Preview>
-      <Body style={{ backgroundColor: "#F9FAFB", fontFamily: font, margin: 0, padding: "24px 0" }}>
+      <Body style={{ backgroundColor: BRAND.surface, fontFamily: font, margin: 0, padding: "24px 0" }}>
         <Container
           style={{ backgroundColor: "#FFFFFF", maxWidth: "600px", borderTop: `4px solid ${BRAND.accent}` }}
         >

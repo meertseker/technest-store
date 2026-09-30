@@ -1,4 +1,5 @@
-// Shop facts used in every email footer. Source: google-business-profile/profile.json
+// Shop facts used in every email footer. Colours are the tokens in docs/specs/design.md.
+// Source: google-business-profile/profile.json
 // and the team brief. LEGAL_NAME is pending the lead's answer (Ltd name / company no.).
 export const BRAND = {
   name: "Tech Nest",
@@ -9,7 +10,10 @@ export const BRAND = {
   accent: "#D6001C",
   text: "#111827",
   muted: "#4B5563",
-  border: "#E5E7EB",
+  border: "#E3E6EA",
+  surface: "#F6F7F9",
+  success: "#166534",
+  destructive: "#B91C1C",
 } as const
 
 export const storefrontUrl = () =>

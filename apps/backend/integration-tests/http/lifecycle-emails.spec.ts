@@ -1,0 +1,144 @@
+import { medusaIntegrationTestRunner } from "@medusajs/test-utils"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
+import {
+  cancelOrderWorkflow,
+  capturePaymentWorkflow,
+  createAndCompleteReturnOrderWorkflow,
+  createOrderFulfillmentWorkflow,
+  createOrderShipmentWorkflow,
+  markOrderFulfillmentAsDeliveredWorkflow,
+  refundPaymentWorkflow,
+} from "@medusajs/medusa/core-flows"
+import orderCancelledEmail from "../../src/subscribers/order-cancelled-email"
+import orderDispatchedEmail from "../../src/subscribers/order-dispatched-email"
+import refundIssuedEmail from "../../src/subscribers/refund-issued-email"
+import returnReceivedEmail from "../../src/subscribers/return-received-email"
+import { seedTechNest } from "../../src/scripts/seed"
+import { mailTo, settle, textOf } from "../utils/mailpit"
+import { orderPayment, placeStoreOrder } from "../utils/store-order"
+import { warmDb } from "../utils/warm-db"
+
+jest.setTimeout(300 * 1000)
+
+const RUN = Date.now()
+process.env.SHOP_NOTIFY_EMAIL = `e2-shop-life-${RUN}@example.com`
+
+medusaIntegrationTestRunner({
+  inApp: true,
+  env: {},
+  testSuite: ({ api, getContainer }) => {
+    describe("order lifecycle emails", () => {
+      let locationId: string
+
+      beforeAll(async () => {
+        const { stockLocation } = await seedTechNest(getContainer())
+        locationId = stockLocation.id
+      })
+
+      beforeEach(() => warmDb(getContainer()))
+
+      const run = (fn: any, name: string, data: object) =>
+        fn({ event: { name, data }, container: getContainer() } as any)
+
+      async function fulfil(orderId: string) {
+        const query = getContainer().resolve(ContainerRegistrationKeys.QUERY)
+        const { data } = await query.graph({
+          entity: "order",
+          fields: ["items.id", "items.quantity"],
+          filters: { id: orderId },
+        })
+        const items = data[0].items!.map((i) => ({ id: i!.id, quantity: Number(i!.quantity) }))
+        const { result: fulfillment } = await createOrderFulfillmentWorkflow(getContainer()).run({
+          input: { order_id: orderId, items, location_id: locationId },
+        })
+        return { fulfillment, items }
+      }
+
+      it("emails tracking details when a shipment is created", async () => {
+        const email = `e2-dispatch-${RUN}@example.com`
+        const order = await placeStoreOrder(api, getContainer(), { email, shipping: "standard" })
+        const { fulfillment, items } = await fulfil(order.id)
+        await createOrderShipmentWorkflow(getContainer()).run({
+          input: {
+            order_id: order.id,
+            fulfillment_id: fulfillment.id,
+            items,
+            labels: [
+              { tracking_number: "RM123GB", tracking_url: "https://track.example/RM123GB", label_url: "https://x.example" },
+            ],
+          },
+        })
+        await run(orderDispatchedEmail, "shipment.created", { id: fulfillment.id })
+
+        const [mail] = await mailTo(email, 1)
+        expect(mail.Subject).toBe(`Your order #${order.display_id} is on its way`)
+        const text = await textOf(mail.ID)
+        expect(text).toContain("RM123GB")
+        expect(text).toContain("1 High St")
+      })
+
+      it("sends nothing for a shipment marked no_notification", async () => {
+        const email = `e2-dispatch-quiet-${RUN}@example.com`
+        await run(orderDispatchedEmail, "shipment.created", { id: "ful_x", no_notification: true })
+        expect(await settle(email)).toHaveLength(0)
+      })
+
+      it("tells the customer an uncollected order was cancelled and the hold released", async () => {
+        const email = `e2-cancel-${RUN}@example.com`
+        const order = await placeStoreOrder(api, getContainer(), { email, shipping: "click-collect" })
+        await getContainer()
+          .resolve(Modules.ORDER)
+          .updateOrders([{ id: order.id, metadata: { technest_cancel_reason: "uncollected" } }])
+        await cancelOrderWorkflow(getContainer()).run({ input: { order_id: order.id } })
+        await run(orderCancelledEmail, "order.canceled", { id: order.id })
+
+        const [mail] = await mailTo(email, 1)
+        expect(mail.Subject).toBe(`Your order #${order.display_id} has been cancelled`)
+        const text = await textOf(mail.ID)
+        expect(text).toContain("collected within 7 days")
+        expect(text).toContain("been charged")
+      })
+
+      it("sends one refund email per refund, with the amount", async () => {
+        const email = `e2-refund-${RUN}@example.com`
+        const order = await placeStoreOrder(api, getContainer(), { email, shipping: "standard" })
+        const payment = await orderPayment(getContainer(), order.id)
+        await capturePaymentWorkflow(getContainer()).run({ input: { payment_id: payment.id } })
+
+        await refundPaymentWorkflow(getContainer()).run({ input: { payment_id: payment.id, amount: 1 } })
+        await run(refundIssuedEmail, "payment.refunded", { id: payment.id })
+        const [first] = await mailTo(email, 1)
+        expect(first.Subject).toBe(`Refund of £1.00 for order #${order.display_id}`)
+        expect(await textOf(first.ID)).toMatch(/5–10\s+working days/)
+
+        // A second partial refund gets its own email; the first isn't resent.
+        await refundPaymentWorkflow(getContainer()).run({ input: { payment_id: payment.id, amount: 2 } })
+        await run(refundIssuedEmail, "payment.refunded", { id: payment.id })
+        await run(refundIssuedEmail, "payment.refunded", { id: payment.id })
+        await settle(email, 1500)
+        const subjects = (await mailTo(email, 2)).map((m) => m.Subject).sort()
+        expect(subjects).toEqual([
+          `Refund of £1.00 for order #${order.display_id}`,
+          `Refund of £2.00 for order #${order.display_id}`,
+        ])
+      })
+
+      it("confirms a received return", async () => {
+        const email = `e2-return-${RUN}@example.com`
+        const order = await placeStoreOrder(api, getContainer(), { email, shipping: "standard" })
+        const { fulfillment, items } = await fulfil(order.id)
+        await markOrderFulfillmentAsDeliveredWorkflow(getContainer()).run({
+          input: { orderId: order.id, fulfillmentId: fulfillment.id },
+        })
+        const { result: ret } = await createAndCompleteReturnOrderWorkflow(getContainer()).run({
+          input: { order_id: order.id, items, location_id: locationId, receive_now: true },
+        })
+        await run(returnReceivedEmail, "order.return_received", { order_id: order.id, return_id: ret.id })
+
+        const [mail] = await mailTo(email, 1)
+        expect(mail.Subject).toBe(`We've received your return for order #${order.display_id}`)
+        expect(await textOf(mail.ID)).toContain("14 days")
+      })
+    })
+  },
+})
