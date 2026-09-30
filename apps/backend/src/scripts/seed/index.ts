@@ -20,6 +20,7 @@ import {
   createTaxRegionsWorkflow,
   linkSalesChannelsToApiKeyWorkflow,
   linkSalesChannelsToStockLocationWorkflow,
+  updateProductsWorkflow,
   updateStoresWorkflow,
 } from "@medusajs/medusa/core-flows"
 import {
@@ -31,6 +32,7 @@ import {
   SHIPPING,
   SHOP,
 } from "./data"
+import { upsertProductAttributesWorkflow } from "../../workflows/upsert-product-attributes"
 
 const PRODUCT_BATCH_SIZE = 10
 
@@ -338,12 +340,13 @@ export async function seedTechNest(
       title: product.title,
       handle: product.handle,
       description: product.description,
-      status: ProductStatus.PUBLISHED,
+      // Drafts first: the publish guard needs the attributes (safety marking)
+      // in place before a charger can go live.
+      status: ProductStatus.DRAFT,
       weight: product.weight,
       category_ids: [categoryId],
       shipping_profile_id: shippingProfileId,
       sales_channels: [{ id: salesChannelId }],
-      metadata: { ...product.attributes },
       options: Object.keys(product.options).map((title) => ({
         id: optionIdByTitle.get(title)!,
       })),
@@ -352,7 +355,6 @@ export async function seedTechNest(
         sku: skuFor(product.handle, combination),
         options: combination,
         manage_inventory: true,
-        metadata: { reorder_level: product.reorder_level },
         prices: [
           {
             currency_code: REGION.currency_code,
@@ -363,11 +365,37 @@ export async function seedTechNest(
     }
   })
 
+  const productIds: string[] = []
   for (let start = 0; start < productInputs.length; start += PRODUCT_BATCH_SIZE) {
-    await createProductsWorkflow(container).run({
+    const { result } = await createProductsWorkflow(container).run({
       input: { products: productInputs.slice(start, start + PRODUCT_BATCH_SIZE) },
     })
+    productIds.push(...result.map((p) => p.id))
   }
+
+  logger.info("Seeding product attributes and publishing...")
+  const seedByHandle = new Map(PRODUCTS.map((p) => [p.handle, p]))
+  const { data: created } = await query.graph({
+    entity: "product",
+    fields: ["id", "handle"],
+    filters: { id: productIds },
+  })
+  for (const product of created) {
+    const seed = seedByHandle.get(product.handle)!
+    await upsertProductAttributesWorkflow(container).run({
+      input: {
+        product_id: product.id,
+        ...seed.attributes,
+        reorder_level: seed.reorder_level,
+      },
+    })
+  }
+  await updateProductsWorkflow(container).run({
+    input: {
+      selector: { id: productIds },
+      update: { status: ProductStatus.PUBLISHED },
+    },
+  })
 
   // ---- Inventory -----------------------------------------------------------
   logger.info("Seeding inventory levels...")

@@ -83,7 +83,7 @@ medusaIntegrationTestRunner({
         const regionId = regions.regions[0].id
 
         const { data } = await api.get(
-          `/store/products?limit=100&region_id=${regionId}&fields=title,handle,metadata,*categories,*variants.calculated_price`,
+          `/store/products?limit=100&region_id=${regionId}&fields=title,handle,+product_attributes.*,*categories,*variants.calculated_price`,
           headers
         )
         expect(data.products.length).toBeGreaterThanOrEqual(30)
@@ -100,7 +100,7 @@ medusaIntegrationTestRunner({
         )
         expect(deals.length).toBeGreaterThanOrEqual(4)
         for (const deal of deals) {
-          expect(deal.metadata.is_addon_item).toBe(true)
+          expect(deal.product_attributes.is_addon_item).toBe(true)
           expect(deal.variants[0].calculated_price.calculated_amount).toBe(1)
         }
 
@@ -112,7 +112,7 @@ medusaIntegrationTestRunner({
         )
         expect(powerProducts.length).toBeGreaterThanOrEqual(5)
         for (const product of powerProducts) {
-          expect(["UKCA", "CE"]).toContain(product.metadata.safety_marking)
+          expect(["UKCA", "CE"]).toContain(product.product_attributes.safety_marking)
         }
       })
 

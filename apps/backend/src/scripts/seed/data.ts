@@ -2,8 +2,10 @@
  * Tech Nest seed data: store configuration, categories and sample products.
  *
  * Medusa prices are major units (GBP 3.49 is 3.49), VAT inclusive.
- * Product attributes live in metadata until the week-2 ADR settles their home.
+ * Product attributes go to the productAttributes module (ADR 0001).
  */
+
+import { ProductAttributesValues } from "../../modules/product-attributes/utils"
 
 export const SHOP = {
   storeName: "Tech Nest",
@@ -117,16 +119,8 @@ export const OPTIONS = {
 
 type OptionTitle = keyof typeof OPTIONS
 
-export type ProductAttributes = {
-  is_addon_item?: boolean
-  safety_marking?: "UKCA" | "CE" | "none"
-  connector_a?: string
-  connector_b?: string
-  wattage?: number
-  cable_length_m?: number
-  platform?: string[]
-  warranty_months?: number
-}
+/** Seed attributes: everything except reorder_level (see ProductSeed). */
+export type ProductAttributes = Partial<Omit<ProductAttributesValues, "reorder_level">>
 
 export type ProductSeed = {
   title: string
@@ -142,7 +136,7 @@ export type ProductSeed = {
   attributes?: ProductAttributes
   /** Stocked quantity per variant at the shop. */
   stock: number
-  /** Low-stock threshold per variant. */
+  /** Low-stock threshold, applied to each variant (product attribute). */
   reorder_level: number
   weight: number
 }
