@@ -16,8 +16,11 @@ export async function GET(req: NextRequest) {
   const redirectStatus = searchParams.get("redirect_status")
 
   // Every redirect below stays on this origin (UK-only site, no country prefix).
-  const rejected = () =>
-    NextResponse.redirect(`${origin}/cart?error=payment_failed`)
+  // Errors go back to the payment step, which shows them in its error summary
+  // (codes: modules/checkout/payment/helpers.ts returnErrorMessage).
+  const backToPayment = (code: "payment_failed" | "declined" | "order_failed") =>
+    NextResponse.redirect(`${origin}/checkout?step=payment&payment_error=${code}`)
+  const rejected = () => backToPayment("payment_failed")
 
   if (!cartId || !paymentIntent || !paymentIntentClientSecret) {
     return rejected()
@@ -48,25 +51,10 @@ export async function GET(req: NextRequest) {
 
   // The customer backed out or the bank declined. Stripe puts the PaymentIntent
   // back into `requires_payment_method`, so the Payment Element can mount
-  // against it again — return to the payment step and let them retry.
+  // against it again: return to the payment step and let them retry. The
+  // client secret is not forwarded (it stays out of URLs we create).
   if (redirectStatus === "failed") {
-    const params = new URLSearchParams({ step: "payment" })
-
-    // Forward Stripe's own return parameters so the checkout step can tell how
-    // the off-site authorization ended.
-    for (const key of [
-      "payment_intent",
-      "payment_intent_client_secret",
-      "redirect_status",
-    ]) {
-      const value = searchParams.get(key)
-
-      if (value) {
-        params.set(key, value)
-      }
-    }
-
-    return NextResponse.redirect(`${origin}/checkout?${params}`)
+    return backToPayment("declined")
   }
 
   try {
@@ -74,9 +62,9 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     unstable_rethrow(error)
 
-    return NextResponse.redirect(`${origin}/cart?error=order_failed`)
+    return backToPayment("order_failed")
   }
 
   // Only reached when the cart did not convert into an order.
-  return NextResponse.redirect(`${origin}/cart?error=order_failed`)
+  return backToPayment("order_failed")
 }

@@ -30,11 +30,11 @@ const SHOP_ADDRESS = `${siteConfig.name}, ${siteConfig.address.line1}, ${siteCon
  * /checkout (spec 7.5): one page, three sections that collapse to a summary with
  * "Edit". Order summary: collapsed bar on mobile, sticky right column on desktop.
  */
-export default async function Checkout(props: { searchParams: Promise<{ step?: string }> }) {
+export default async function Checkout(props: { searchParams: Promise<{ step?: string; payment_error?: string }> }) {
   const cart = await retrieveCart(undefined, CHECKOUT_CART_FIELDS)
   if (!cart?.items?.length) redirect("/basket")
 
-  const { step: requested } = await props.searchParams
+  const { step: requested, payment_error } = await props.searchParams
   const step = resolveStep(requested, cart)
   if (requested !== step) redirect(`/checkout?step=${step}`)
 
@@ -113,7 +113,7 @@ export default async function Checkout(props: { searchParams: Promise<{ step?: s
           </StepSection>
 
           {rank >= 2 ? (
-            <PaymentSection cart={cart} />
+            <PaymentSection cart={cart} isCollect={isCollect} paymentError={payment_error} />
           ) : (
             <StepSection id="payment" number={3} title="Payment" state="locked" />
           )}
