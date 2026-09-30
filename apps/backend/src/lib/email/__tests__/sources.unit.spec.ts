@@ -34,3 +34,16 @@ describe("resolveEmail", () => {
     expect(await resolveEmail(missing.container, "welcome", "cus_3", "customer")).toBeNull()
   })
 })
+
+describe("resolveEmail recipient guard", () => {
+  it("rejects a missing or unknown recipient instead of defaulting to the customer", async () => {
+    const { container } = containerWithCustomer(undefined)
+    await expect(resolveEmail(container, "welcome", "cus_1", undefined as any)).rejects.toThrow(/recipient/)
+    await expect(resolveEmail(container, "shop-new-order", "order_1", "admin" as any)).rejects.toThrow(/recipient/)
+  })
+
+  it("never sends a welcome to the shop", async () => {
+    const { container } = containerWithCustomer({ email: "sam@example.com", first_name: "Sam", has_account: true })
+    expect(await resolveEmail(container, "welcome", "cus_1", "shop")).toBeNull()
+  })
+})

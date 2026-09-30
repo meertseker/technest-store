@@ -22,8 +22,19 @@ const ACTORS: Record<string, { idKey: string; audience: "customer" | "staff" }> 
 
 const RETRY_DELAYS_MS = [2_000, 10_000]
 
-const adminUrl = () =>
-  `${(process.env.MEDUSA_BACKEND_URL || "http://localhost:9000").replace(/\/$/, "")}/app`
+/**
+ * The admin dashboard's base URL (ADMIN_URL, e.g. https://admin.technest.co.uk/app),
+ * else the backend's /app. Production must configure one: the link carries a
+ * live token, so never guess a host there.
+ */
+export function adminUrl(env: NodeJS.ProcessEnv = process.env): string {
+  if (env.ADMIN_URL) return env.ADMIN_URL.replace(/\/$/, "")
+  if (env.MEDUSA_BACKEND_URL) return `${env.MEDUSA_BACKEND_URL.replace(/\/$/, "")}/app`
+  if (env.NODE_ENV === "production") {
+    throw new Error("ADMIN_URL (or MEDUSA_BACKEND_URL) must be set for staff password resets")
+  }
+  return "http://localhost:9000/app"
+}
 
 /**
  * Medusa accepts any actor_type in /auth/{actor}/emailpass/reset-password, so

@@ -18,7 +18,8 @@ const orderEmail: Source = async (container, orderId, recipient) => {
   return to ? { to, data: data as unknown as Record<string, unknown> } : null
 }
 
-const welcome: Source = async (container, customerId) => {
+const welcome: Source = async (container, customerId, recipient) => {
+  if (recipient !== "customer") return null
   const query = container.resolve(ContainerRegistrationKeys.QUERY)
   const { data } = await query.graph({
     entity: "customer",
@@ -49,6 +50,11 @@ export async function resolveEmail(
   resourceId: string,
   recipient: EmailRecipient
 ): Promise<ResolvedEmail | null> {
+  // Reject anything else (e.g. inputs stored by an older version of the
+  // workflow) rather than guess, so a shop alert never reaches a customer.
+  if (recipient !== "customer" && recipient !== "shop") {
+    throw new MedusaError(MedusaError.Types.INVALID_DATA, `Unknown email recipient "${recipient}"`)
+  }
   const source = sources[template]
   if (!source) {
     throw new MedusaError(MedusaError.Types.INVALID_DATA, `No email source for template "${template}"`)
