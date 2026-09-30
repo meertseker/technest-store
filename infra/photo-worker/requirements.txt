@@ -1,0 +1,5 @@
+# Pinned. Upgrade deliberately and re-run the benchmark in README.md.
+rembg[cpu]==2.0.85
+fastapi==0.128.0
+uvicorn==0.40.0
+python-multipart==0.0.21
