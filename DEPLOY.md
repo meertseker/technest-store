@@ -39,7 +39,7 @@ Tek bir Hetzner CX43 sunucusu (8 vCPU, 16 GB RAM), Docker Compose ile şu servis
 | `redis` | Kuyruk, olaylar, kilitler (Redis 7) | Hayır |
 | `photo-worker` | Arka plan silme (rembg) | Hayır, asla |
 | `backup` | Her gece 03:15'te veritabanı yedeği → R2 | Hayır |
-| `mailserver` | E-posta gönderimi (docker-mailserver, E2) | 25/465/587 |
+| `mailserver` | E-posta gönderimi (docker-mailserver, E2). Şimdilik yer tutucu: `profiles: [mail]`, port yayınlamıyor | Henüz hayır (E2 açınca 25/465/587) |
 
 Alan adları:
 
@@ -311,7 +311,8 @@ Depo düzeyinde (Settings → Secrets and variables → Actions → **Variables*
    scp infra/staging/docker-compose.staging.yml deploy@SUNUCU_IP:/opt/technest/
    ```
 3. GitHub → **Actions → Deploy → Run workflow** → environment: `staging`.
-   İş sırası: 3 imaj derlenir (lisans kontrolü dahil) → GHCR'ye gönderilir → sunucuda
+   İş sırası: 4 imaj derlenir (`technest-backend`, `technest-storefront`,
+   `technest-photo-worker`, `technest-backup`; lisans kontrolü dahil) → GHCR'ye gönderilir → sunucuda
    `docker compose pull` → `migrate` (veritabanı tabloları + ilk veriler) → `up -d` →
    sağlık kontrolü. İlk derleme 15–25 dakika sürebilir.
 4. Kontrol:
@@ -392,17 +393,30 @@ Amaç: sunucu tamamen kaybolursa mağazanın 1 saatten kısa sürede geri geldi�
 **Başlangıç saatini not edin.**
 
 1. Yeni bir CX23 açın (bölüm 2.1–2.2, yaklaşık 10 dk).
-2. `/opt/technest`'e `docker-compose.yml`, `Caddyfile`, `infra/staging/docker-compose.staging.yml`
-   ve parola yöneticisindeki `.env`'i koyun. `SHOP_DOMAIN`'i staging/test alan adı yapın.
-   GHCR girişi yapın.
-3. Yalnızca veritabanını ve yedek servisini başlatın:
+2. `/opt/technest`'e `docker-compose.yml`, `Caddyfile`, `docker-compose.staging.yml`
+   (depoda `infra/staging/` altında) ve parola yöneticisindeki `.env`'i koyun. GHCR girişi yapın.
+   `.env`'de **başlatmadan önce** şunları değiştirin (bu sunucu canlı verinin kopyasıyla çalışacak):
+   - `SHOP_DOMAIN=` test alan adı (canlı alan adı **değil**)
+   - `COMPOSE_FILE=docker-compose.yml:docker-compose.staging.yml` ve `PHOTO_MODEL=isnet-general-use`
+     (CX23'ün belleği için)
+   - `STRIPE_API_KEY=` ve `STRIPE_WEBHOOK_SECRET=` → staging'in **test** değerleri (`sk_test_…`, `whsec_…`).
+     Canlı anahtarla bu kopya gerçek ödemeleri alabilir veya iptal edebilir. Boş bırakmayın:
+     backend üretim modunda bu ikisi olmadan açılmaz.
+   - `SMTP_HOST=localhost`: bu sunucuda e-posta sunucusu yok, gönderim başarısız olur, müşterilere
+     e-posta gitmez. (Boş bırakmak işe yaramaz: compose boş değeri `mailserver` yapar.)
+3. Yalnızca veritabanını başlatıp yedeği geri yükleyin:
    ```bash
    docker compose pull
    docker compose up -d postgres redis
    docker compose run --rm backup restore.sh latest --yes
    ```
-4. Uygulamayı başlatın: `docker compose up -d`. (Migration gerekmez; yedek zaten günceldir.
-   Emin olmak için: `docker compose --profile ops run --rm migrate`.)
+4. Uygulamayı **worker ve backup olmadan** başlatın:
+   `docker compose up -d caddy server storefront`.
+   `worker` başlatılmaz (zamanlanmış işler, ör. 7 gün sonra teslim alınmayan siparişin iptali, canlı
+   verinin kopyasında çalışmasın); `backup` başlatılmaz (bu sunucunun yedekleri canlı yedek klasörüne
+   `technest-*.dump` adıyla yazılır ve "latest" onlardan biri olur). Admin'den fotoğraf yüklemeyin:
+   `S3_*` canlı medya bucket'ını gösterir.
+   Migration gerekmez; yedek zaten günceldir. Emin olmak için: `docker compose --profile ops run --rm migrate`.
 5. Kontrol: `curl https://api.TEST_ALANI/health`, admin'e giriş, son siparişin görünmesi,
    ürün sayısının canlıyla aynı olması.
 6. **Bitiş saatini not edin** ve süreyi TEAM_CHAT'e yazın. Sunucuyu silin.
@@ -421,28 +435,38 @@ Ayrıntılı liste: `docs/ops/uptime-and-sentry.md`.
    - `technest-backend` (platform: Node.js)
    - `technest-storefront` (platform: Next.js)
 2. Her projenin DSN'ini kopyalayın:
-   - backend DSN → sunucu `.env`: `SENTRY_DSN_BACKEND`
-   - storefront DSN → sunucu `.env`: `SENTRY_DSN_STOREFRONT` ve GitHub secret `NEXT_PUBLIC_SENTRY_DSN`
-3. Proje ayarları → **Security & Privacy**: "Data Scrubber" açık, "Scrub IP Addresses" açık.
-   Kodumuz da kişisel verileri (e-posta, telefon, adres, çerez, kart bilgisi) göndermeden
-   önce siler; bu ikinci katmandır.
+   - backend DSN → sunucu `.env`: `SENTRY_DSN_BACKEND` (compose bunu `server` ve `worker`'a `SENTRY_DSN` olarak verir)
+   - storefront DSN → sunucu `.env`: `SENTRY_DSN_STOREFRONT` (sunucu tarafı) ve GitHub secret
+     `NEXT_PUBLIC_SENTRY_DSN` (tarayıcı tarafı). `NEXT_PUBLIC_…` imaja derleme sırasında gömülür:
+     değiştirdikten sonra yayını bir kez daha çalıştırın. `.env` değişikliği için
+     `docker compose up -d` yeterlidir.
+3. Proje ayarları → **Security & Privacy**: "Data Scrubber" açık, "Prevent Storing of IP Addresses" açık.
+   Kodumuz da kişisel verileri (e-posta, ad, adres, telefon, posta kodu, çerez, kart bilgisi,
+   Stripe anahtarları, yetki başlıkları, adresteki sorgu parametreleri) göndermeden önce siler;
+   bu ikinci katmandır. Tarayıcıda Sentry `/checkout` sayfasında **hiç çalışmaz** (orada yalnızca
+   Stripe'ın betiğine izin var).
 4. **Alerts**: "A new issue is created" → e-posta sahibine/lead'e.
 5. DSN boşsa Sentry tamamen kapalıdır; uygulama normal çalışır.
 
 ### 9.2 UptimeRobot (ücretsiz, 5 dakikada bir)
 
-https://uptimerobot.com → **Add New Monitor** (4 adet):
+https://uptimerobot.com → **Add New Monitor** (3 adet):
 
 | Ad | Tür | Adres | Beklenen |
 |---|---|---|---|
 | Mağaza ana sayfa | HTTP(s) | `https://technest.co.uk/` | 200 |
-| Ödeme sayfası | HTTP(s) | `https://technest.co.uk/checkout` | 200 |
+| Ödeme sayfası | HTTP(s) | `https://technest.co.uk/checkout` | **404** (sepet olmadan sayfa ödeme düzeni içinde 404 döner; 5xx = sorun) |
 | API sağlık | Keyword | `https://api.technest.co.uk/health` | "OK" içeriyor |
-| Stripe webhook | HTTP(s), POST | `https://api.technest.co.uk/hooks/payment/stripe_stripe` | 400 (imzasız istek reddedilir; 5xx = sorun) |
+
+Ödeme sayfası izleyicisinde "Up" sayılacak durum kodlarını ayarlayın
+(Advanced → "Up HTTP status codes"): `200-299, 404`.
+
+Stripe webhook adresi için izleyici **eklemeyin**: Medusa her POST'a 200 döner ve imzayı sonra
+worker'da kontrol eder; deneme istekleri yalnızca başarısız webhook olayları üretir. Webhook
+teslimleri art arda başarısız olursa Stripe hesap sahibine kendisi e-posta gönderir
+(Stripe Dashboard → Developers → Webhooks).
 
 Uyarılar: e-posta + (isteğe bağlı) SMS yerine UptimeRobot mobil uygulama bildirimi.
-Stripe webhook izleyicisinde "Up" sayılacak durum kodlarını **400** olarak ayarlayın
-(Advanced → "Up HTTP status codes"): `200-299, 400`.
 
 ### 9.3 Haftalık kontrol (5 dakika)
 
@@ -524,7 +548,7 @@ Lead ve E4 birlikte yapar.
 - [ ] Stripe **canlı** anahtarlar `.env`'de ve GitHub secret'ında; canlı webhook uç noktası
       Stripe'ta tanımlı: `https://api.technest.co.uk/hooks/payment/stripe_stripe`
 - [ ] E-posta: mail-tester.com puanı 9/10 veya üzeri
-- [ ] UptimeRobot 4 izleyici yeşil, Sentry DSN'ler girili
+- [ ] UptimeRobot 3 izleyici yeşil, Sentry DSN'ler girili
 - [ ] Hetzner Backups açık
 - [ ] Cloudflare rate limit kuralı açık
 
