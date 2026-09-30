@@ -26,6 +26,16 @@ const collectionOrder: OrderEmailData = {
   shipping_address: null,
 }
 
+const collection = {
+  display_id: 1042,
+  first_name: "Sam",
+  order_url: order.order_url,
+  collection_code: "K7QX4M",
+  items: [{ title: "USB-C to USB-C cable", variant_title: "1 m, black", quantity: 2 }],
+  today_hours: "Today (Saturday): 9am–8pm",
+  hold_until: "Friday 9 October",
+}
+
 // Sample data for the local preview. Keep one entry per template.
 export const fixtures: Record<TemplateId, Record<string, unknown>> = {
   welcome: { first_name: "Sam" },
@@ -58,4 +68,7 @@ export const fixtures: Record<TemplateId, Record<string, unknown>> = {
     order_url: order.order_url,
     items: [{ title: "Screen protector", quantity: 1 }],
   },
+  "ready-for-collection": collection,
+  "collection-reminder": collection,
+  "payment-failed": { display_id: 1042, first_name: "Sam", order_url: order.order_url, total_pence: 1447 },
 }

@@ -1,15 +1,19 @@
 import { render } from "@react-email/render"
 import { createElement, type ComponentType } from "react"
+import * as collectionReminder from "./templates/collection-reminder"
 import * as orderCancelled from "./templates/order-cancelled"
 import * as orderConfirmation from "./templates/order-confirmation"
 import * as orderDispatched from "./templates/order-dispatched"
 import * as passwordReset from "./templates/password-reset"
+import * as paymentFailed from "./templates/payment-failed"
+import * as readyForCollection from "./templates/ready-for-collection"
 import * as refundIssued from "./templates/refund-issued"
 import * as returnReceived from "./templates/return-received"
 import * as shopNewOrder from "./templates/shop-new-order"
 import * as welcome from "./templates/welcome"
 
 export type * from "./order-types"
+export { todaysHours } from "./brand"
 
 type Template<D> = { subject: (data: D) => string; Email: ComponentType<D> }
 
@@ -23,6 +27,9 @@ const templates = {
   "order-cancelled": orderCancelled,
   "refund-issued": refundIssued,
   "return-received": returnReceived,
+  "ready-for-collection": readyForCollection,
+  "collection-reminder": collectionReminder,
+  "payment-failed": paymentFailed,
 } satisfies Record<string, Template<any>>
 
 export type TemplateId = keyof typeof templates

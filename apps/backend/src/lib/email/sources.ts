@@ -1,5 +1,6 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
+import { collection, paymentFailed } from "./collection-sources"
 import * as lifecycle from "./lifecycle-sources"
 import { loadOrderEmailData, safeFirstName, shopNotifyEmail } from "./order-email-data"
 
@@ -46,6 +47,9 @@ const sources: Record<string, Source> = {
   "order-cancelled": (c, id) => lifecycle.orderCancelled(c, id),
   "refund-issued": (c, id) => lifecycle.refundIssued(c, id),
   "return-received": (c, id) => lifecycle.returnReceived(c, id),
+  "ready-for-collection": collection,
+  "collection-reminder": collection,
+  "payment-failed": paymentFailed,
 }
 
 /** null = nothing to send (e.g. guest customer, order without an email). */

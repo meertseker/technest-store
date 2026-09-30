@@ -59,3 +59,19 @@ export type RefundIssuedData = OrderRef & {
 }
 
 export type ReturnReceivedData = OrderRef & { items: OrderLine[] }
+
+export type CollectionData = OrderRef & {
+  /** Short code staff check at the counter; falls back to the order number. */
+  collection_code: string
+  items: OrderLine[]
+  /** e.g. "Today (Saturday): 9am–8pm", worked out when the email is sent. */
+  today_hours: string
+  /** Last day we hold the order, e.g. "Friday 9 October". */
+  hold_until?: string | null
+}
+
+export type PaymentFailedData = OrderRef & {
+  total_pence: number
+  /** The shop's copy is worded for staff. */
+  for_shop?: boolean
+}
