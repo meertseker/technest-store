@@ -110,6 +110,76 @@ describe("TechNestStripeService", () => {
     })
   })
 
+  describe("Klarna minimum from the settings module (session context)", () => {
+    it("uses the context minimum over the option and flags the session data", async () => {
+      const { service, create } = makeService({ klarnaMinBasketPence: 3000 })
+
+      const below = await service.initiatePayment({
+        amount: 45,
+        currency_code: "gbp",
+        data: { session_id: "payses_1" },
+        context: { technest_klarna_min_basket_pence: 5000 },
+      } as any)
+      const above = await service.initiatePayment({
+        amount: 20,
+        currency_code: "gbp",
+        data: { session_id: "payses_2" },
+        context: { technest_klarna_min_basket_pence: 1500 },
+      } as any)
+
+      expect(create.mock.calls[0][0].excluded_payment_method_types).toEqual(["klarna"])
+      expect(below.data).toMatchObject({ id: "pi_123", klarna_available: false, klarna_min_basket_pence: 5000 })
+      expect(create.mock.calls[1][0].excluded_payment_method_types).toBeUndefined()
+      expect(above.data).toMatchObject({ klarna_available: true, klarna_min_basket_pence: 1500 })
+    })
+
+    it("falls back to the option when the context value is missing or invalid", async () => {
+      const { service } = makeService({ klarnaMinBasketPence: 3000 })
+
+      for (const bad of [undefined, "0", -1, 12.5, null]) {
+        const res = await service.initiatePayment({
+          amount: 29.99,
+          currency_code: "gbp",
+          data: { session_id: "payses_1" },
+          context: { technest_klarna_min_basket_pence: bad },
+        } as any)
+        expect(res.data).toMatchObject({ klarna_available: false, klarna_min_basket_pence: 3000 })
+      }
+    })
+
+    it("never lets client data set the minimum", async () => {
+      const { service, create } = makeService({ klarnaMinBasketPence: 3000 })
+
+      const res = await service.initiatePayment({
+        amount: 5,
+        currency_code: "gbp",
+        data: { session_id: "payses_1", klarna_min_basket_pence: 0, klarna_available: true },
+        context: {},
+      } as any)
+
+      expect(create.mock.calls[0][0].excluded_payment_method_types).toEqual(["klarna"])
+      expect(res.data).toMatchObject({ klarna_available: false, klarna_min_basket_pence: 3000 })
+    })
+
+    it("updatePayment keeps the minimum stored on the session", async () => {
+      const { service, update } = makeService({ klarnaMinBasketPence: 3000 })
+
+      const res = await service.updatePayment({
+        amount: 45,
+        currency_code: "gbp",
+        data: { id: "pi_123", amount: 2500, klarna_min_basket_pence: 5000 },
+        context: {},
+      } as any)
+
+      expect(update).toHaveBeenCalledWith(
+        "pi_123",
+        expect.objectContaining({ amount: 4500, excluded_payment_method_types: ["klarna"] }),
+        expect.anything()
+      )
+      expect(res.data).toMatchObject({ klarna_available: false, klarna_min_basket_pence: 5000 })
+    })
+  })
+
   describe("updatePayment", () => {
     it("re-evaluates Klarna when the basket crosses the minimum upwards", async () => {
       const { service, update } = makeService()
