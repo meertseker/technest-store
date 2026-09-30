@@ -47,12 +47,10 @@ of steps). Two kinds of marks are left:
 
 ### For the lead before recording
 
-- Emails named in the scripts (ready for collection, reminder, trade, repair, low-stock, refund,
-  dispatched) come from branch `e2/emails-trade`, which is not on `main` yet. Merge it before recording
-  scripts 3, 6, 8 and the routine. [LEAD?]
-- There is no "Product details" screen for `safety_marking`, `is_addon_item` and `reorder_level` on an
-  existing product (ADR 0001 planned one). Until there is, the scripts use a CSV import (script 7). [LEAD?]
-- Quick add has no add-on switch; add-ons are set by CSV import. [LEAD?]
+- All emails named in the scripts are on `main`.
+- Safety marking, the £1 add-on flag and the reorder level of an existing product are edited in the
+  "Product details for Tech Nest" box on the product page (also after Quick add). Script 7's CSV import
+  still works for many products at once.
 - Trade tier prices are entered in Medusa's **Trade** price list, VAT included in pounds. Who enters them? [LEAD?]
 
 ## Words used in these guides

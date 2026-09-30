@@ -838,9 +838,6 @@ kutuları yeniden açmak yeterlidir; siparişler etkilenmez.
 Geçiş gününden **önce**, staging'de ve sonra üretim sunucusunda tek tek işaretleyin. Bir madde
 başarısızsa canlıya geçmeyin.
 
-**Kodda bilinen eksikler (önce kapanmalı)** [LEAD?]
-- [ ] E-posta abonelerini içeren `e2/emails-trade` dalı `main`e birleştirildi (hazır, hatırlatma, trade,
-      tamir, düşük stok, iade, kargoya verildi e-postaları)
 
 **Stripe (5.4)**
 - [ ] `.env`'de `STRIPE_API_KEY=sk_live_…`, GitHub `production` ortamında `NEXT_PUBLIC_STRIPE_KEY=pk_live_…`

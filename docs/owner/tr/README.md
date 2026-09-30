@@ -51,12 +51,10 @@ karşılaştırıldı. İki tür işaret kaldı:
 
 ### Kayıttan önce lead için
 
-- Senaryolarda geçen e-postalar (hazır, hatırlatma, trade, tamir, düşük stok, iade, kargoya verildi)
-  `e2/emails-trade` dalından geliyor ve bu dal henüz `main`e girmedi. Senaryo 3, 6, 8 ve rutin
-  kaydedilmeden önce birleştirilmeli. [LEAD?]
-- Mevcut bir üründe `safety_marking`, `is_addon_item` ve `reorder_level` için ekran yok (ADR 0001'de
-  planlanmıştı). O gelene kadar senaryolar CSV içe aktarmayı kullanıyor (senaryo 7). [LEAD?]
-- Quick add'de add-on seçeneği yok; add-on CSV ile ayarlanıyor. [LEAD?]
+- Senaryolarda geçen tüm e-postalar `main`de.
+- Mevcut bir ürünün güvenlik işareti (UKCA/CE), £1 ek ürün işareti ve yeniden sipariş seviyesi ürün
+  sayfasındaki "Product details for Tech Nest" kutusundan düzenlenir (Quick add'den sonra da). Çok
+  sayıda ürün için senaryo 7'deki CSV içe aktarma da çalışır.
 - Toptan kademe fiyatları Medusa'nın **"Trade"** fiyat listesine sterlin ve KDV dahil giriliyor. Kim girecek? [LEAD?]
 
 ## Bu rehberlerdeki bazı kelimeler

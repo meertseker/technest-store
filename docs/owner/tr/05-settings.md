@@ -50,8 +50,9 @@
 ## Yeniden sipariş seviyeleri nerede?
 
 Her sabah 08:00'deki düşük stok e-postası her ürünün **yeniden sipariş seviyesine** (reorder level,
-normalde 3) bakar. Bunun için henüz bir ekran yok: CSV içe aktarmada `reorder_level` sütunuyla
-ayarlanır (senaryo 7). [LEAD?]
+normalde 3) bakar. Ürün sayfasındaki "Product details for Tech Nest" kutusunda → "Edit" →
+"Reorder level" alanından değiştirilir; çok sayıda ürün için CSV içe aktarmada `reorder_level` sütunu da
+kullanılabilir (senaryo 7).
 
 ## Unutmayın
 

@@ -49,8 +49,9 @@
 
 ## Where are the reorder levels?
 
-The low-stock email (08:00 every morning) uses each product's **reorder level** (normally 3). There is no
-screen for it yet: set it with a CSV import, column `reorder_level` (script 7). [LEAD?]
+The low-stock email (08:00 every morning) uses each product's **reorder level** (normally 3). Change it on
+the product page, box "Product details for Tech Nest" → Edit → "Reorder level", or for many products at once
+with a CSV import, column `reorder_level` (script 7).
 
 ## Rules to remember
 
