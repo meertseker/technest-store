@@ -20,6 +20,8 @@ export type SendEmailInput = {
   resource_type: string
   trigger_type: string
   recipient: EmailRecipient
+  /** Extra non-PII entity ids the template needs (e.g. low-stock variant ids). */
+  ids?: string[]
 }
 
 const sendEmailStep = createStep(
@@ -32,7 +34,13 @@ const sendEmailStep = createStep(
     retryInterval: 60,
   },
   async (input: SendEmailInput, { container }): Promise<StepResponse<SendEmailOnceResult>> => {
-    const resolved = await resolveEmail(container, input.template, input.resource_id, input.recipient)
+    const resolved = await resolveEmail(
+      container,
+      input.template,
+      input.resource_id,
+      input.recipient,
+      input.ids
+    )
     if (!resolved) {
       return new StepResponse<SendEmailOnceResult>({ skipped: true })
     }
