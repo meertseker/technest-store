@@ -3,56 +3,67 @@
 Bu rehberler dükkan sahibi için. Online mağazanın **admin.technest.co.uk** adresindeki yönetim
 panelinden (admin) nasıl yönetileceğini anlatır. Telefonda da bilgisayarda da kullanılabilir.
 
-Telefonda, sol üstteki menü düğmesine basın. Tech Nest sayfaları açılan sol menüde (sidebar) yer alır.
+Telefonda sol üstteki menü düğmesine basın. Tech Nest sayfaları açılan sol menüde (sidebar) yer alır.
 
-Panelin dili İngilizce. Bu yüzden düğme adlarını İngilizce ve tırnak içinde yazdık, yanına Türkçesini
-ekledik. Örnek: **"Publish"** ("Yayınla").
+Panelin dili İngilizce. Bu yüzden düğme adlarını ekranda göründüğü gibi İngilizce ve tırnak içinde
+yazdık, yanına Türkçesini ekledik. Örnek: **"Save as draft"** ("Taslak olarak kaydet").
+Ekrandaki İngilizce mesajları da aynen yazdık ki tanıyabilesiniz.
 
 İngilizce asıllar [`../en/`](../en/) klasöründe; genel dizin [`../README.md`](../README.md).
 
 ## Bu klasörde neler var
 
-| Dosya | Ne işe yarar |
-|---|---|
-| [01-quick-add.md](./01-quick-add.md) | Telefondaki bir fotoğraftan bir dakikadan kısa sürede ürün ekleme |
-| [02-photo-widget.md](./02-photo-widget.md) | Ürün sayfasında temizlenmiş fotoğrafı kontrol etme: "Approve", "Retry" veya "Keep original" |
-| [03-click-and-collect.md](./03-click-and-collect.md) | Click & Collect (mağazadan teslim) panosu: "To pick", "Ready", "Collected" |
-| [04-devices.md](./04-devices.md) | "Devices" (Cihazlar) sayfası ve üründeki "Fits these devices" bölümü |
-| [05-settings.md](./05-settings.md) | Ücretsiz kargo sınırı, Klarna alt sınırı ve yeniden sipariş seviyeleri |
-| [06-trade-and-repairs.md](./06-trade-and-repairs.md) | Toptan (trade) hesap başvuruları ve tamir randevuları |
-| [first-week-routine.md](./first-week-routine.md) | Tek sayfa: günlük rutin ve ilk hafta kontrol listesi |
+| Dosya | Ne işe yarar | Menü |
+|---|---|---|
+| [01-quick-add.md](./01-quick-add.md) | Telefon fotoğrafından yapay zekâ önerisiyle ürün, taslak olarak | "Quick add" |
+| [02-photo-widget.md](./02-photo-widget.md) | "Product photo" kutusu: "Process", "Approve", "Discard" | "Products" → ürün |
+| [03-click-and-collect.md](./03-click-and-collect.md) | Pano: "To pick", "Mark ready", "Collected" (parayı çeker); 3. gün hatırlatma, 7. gün iptal | "Click & Collect" |
+| [04-devices.md](./04-devices.md) | "Devices" sayfası ve üründeki "Fits these devices" | "Devices" |
+| [05-settings.md](./05-settings.md) | Ücretsiz Standart kargo ve Klarna tutarları | "Settings" → "Shop settings" |
+| [06-trade-and-repairs.md](./06-trade-and-repairs.md) | Toptan (trade) başvuruları ve tamir randevuları | "Trade applications", "Repair bookings" |
+| [07-import-and-product-rules.md](./07-import-and-product-rules.md) | CSV ile ürün yükleme; güvenlik işareti, vape, £1 ek ürün, 3 al 2 öde, yeniden sipariş seviyesi | "Import products" |
+| [08-orders-and-refunds.md](./08-orders-and-refunds.md) | Kargolu siparişler, iptal, iade (sadece panelden, Stripe'tan asla) | "Orders" |
+| [first-week-routine.md](./first-week-routine.md) | Tek sayfa: günlük rutin ve ilk hafta kontrol listesi | |
 
 ## Senaryolar nasıl kullanılır
 
-01-06 arası dosyalar **ekran kaydı senaryolarıdır**. Her biri yaklaşık 5 dakikalık bir video çıkarır.
+01-08 arası dosyalar **ekran kaydı senaryolarıdır**. Her biri 3-5 dakikalık bir video çıkarır.
 
 1. Paneli her gün kullanacağınız cihazda açın (genelde telefonunuz).
 2. Ekran kaydını başlatın.
-3. Sahneleri sırayla izleyin. "Ekranda" neye basacağınızı, "Söyleyin" ne diyeceğinizi gösterir.
+3. Sahneleri sırayla izleyin. **Dokunun** neye basacağınızı, **Göreceğiniz** ekranda ne çıkacağını,
+   **Söyleyin** ne diyeceğinizi gösterir.
 4. **Deneme ürünü** veya **deneme siparişi** kullanın. Gerçek müşteri siparişiyle kayıt yapmayın.
 5. Videoyu saklayın. Bir adımı unuttuğunuzda tekrar izleyin.
 
+Her senaryonun sonunda **Ne ters gidebilir** (ekrandaki mesaj ve ne yapılacağı) ve **Unutmayın** bölümleri var.
 Senaryoları kayıt yapmadan, adım adım kullanım kılavuzu olarak da okuyabilirsiniz.
 
-## "Son arayüzle kontrol edin" kuralı
+## Kodla karşılaştırıldı; açık kalanlar
 
-Bu senaryolar **panel sayfaları bitmeden önce** yazıldı. Bitmiş ekranlara değil, her sayfanın planına
-dayanıyor. Bu yüzden:
+Tüm senaryolar 2026-09-30'da bitmiş panel sayfalarıyla (düğme adları, mesajlar, adımların sırası)
+karşılaştırıldı. İki tür işaret kaldı:
 
-- Bir düğme, etiket veya yerleşim adı geçen her adımın altında şu satır var:
+- **⚠** : adım Medusa'nın kendi ekranlarından birini kullanıyor (Orders, ürün düzenleme, Promotions,
+  Customers, Pricing, Settings menüsü). Kayıttan önce lead o ekranı bir kez açıp düğme adına bakar,
+  sonra işareti siler.
+- **[LEAD?]** : lead'in karar vermesi ya da tamamlaması gereken bir konu. Cevaplanmadan o kısmı kaydetmeyin.
 
-  > ⚠ Son arayüzle kontrol edin
+### Kayıttan önce lead için
 
-- Kayıttan önce sayfayı yapan kişi (veya proje lideri) bitmiş sayfayı açar ve işaretli her adımı kontrol
-  eder. Düğmenin adı farklıysa senaryo düzeltilir.
-- Adım gerçek ekranla uyuşuyorsa işaret silinir.
-- Hiç işaret kalmayınca **Durum** satırı "<tarih> tarihinde son arayüzle kontrol edildi" olarak değiştirilir.
-
-İçinde hâlâ işaret olan bir senaryoyu kaydetmeyin.
+- Senaryolarda geçen e-postalar (hazır, hatırlatma, trade, tamir, düşük stok, iade, kargoya verildi)
+  `e2/emails-trade` dalından geliyor ve bu dal henüz `main`e girmedi. Senaryo 3, 6, 8 ve rutin
+  kaydedilmeden önce birleştirilmeli. [LEAD?]
+- Mevcut bir üründe `safety_marking`, `is_addon_item` ve `reorder_level` için ekran yok (ADR 0001'de
+  planlanmıştı). O gelene kadar senaryolar CSV içe aktarmayı kullanıyor (senaryo 7). [LEAD?]
+- Quick add'de add-on seçeneği yok; add-on CSV ile ayarlanıyor. [LEAD?]
+- Toptan kademe fiyatları Medusa'nın **"Trade"** fiyat listesine sterlin ve KDV dahil giriliyor. Kim girecek? [LEAD?]
 
 ## Bu rehberlerdeki bazı kelimeler
 
-- **SKU**: ürünün stok kodu (örneğin `CLEAR-CASE-IPHONE-16`).
+- **SKU**: ürünün stok kodu (örneğin `TN-CASE-IP16-CLR`).
 - **Draft** (taslak): kaydedilmiş ama sitede henüz görünmeyen ürün.
 - **Publish** (yayınla): ürünü sitede görünür yapmak.
-- **Add-on item** (ek ürün): £1'lık veya ucuz ürün. Her sepete eklenebilir ama tek başına kargolu sipariş olamaz.
+- **Add-on item** (ek ürün): £1'lık ürün. Her sepete girebilir ama sadece ek üründen oluşan sepet kargoyla gönderilemez. Click & Collect olur.
+- **Collection code** (teslim kodu): müşterinin tezgahta söylediği 6 harf ve rakam (`K7MQ2X` gibi).
+- **Bloke** (provizyon): kartta tutulan ama henüz çekilmemiş para.

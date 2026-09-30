@@ -1,89 +1,95 @@
-# Senaryo 1: Quick Add (Hızlı Ekle), fotoğraftan yeni ürün
+# Senaryo 1: "Quick add" (Hızlı ekle), fotoğraftan yeni ürün
 
 - **Süre:** yaklaşık 5 dakika
-- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefonunuz; fotoğrafını çekeceğiniz gerçek bir aksesuar (örneğin paketindeki bir telefon kılıfı); düz, açık renkli bir zemin; iyi ışık. Gerçekten sattığınız bir ürünü kullanın; kayıttan sonra silebilirsiniz.
-- **Durum:** Taslak, plana (brief) göre yazıldı - kayıttan önce her adımı son arayüzle kontrol edin.
-- **Hedef:** fotoğraftan yayındaki ürüne **60 saniyeden kısa** sürede.
+- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefonunuz; paketinde gerçek bir aksesuar (üzerindeki güvenlik işaretini gösterebilmek için en iyisi bir şarj aleti); düz, açık renkli bir zemin; iyi ışık. Deneme ürününü sonra silebilirsiniz.
+- **Nerede:** menü → **"Quick add"** (adres `/app/quick-add`).
+- **Durum:** 2026-09-30'da bitmiş panel koduyla karşılaştırıldı. ⚠ işaretli adımlar Medusa'nın kendi ürün sayfasını kullanır: kayıttan önce canlı panelde bir kez bakın.
+- **Hedef:** fotoğraftan taslak ürüne yaklaşık bir dakika, sonra ürün sayfasından yayınlamak.
 
 ---
 
-### Sahne 1 (0:00-0:30) Quick Add neden var
+### Sahne 1 (0:00-0:30) Quick add ne yapar
 
-**Ekranda:** telefonda panelin ana sayfası. Sol üstteki menü düğmesine basın, sol menüyü gösterin.
+**Dokunun:** sol üstteki menü düğmesi, sonra **"Quick add"**.
 
-**Söyleyin:** "Bu Quick Add. Siteye yeni ürün koymanın en hızlı yolu. Tek bir fotoğraf çekiyorsunuz. Sistem fotoğrafı temizliyor ve yazıları sizin için hazırlıyor. Siz sadece fiyatı ve stoğu yazıyor, uyduğu telefonları seçiyor ve yayınlıyorsunuz. Hepsi bir dakikadan kısa sürmeli."
+**Göreceğiniz:** "Quick add" başlığı, büyük bir **"Take photo"** ("Fotoğraf çek") düğmesi, **"Choose a photo"** ("Fotoğraf seç") ve **"Add without a photo"** ("Fotoğrafsız ekle").
 
-### Sahne 2 (0:30-1:15) Fotoğrafı çekin
+**Söyleyin:** "Burası Quick add. Ürünün tek bir fotoğrafını çekiyorum. Sistem fotoğrafı okuyup başlığı, kategoriyi, uyduğu telefonları ve güvenlik işaretini öneriyor. Ben hepsini kontrol ediyorum, fiyatı yazıyorum ve taslak olarak kaydediyorum. Ben yayınlamadıkça sitede hiçbir şey görünmez."
 
-**Ekranda:** menüden **"Quick Add"** ("Hızlı Ekle") seçin. Fotoğraf düğmesine basın, kamera açılır. Ürünü düz zemine koyup fotoğrafı çekin.
+### Sahne 2 (0:30-1:00) Fotoğrafı çekin
 
-> ⚠ Son arayüzle kontrol edin
+**Dokunun:** **"Take photo"**. Kamera açılır. Ürünü düz zemine, etiketi size bakacak şekilde koyun ve çekin.
 
-**Söyleyin:** "Menüden Quick Add'e basın. Fotoğraf düğmesine basınca kamera açılır. Ürünü düz, açık renkli bir zemine koyun. Kareyi büyük ölçüde ürünle doldurun. Telefonu sabit tutup çekin. Arka plana takılmayın; sistem onu bembeyaz yapacak."
+**Göreceğiniz:** üstte fotoğrafınız ve mavi bir kutu: "Reading the photo… this takes up to half a minute. You can start typing meanwhile." (Fotoğraf okunuyor, yarım dakika kadar sürer; bu arada yazmaya başlayabilirsiniz.)
 
-### Sahne 3 (1:15-1:45) Fotoğraf temizleniyor
+**Söyleyin:** "Ürünün tamamı karede olsun, etiket okunsun, arka plan sade olsun. Fotoğraf olduğu gibi yükleniyor ve bu orijinal her zaman saklanıyor."
 
-**Ekranda:** temizlenirken ilerleme göstergesi. Sonra temiz fotoğraf: beyaz zeminde, kare, hafif gölgeli ürün.
+### Sahne 3 (1:00-2:00) Öneriyi kontrol edin
 
-> ⚠ Son arayüzle kontrol edin
+**Göreceğiniz:** mor **"AI suggestion"** (yapay zekâ önerisi) etiketi, bir **"Confidence"** (güven: high/medium/low, yani yüksek/orta/düşük) etiketi, "Check every field. The AI can be wrong…" (Her alanı kontrol edin, yapay zekâ yanılabilir) cümlesi, belki turuncu uyarılar, ve dolu alanlar: **"Title"** (başlık), **"Description"** (açıklama), **"Category"** (kategori), **"Product type"** (ürün türü), **"Fits these devices"** (uyumlu cihazlar).
 
-**Söyleyin:** "Birkaç saniye bekleyin, çalıştığını görüyorsunuz. Arka planı kaldırıp ürünü hafif bir gölgeyle beyaz zemine koyuyor. Sadece arka planı değiştirir. Ürünün kendisine asla dokunmaz, hiçbir şey uydurmaz. Orijinal fotoğrafınız her zaman saklanır, hiçbir şey kaybolmaz."
+**Dokunun:** başlıkta bir kelimeyi düzeltin. **"Fits these devices"** bölümünde yanlış bir telefona dokunup kaldırın (yanında ✕ var) ya da aramaya "16 pro" yazıp **"+ Apple iPhone 16 Pro"** ile ekleyin.
 
-### Sahne 4 (1:45-2:45) Önerilen yazıları kontrol edin
+**Söyleyin:** "Bunlar sadece öneri. Güven düşükse her şeyi iki kez okurum. Kategori, ürünün sitede nerede çıkacağını belirler. Cihazlar da telefonunu seçen müşterinin ürünü görüp görmeyeceğini belirler; o yüzden sadece gerçekten uyan telefonları bırakırım."
 
-**Ekranda:** önerilen alanlar doldurulmuş: başlık, açıklama, kategori, etiketler ve "add-on item" (ek ürün) anahtarı. Aşağı kaydırın. Başlıkta bir kelimeyi değiştirin.
+### Sahne 4 (2:00-2:45) Fiyat ve güvenlik işareti
 
-> ⚠ Son arayüzle kontrol edin
+**Göreceğiniz:** **"Price (£, incl. VAT)"** (KDV dahil fiyat, £) boş. Altında "Suggested: £14.99 (an AI guess, not a rule)" (önerilen fiyat, sadece tahmin) ve **"Use £14.99"** ("£14.99'u kullan") düğmesi.
 
-**Söyleyin:** "Fotoğraf temizlenirken sistem ona baktı ve başlık, açıklama, kategori ve etiket önerdi. Bunun bir poundluk ek ürün olup olmadığını da tahmin ediyor. Bunlar sadece öneri. Okuyun, yanlışı düzeltin. Ben başlıkta bir kelimeyi değiştiriyorum. Kategoriye dikkat edin; ürünün mağazada nerede görüneceğini o belirler. Ek ürün anahtarına da bakın. Ek ürünler her sepete girebilir ama müşteri sadece onlarla kargolu sipariş veremez."
+**Dokunun:** fiyatınızı yazın, örneğin `12.99` (katılıyorsanız **"Use £…"**a da basabilirsiniz). **"Safety marking"** (güvenlik işareti) bölümünde "AI saw: …" (yapay zekânın gördüğü) satırını okuyun, sonra kutuya kendiniz bakın. **"UKCA"**, **"CE"** veya **"No mark"** (işaret yok) seçin. UKCA ya da CE seçtiyseniz **"I have checked the label: it shows the UKCA mark"** (etiketi kontrol ettim, UKCA işareti var) kutusunu işaretleyin.
 
-### Sahne 5 (2:45-3:30) Fiyat, stok ve cihazlar
+**Söyleyin:** "Fiyat benim yerime asla doldurulmaz. Sterlin olarak, KDV dahil yazarım. Güvenlik işaretini sistem sadece tahmin eder; gerçek etikete bakıp kutuyu ben işaretlerim. UKCA veya CE'si olmayan şarj aletleri ve powerbank'ler taslak olarak kaydedilebilir ama yayınlanamaz."
 
-**Ekranda:** fiyatı pound olarak yazın (örneğin 9.99). Stoğu yazın (örneğin 12). Bir telefon modeli arayıp seçin, sonra ikincisini seçin.
+### Sahne 5 (2:45-3:15) Stok ve SKU
 
-> ⚠ Son arayüzle kontrol edin
+**Dokunun:** **"More details (SKU, stock, connectors)"** (diğer bilgiler) bölümünü açın. **"Stock in the shop"** (dükkandaki stok) alanını girin (1'den başlar). Kullanıyorsanız **"SKU"** (stok kodu) yazın. Konnektör ve watt isteğe bağlı.
 
-**Söyleyin:** "Şimdi fiyat. Pound olarak yazın, 9.99 gibi. Bu müşterinin ödediği fiyat, KDV dahil. Sonra stok: dükkanda kaç tane var. Sonra cihazlar. Model adının bir kısmını yazın, mesela '16 pro', ve listeden seçin. Ürünün gerçekten uyduğu her telefonu seçin. Sitede telefonunu seçen müşteri sadece ona uyan ürünleri görür; bu yüzden önemli."
+**Dokunun:** **"Save as draft"** ("Taslak olarak kaydet").
 
-### Sahne 6 (3:30-4:00) Yayınlayın
+**Göreceğiniz:** "… saved as a draft" (taslak olarak kaydedildi) mesajı.
 
-**Ekranda:** **"Publish"** ("Yayınla") düğmesine basın. Başarı mesajını gösterin. Telefonda siteyi açıp ürünün yayında olduğunu gösterin.
+### Sahne 6 (3:15-4:00) Temiz fotoğraf
 
-> ⚠ Son arayüzle kontrol edin
+**Göreceğiniz:** "Saved as a draft. Now the photo…", bir yanda orijinaliniz, diğer yanda "Cleaning up the background…" (arka plan temizleniyor), sonra beyaz arka planlı fotoğraf (genelde 5-15 saniye).
 
-**Söyleyin:** "Son adım: Publish'e basın. Bu kadar. Ürün artık sitede. Açıp bakalım. İşte, temiz beyaz fotoğrafıyla. Fotoğraftan siteye bir dakikadan kısa sürede."
+**Dokunun:** temiz fotoğrafta ürünün kenarlarına bakın. Doğruysa **"Use this photo"** ("Bu fotoğrafı kullan"). Değilse **"Skip for now"** ("Şimdilik geç"); bunu sonra ürün sayfasında yapabilirsiniz (senaryo 2).
 
-### Sahne 7 (4:00-4:40) Şarj cihazları, powerbankler ve vape
+**Söyleyin:** "Sadece arka plan değişir. Ürün asla çizilmez ya da değiştirilmez, orijinalim de saklanır."
 
-**Ekranda:** bir şarj cihazı ürünü. Güvenlik işareti olmadan yayınlamaya çalışınca çıkan hata mesajı. Ürün detaylarında **"Safety marking"** ("Güvenlik işareti") alanını UKCA veya CE yapın, tekrar yayınlayın.
+### Sahne 7 (4:00-4:45) Yayınlama ⚠
 
-> ⚠ Son arayüzle kontrol edin
+**Göreceğiniz:** "… is saved as a draft. Check it on the product page, then publish it there when it is ready." (Taslak kaydedildi; ürün sayfasında kontrol edip oradan yayınlayın.) ve iki düğme: **"Open product"** ("Ürünü aç") ve **"Add another product"** ("Başka ürün ekle").
 
-**Söyleyin:** "Şarj cihazları ve powerbankler farklı. Chargers and Cables veya Power Banks kategorisindeki her ürün bir güvenlik işareti ister: UKCA veya CE. İşareti kutunun üstünde arayın. İşaret girmeden yayınlamaya çalışırsanız sistem durdurur ve nedenini söyler. Ürün detaylarında Safety marking'i UKCA veya CE yapıp tekrar yayınlayın. Ve unutmayın: vape online asla satılmaz. Sistem reddeder."
+**Dokunun:** **"Open product"**. Ürün sayfasında üstteki menüyü (⋯) açın, **"Edit"** ("Düzenle"), **"Status"** (durum) alanını **"Published"** (yayında) yapın ve **"Save"** ("Kaydet"). ⚠
 
-### Sahne 8 (4:40-5:00) Kapanış
+**Söyleyin:** "Artık sitede. Güvenlik işareti olmayan bir şarj aletiyse yayınlama reddedilir ve nedeni yazılır."
 
-**Ekranda:** bir sonraki fotoğrafa hazır Quick Add sayfası.
+### Sahne 8 (4:45-5:00) Toparlama
 
-**Söyleyin:** "Özetle: fotoğraf, yazıları kontrol, fiyat, stok, cihazlar, yayınla. Bir sorun olursa ekrandaki mesajı okuyun; ne yapacağınızı söyler."
+**Söyleyin:** "Fotoğraf, öneriyi kontrol, fiyat, güvenlik işareti, stok, kaydet. Sonra fotoğraf, sonra yayınla. Ürün başına bir dakika kadar."
 
 ---
 
-## Sık yapılan hatalar / bir şey ters giderse
+## Ne ters gidebilir
 
-- **"Photo too small, please retake closer"** (fotoğraf çok küçük, yaklaşıp tekrar çekin): fotoğrafın kısa kenarı 1000 pikselden az. Yaklaşın, tekrar çekin.
-- **"No product found in the photo, please retake it against a plain background"** (fotoğrafta ürün bulunamadı): ürünü düz, açık renkli zemine koyup tekrar deneyin.
-- **Fotoğraf temizleme veya yazı önerisi çalışmıyor**: bu yardımcılar kapalıysa veya cevap vermiyorsa Quick Add yine de yüklemenize izin verir. Düğme neyin çalışmadığını yazar. Yazıları kendiniz girin ya da bir dakika sonra tekrar deneyin.
-  > ⚠ Son arayüzle kontrol edin
-- **Uzun sürüyor**: bir fotoğrafın temizlenmesi genelde 5-15 saniye sürer. Aynı anda tek fotoğraf işlenir; başkası da ürün ekliyorsa bekleyin.
-- **Yanlış fiyat**: fiyat pound olarak girilir, peni değil. 999 değil, 9.99 yazın.
-- **Şarj cihazı yayınlanmıyor**: Safety marking'i UKCA veya CE yapın (Sahne 7).
+| Gördüğünüz | Anlamı / ne yapmalı |
+|---|---|
+| "AI suggestions are switched off (ANTHROPIC_API_KEY is not set)…" | Sunucuda yapay zekâ anahtarı girilmemiş. Bilgileri kendiniz yazın, lead'e haber verin. |
+| Fotoğraftan sonra turuncu bir kutu (ör. "too many requests", "busy", "timed out") | Yapay zekâ cevap vermedi. Form yerinde kalır. Bilgileri kendiniz yazın ya da sonra tekrar deneyin. Kişi başına saatte yaklaşık 60 fotoğraf okunabilir. |
+| "This looks like a vape product. Vapes are never sold online, so it can't be added." | Doğru: vape internetten asla satılmaz. |
+| "Enter the selling price in pounds, e.g. 12.99." / "Use at most 2 decimals…" | Peni değil sterlin yazın: `1299` değil `12.99`. |
+| "Check the UKCA mark on the label, then tick the box." | UKCA/CE seçtiniz ama kutuyu işaretlemediniz. |
+| "This photo is larger than 25 MB…" | Kamera çözünürlüğünü düşürün ya da daha küçük bir fotoğraf seçin. |
+| "Photo too small, please retake closer" / "The product is too small in the photo…" | Yaklaşıp tekrar çekin. |
+| "No product found in the photo, please retake it against a plain background" | Sade, açık renkli bir zemin kullanın. |
+| Ürün kaydedildi ama temiz fotoğraf başarısız | Ürün taslak olarak güvende. **"Try again"** ("Tekrar dene") ya da **"Skip for now"** deyip fotoğrafı sonra ürün sayfasında yapın. |
+| Şarj aleti yayınlanmıyor: "… needs a safety marking (UKCA or CE) before it can be published…" | Kutudaki işarete bakın. CSV içe aktarmayla düzeltin (senaryo 7), sonra yayınlayın. |
+| SKU reddedildi | Bu stok kodu başka bir üründe kullanılıyor. |
 
-## Akılda tutulacak kurallar
+## Unutmayın
 
-- Fotoğrafta sadece arka plan değişir. Ürün asla değişmez. Orijinal her zaman saklanır.
-- Fiyatlar pound olarak girilir ve KDV dahildir.
-- Şarj cihazı ve güç ürünleri UKCA veya CE olmadan yayınlanamaz.
-- Vape online asla satılmaz.
-- £1'lık ek ürünler tek başına kargolu sipariş olamaz. Click & Collect'te sorun yok.
-- Sadece ürünün gerçekten uyduğu cihazları seçin.
+- Quick add her zaman **taslak** kaydeder. Yayınlamayı ürün sayfasında yaparsınız.
+- Fiyatlar sterlin ve KDV dahil. Önerilen fiyat sadece tahmin.
+- Güvenlik işaretini etikete bakarak siz onaylarsınız. Şarj ve güç ürünleri UKCA veya CE olmadan yayınlanamaz.
+- Vape internetten asla satılmaz.
+- Quick add'de "£1 ek ürün" (add-on) seçeneği yok. Bunu CSV içe aktarmayla ayarlarsınız (senaryo 7). [LEAD?]

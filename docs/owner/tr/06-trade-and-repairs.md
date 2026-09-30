@@ -1,89 +1,91 @@
 # Senaryo 6: Toptan (trade) başvuruları ve tamir randevuları
 
 - **Süre:** yaklaşık 5 dakika
-- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefonunuz; iki **deneme** trade başvurusu (sitedeki trade formundan deneme hesaplarıyla gönderin) ve bir **deneme** tamir randevusu (sitedeki tamir formundan kendi telefon numaranızla gönderin).
-- **Durum:** Taslak, plana (brief) göre yazıldı - kayıttan önce her adımı son arayüzle kontrol edin.
+- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefonunuz; iki **deneme** trade başvurusu (sitedeki trade formundan iki deneme müşteri hesabıyla gönderin) ve bir **deneme** tamir randevusu (sitedeki tamir formundan kendi telefon numaranızla gönderin).
+- **Nerede:** menü → **"Trade applications"** (`/app/trade-applications`) ve **"Repair bookings"** (`/app/repair-bookings`).
+- **Durum:** 2026-09-30'da bitmiş panel koduyla karşılaştırıldı. ⚠ işaretli adımlar Medusa'nın kendi ekranlarıdır.
 
 ---
 
-## Bölüm A: Trade başvuruları (0:00-2:40)
+## A Bölümü: Trade başvuruları (0:00-2:30)
 
-### Sahne 1 (0:00-0:40) Trade hesabı nedir
+### Sahne 1 (0:00-0:30) Liste
 
-**Ekranda:** menüden **"Trade applications"** ("Trade başvuruları"). **Bekleyen** (pending) başvuruların listesini gösterin.
+**Dokunun:** menü → **"Trade applications"**.
 
-> ⚠ Son arayüzle kontrol edin
+**Göreceğiniz:** "Businesses asking for trade prices…" (toptan fiyat isteyen işletmeler) açıklaması ve **"Waiting"** (bekleyen), **"Approved"** (onaylanan), **"Rejected"** (reddedilen), **"All"** (hepsi) düğmeleri. **"Waiting"** açık, en eskisi üstte.
 
-**Söyleyin:** "Başka tamirciler gibi işletmeler sitede trade hesabı için başvurabilir. Onayladığınızda KDV hariç trade fiyatlarını görürler; çok alana daha düşük fiyat. Yeni başvurular buraya gelir. Her biri için ayrıca e-posta alırsınız."
+**Söyleyin:** "Başka tamirciler gibi işletmeler sitede trade hesabı için başvuruyor. Her biri için bana e-posta da geliyor. Onayladığımda, giriş yaptıklarında KDV hariç toptan fiyatları görüyorlar."
 
-### Sahne 2 (0:40-1:30) Başvuruyu inceleyin
+### Sahne 2 (0:30-1:15) Başvuruyu kontrol edin
 
-**Ekranda:** bir başvuru açın. Gösterin: şirket adı, işletme türü, KDV numarası, Companies House numarası, iletişim kişisinin adı, telefonu ve e-postası.
+**Dokunun:** ilk başvuruyu açın.
 
-> ⚠ Son arayüzle kontrol edin
+**Göreceğiniz:** şirket adı, **"Waiting for review"** (inceleme bekliyor) etiketi ve **"Business type"** (işletme türü), **"VAT number"** (KDV numarası), **"Companies House number"** (şirket sicil numarası), **"Contact"** (yetkili), **"Phone"**, **"Email"**, **"Customer account"** (müşteri hesabı).
 
-**Söyleyin:** "Bir başvuru açın. Şirket adını, işletme türünü, verdiyse KDV numarasını ve Companies House numarasını, bir de iletişim kişisini görürsünüz. Gerçek bir işletme mi, kontrol edin. Şirket numarasını Companies House sitesinde arayabilirsiniz. Tanıyorsanız daha da iyi."
+**Söyleyin:** "Gerçek bir işletme mi diye bakıyorum. Companies House numarasını devletin sitesinde arayabilirim."
 
-### Sahne 3 (1:30-1:55) Onaylayın
+### Sahne 3 (1:15-1:45) Onaylayın
 
-**Ekranda:** **"Approve"** ("Onayla") düğmesine basın. Durumun onaylandı olarak değiştiğini gösterin.
+**Dokunun:** **"Approve"** ("Onayla") → "Approve …? They will see trade prices when they log in, and we'll email them to say so." (giriş yapınca toptan fiyatları görecekler, onlara e-posta gidecek) → **"Approve"**.
 
-> ⚠ Son arayüzle kontrol edin
+**Göreceğiniz:** "… approved." ve "Approved. This customer sees trade prices when logged in."
 
-**Söyleyin:** "Sorun yoksa Approve'a basın. Tek dokunuş. Onaylandıklarını söyleyen bir e-posta alırlar. Artık trade fiyatı girilmiş her üründe trade fiyatlarını görürler."
+### Sahne 4 (1:45-2:30) Gerekçeyle reddedin
 
-### Sahne 4 (1:55-2:40) Gerekçeyle reddedin
+**Dokunun:** ikinci başvuruyu açın → **"Reject"** ("Reddet").
 
-**Ekranda:** ikinci başvuruyu açın. **"Reject"** ("Reddet") düğmesine basın. Gerekçe istediğini gösterin. Yazın: "We could not confirm your business. Please apply again with your Companies House number." Onaylayın.
+**Göreceğiniz:** "Reject …" penceresinde bir **"Reason"** (gerekçe) kutusu ve "The customer sees this in their email…" (müşteri bunu e-postasında görür) notu.
 
-> ⚠ Son arayüzle kontrol edin
+**Dokunun:** yazın: "We couldn't find your company on Companies House. Please check the number and apply again." → **"Reject and email"** ("Reddet ve e-posta gönder").
 
-**Söyleyin:** "Onaylayamıyorsanız Reject'e basın. Bir gerekçe yazmak zorundasınız. Müşteri bunu e-postayla alır; bu yüzden kibar ve açık yazın, ne yapması gerektiğini söyleyin. Gerekçe müşteriye gittiği için İngilizce yazın. Daha sonra tekrar başvurabilirler."
+**Göreceğiniz:** "… rejected." ve "Rejected. The customer can send a new application." (müşteri yeniden başvurabilir)
 
-## Bölüm B: Tamir randevuları (2:40-4:40)
+**Söyleyin:** "Gerekçe müşteriye İngilizce e-postayla gidiyor; kibar ve açık yazıyorum, ne yapması gerektiğini söylüyorum."
 
-### Sahne 5 (2:40-3:20) Gelen kutusu
+## B Bölümü: Tamir randevuları (2:30-4:30)
 
-**Ekranda:** menüden **"Repair bookings"** ("Tamir randevuları"). Üç grubu gösterin: **"New"** ("Yeni"), **"Booked"** ("Randevu verildi"), **"Done"** ("Bitti").
+### Sahne 5 (2:30-3:00) Liste
 
-> ⚠ Son arayüzle kontrol edin
+**Dokunun:** menü → **"Repair bookings"**.
 
-**Söyleyin:** "Müşteriler sitede tamir talebi gönderir: cihazlarını, arızayı ve onlara uygun zamanı yazarlar. Biz de onları geri ararız. Her yeni talep için ayrıca e-posta alırsınız. Hepsi buraya, üç gruba gelir: New, Booked ve Done."
+**Göreceğiniz:** "Repair requests from the website. Call the customer back, then mark it booked in." (siteden gelen tamir talepleri; müşteriyi geri arayın, sonra randevu verildi işaretleyin) ve **"To call back"** (geri aranacak), **"Booked in"** (randevu verildi), **"Done"** (bitti), **"All"** düğmeleri. **"To call back"** açık, en uzun bekleyen üstte. Liste her dakika yenilenir.
 
-### Sahne 6 (3:20-4:10) Müşteriyi arayın ve randevu verin
+### Sahne 6 (3:00-4:00) Arayın ve randevu verin
 
-**Ekranda:** deneme randevusunu açın. Cihazı, arızayı, tercih edilen zamanı gösterin. Telefon numarasına dokunun: telefon arama başlatır. Geri dönün, bir not yazın ("Screen £X, booked Sat 11am"), durumu **"Booked"** yapın, kaydedin.
+**Dokunun:** deneme randevusunu açın.
 
-> ⚠ Son arayüzle kontrol edin
+**Göreceğiniz:** başlıkta cihaz, "Sent … (2 hours ago)", **"Name"** (ad), **"Phone"**, **"Email"**, **"Device"** (cihaz), **"What's wrong"** (arıza), **"Best time to call"** (aranmak için uygun saat), sonra üç büyük düğmeli **"Status"** (durum: **"To call back"**, **"Booked in"**, **"Done"**) ve **"Staff notes"** (personel notları).
 
-**Söyleyin:** "Yeni bir talep açın. Cihazı, arızayı ve ne zaman gelmek istediğini okuyun. Telefon numarasına dokunun, telefonunuz onu arar. Fiyatı ve saati konuşun. Sonra fiyat ve gün gibi kısa bir not yazın ve Booked'a taşıyın. Notları sadece çalışanlar görür, müşteri asla görmez."
+**Dokunun:** telefon numarasına: telefonunuz aramayı başlatır. Fiyat ve saat konusunda anlaşın. Panele dönüp **"Staff notes"**a "Ekran £89, Cmt 11:00" yazın, **"Save notes"** ("Notes saved."). Sonra **"Booked in"** ("Marked as booked in.").
 
-### Sahne 7 (4:10-4:40) Bitti olarak işaretleyin
+**Söyleyin:** "Notları sadece personel görür, müşteri asla görmez."
 
-**Ekranda:** randevuyu **"Done"** yapın. Gerekirse tekrar **"Booked"**a alınabildiğini gösterin.
+### Sahne 7 (4:00-4:30) Bitti
 
-> ⚠ Son arayüzle kontrol edin
+**Dokunun:** tamir bitip cihaz teslim edilince **"Done"**. Yanlışlıkla bastıysanız tekrar **"Booked in"**e basın.
 
-**Söyleyin:** "Tamir bitip müşteri telefonunu alınca Done'a taşıyın. Yanlışlıkla taşıdıysanız geri alın, o kadar."
+### Sahne 8 (4:30-5:00) Toparlama
 
-### Sahne 8 (4:40-5:00) Kapanış
-
-**Söyleyin:** "Her gün iki listeye de bakın. İyi işletmeleri tek dokunuşla onaylayın. Reddederken her zaman gerekçe yazın. Tamir müşterilerini mümkünse aynı gün geri arayın."
+**Söyleyin:** "İki listeye de her gün bakarım. Gerçek işletmeleri onaylarım; reddederken her zaman açık bir gerekçe yazarım. Tamir müşterilerini mümkünse aynı gün ararım."
 
 ---
 
-## Sık yapılan hatalar / bir şey ters giderse
+## Ne ters gidebilir
 
-- **Reddetme gitmiyor**: gerekçe boş kalmış. Bir gerekçe yazın.
-- **Approve veya Reject kabul edilmiyor**: başvuru zaten onaylanmış ya da reddedilmiş. Sayfayı yenileyin.
-- **Yanlış işletmeyi onayladım**: proje liderine söyleyin. Planda bunun için "geri al" düğmesi yok.
-  > ⚠ Son arayüzle kontrol edin
-- **Bilgisayarda numaraya dokununca arama başlamıyor**: arama telefondan çalışır. Telefonunuzu kullanın ya da numarayı elle çevirin.
-- **Müşteri "beni kimse aramadı" diyor**: New'e bakın. Aradığınız herkesi Booked'a taşıdığınızdan emin olun.
+| Gördüğünüz | Anlamı / ne yapmalı |
+|---|---|
+| Reddetme gitmiyor | Gerekçe boş. Bir gerekçe yazın. |
+| Onay ya da ret reddedildi | Başka biri zaten onayladı ya da reddetti. Sayfayı yenileyin. |
+| Yanlış işletmeyi onayladınız | Geri alma düğmesi yok. Müşteriyi **"Trade"** müşteri grubundan çıkarın (menü → **"Customers"** → müşteri → gruplar) ⚠, sonra lead'e haber verin. |
+| Onaylı trade müşterisi toptan fiyat görmüyor | Toptan fiyat sadece **"Trade"** fiyat listesinde fiyatı olan ürünlerde var (menü → **"Pricing"**) ⚠. Oraya fiyatlar **sterlin ve KDV dahil** girilir; site KDV hariç gösterir. [LEAD?] bu fiyatları kim girecek |
+| Bilgisayarda numaraya dokununca arama başlamıyor | Telefonunuzu kullanın ya da numarayı elle çevirin. |
+| Müşteri "kimse aramadı" diyor | **"To call back"**e bakın. Aradığınız herkesi **"Booked in"**e taşıyın. |
+| Hiç tamir randevusu gelmiyor | Sitedeki form robot kontrolü (Cloudflare Turnstile) yapar. Sunucuda kurulu değilse her randevu reddedilir. Lead'e haber verin. |
 
-## Akılda tutulacak kurallar
+## Unutmayın
 
-- Onay tek dokunuş. Reddetmek her zaman gerekçe ister ve müşteri bunu e-postayla alır.
-- Trade müşterileri fiyatları KDV hariç, açıkça "ex VAT" etiketiyle görür.
-- Tamir randevuları New, sonra Booked, sonra Done olur. Notlar sadece çalışanlar içindir.
-- Müşterinin telefonunu veya e-postasını dükkan dışında kimseyle paylaşmayın.
+- Onaylamak bir dokunuş ve bir onaydır. Reddetmek her zaman gerekçe ister ve gerekçe müşteriye e-postayla gider.
+- Trade müşterileri fiyatları KDV hariç, açıkça etiketlenmiş görür.
+- Tamir randevuları: To call back → Booked in → Done. Notlar sadece personel için.
+- Müşterinin telefon numarasını ya da e-postasını dükkan dışında kimseyle paylaşmayın.

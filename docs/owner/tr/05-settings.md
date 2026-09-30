@@ -1,65 +1,60 @@
-# Senaryo 5: Ayarlar
+# Senaryo 5: "Shop settings" (Mağaza ayarları: ücretsiz kargo ve Klarna)
 
-- **Süre:** yaklaşık 5 dakika
-- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefon veya bilgisayar; bir deneme ürünü; etkisini göstermek için ikinci bir ekranda veya sekmede açık site. Kaydın sonunda tüm değerleri eski haline getirin.
-- **Durum:** Taslak, plana (brief) göre yazıldı - kayıttan önce her adımı son arayüzle kontrol edin.
-
----
-
-### Sahne 1 (0:00-0:30) Bu sayfada neler var
-
-**Ekranda:** menüden **"Settings"** ("Ayarlar") seçin (Medusa'nın kendi ayarları değil, Tech Nest ayarlar sayfası). Alanları gösterin.
-
-> ⚠ Son arayüzle kontrol edin (sayfanın adı ve menüdeki yeri)
-
-**Söyleyin:** "Bu sayfada mağazanın para kuralları var: ücretsiz kargo tutarı, Klarna alt sınırı ve düşük stok e-postası için yeniden sipariş seviyeleri. Bunları sık değiştirmezsiniz ama nerede olduklarını bilmek iyi."
-
-### Sahne 2 (0:30-1:45) Ücretsiz kargo sınırı
-
-**Ekranda:** £20.00 gösteren **ücretsiz kargo sınırı** alanı. £25.00 yapın, kaydedin. Sitede sepete £10'luk bir ürün ekleyin ve çubuğu gösterin: "£15.00 away from free delivery".
-
-> ⚠ Son arayüzle kontrol edin
-
-**Söyleyin:** "Önce ücretsiz kargo. Yirmi pounddan başlıyor. Sepet KDV dahil bu tutara ulaşınca Standart kargo ücretsiz olur. Sepette 'ücretsiz kargoya on beş pound kaldı' gibi bir çubuk çıkar; bu, müşteriyi bir ürün daha eklemeye iter. Tutarı pound olarak yazıp kaydedin. Kargo fiyatı hemen değişir. Ertesi gün teslimat asla ücretsiz olmaz. Click & Collect her zaman ücretsizdir."
-
-### Sahne 3 (1:45-2:45) Klarna alt sınırı
-
-**Ekranda:** £30.00 gösteren **Klarna alt sınırı** alanı. £30'un altındaki bir sepeti (ödemede Klarna yok) ve üstündeki bir sepeti (Klarna var) gösterin.
-
-> ⚠ Son arayüzle kontrol edin
-
-**Söyleyin:** "Sonra Klarna. Klarna müşterinin sonra ya da taksitle ödemesini sağlar. Ödeme adımında sadece sepet otuz pound veya üstündeyse çıkar. Bu tutarı buradan değiştirebilirsiniz. İyi bir nedeniniz yoksa otuzda bırakın."
-
-### Sahne 4 (2:45-4:15) Yeniden sipariş seviyeleri
-
-**Ekranda:** bir ürünün 3 gösteren yeniden sipariş seviyesi (reorder level). Çok satan bir ürün için 5 yapın, kaydedin.
-
-> ⚠ Son arayüzle kontrol edin (seviyeler nerede değiştiriliyor: bu sayfada mı, ürün detaylarında mı, ikisinde de mi)
-
-**Söyleyin:** "Şimdi yeniden sipariş seviyeleri. Her ürünün bir seviyesi var; normalde üç. Her sabah saat sekizde, bu sayıya göre azalan ürünlerin listesiyle bir e-posta alırsınız. USB-C kablo gibi hızlı satan bir ürün için seviyeyi yükseltin, beş ya da on gibi. Böylece zamanında sipariş vermeniz için uyarılırsınız. Yavaş satanlarda üçte bırakın. Seviye, ürünün her çeşidi için ayrı sayılır, yani her renk ya da her model için."
-
-### Sahne 5 (4:15-5:00) Kaydedin ve kontrol edin
-
-**Ekranda:** ücretsiz kargo sınırını £20.00'a geri alın, kaydedin. Kaydedildi mesajını gösterin. Sayfayı yenileyip değerlerin kaldığını gösterin.
-
-> ⚠ Son arayüzle kontrol edin
-
-**Söyleyin:** "Her zaman kaydedin ve kaydedildi mesajını görün. Kontrol için sayfayı yenileyin. Bir sayı garip görünüyorsa, yirmi yerine iki bin pound gibi, hemen düzeltin. Müşteriler bu sayıları görür."
+- **Süre:** yaklaşık 3 dakika
+- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefon veya bilgisayar; etkisini göstermek için ikinci bir sekmede açık site. Sonunda her değeri eski haline getirin.
+- **Nerede:** menü → **"Settings"** (Ayarlar, menünün en altında) → **"Shop settings"** (adres `/app/settings/technest`).
+- **Durum:** 2026-09-30'da bitmiş panel koduyla karşılaştırıldı. ⚠ "Shop settings"in Medusa ayar menüsündeki yeri (genelde "Extensions" başlığı altında) Medusa'nın kendi ekranıdır: bir kez bakın.
 
 ---
 
-## Sık yapılan hatalar / bir şey ters giderse
+### Sahne 1 (0:00-0:30) Bu sayfada ne var
 
-- **Pound yerine peni yazdım**: yirmi pound için 20 ya da 20.00 yazın, 2000 değil.
-  > ⚠ Son arayüzle kontrol edin (alanların pound aldığını doğrulayın)
-- **Değer kaydedilmiyor**: tutarlar £0 ile £1.000 arasında olmalı. Yeniden sipariş seviyesi 0 veya daha büyük bir tam sayı olmalı.
-- **Ücretsiz kargo £0 yapıldı**: bu durumda Standart kargo her zaman ücretsiz olur. Bunu sadece bilerek yapın.
-- **Düşük stok e-postasında çok fazla ürün var**: bazı seviyeler çok yüksek. Yavaş satanlarda düşürün.
-- **Düşük stok e-postası gelmedi**: azalan ürün yoksa o gün e-posta gönderilmez.
+**Dokunun:** menü → **"Settings"** → **"Shop settings"**. ⚠
 
-## Akılda tutulacak kurallar
+**Göreceğiniz:** "Shop settings", "Free delivery and Klarna thresholds. Amounts include VAT." (ücretsiz kargo ve Klarna sınırları, tutarlar KDV dahil), bir **"Edit"** ("Düzenle") düğmesi ve iki satır:
+- **"Free Standard delivery from"** (standart kargo şu tutardan itibaren ücretsiz) £20.00
+- **"Klarna from"** (Klarna şu tutardan itibaren) £30.00
 
-- Tüm tutarlar pound cinsindendir ve KDV dahildir.
-- Ücretsiz kargo sadece Standart kargo içindir. Ertesi gün teslimat asla ücretsiz değildir. Click & Collect her zaman ücretsizdir.
-- Klarna sadece Klarna alt sınırında veya üstünde çıkar (normalde £30).
-- Saat 08:00'deki düşük stok e-postası her ürünün yeniden sipariş seviyesini kullanır (normalde 3).
+**Söyleyin:** "Mağazanın iki para kuralı. Sık değiştirmem gerekmez ama yerini bilmek iyi."
+
+### Sahne 2 (0:30-1:30) Ücretsiz kargo
+
+**Dokunun:** **"Edit"**. **"Free Standard delivery from (£)"** alanına `25` yazın. **"Save"**.
+
+**Göreceğiniz:** "Settings saved" (ayarlar kaydedildi); satırda artık £25.00 yazar.
+
+**Dokunun:** sitede sepete £10'luk bir ürün koyun: çubukta "£15.00 away from free delivery" (ücretsiz kargoya £15 kaldı) yazar.
+
+**Söyleyin:** "Sepet KDV dahil bu tutara ulaşınca Standart kargo ücretsiz olur. Ertesi gün teslimat hiçbir zaman ücretsiz değil. Click & Collect her zaman ücretsiz. Değişiklik hemen geçerli olur."
+
+### Sahne 3 (1:30-2:15) Klarna
+
+**Söyleyin:** "Klarna, müşterinin sonra ya da taksitle ödemesini sağlar. Ödeme sayfasında ancak sepet en az bu tutardaysa görünür. Özel bir nedeniniz yoksa otuz sterlinde bırakın."
+
+### Sahne 4 (2:15-3:00) Eski haline getirin
+
+**Dokunun:** **"Edit"** → `20` yazın → **"Save"**. Sayfayı yenileyin: £20.00 duruyor.
+
+**Söyleyin:** "Sterlin yazıyorum, 20 ya da 20.00 gibi. Bir sayı tuhaf görünürse hemen düzeltirim, çünkü müşteri görüyor."
+
+---
+
+## Ne ters gidebilir
+
+| Gördüğünüz | Anlamı / ne yapmalı |
+|---|---|
+| "Enter an amount between £0.00 and £1,000.00, e.g. 20.00" | Peni değil sterlin yazın; en fazla £1.000. |
+| "Couldn't save the settings" | Tekrar deneyin. Devam ederse lead'e haber verin. |
+| Ücretsiz kargo £0 yapıldı | O zaman Standart kargo hep ücretsiz olur. Bunu sadece bilerek yapın. |
+
+## Yeniden sipariş seviyeleri nerede?
+
+Her sabah 08:00'deki düşük stok e-postası her ürünün **yeniden sipariş seviyesine** (reorder level,
+normalde 3) bakar. Bunun için henüz bir ekran yok: CSV içe aktarmada `reorder_level` sütunuyla
+ayarlanır (senaryo 7). [LEAD?]
+
+## Unutmayın
+
+- Tüm tutarlar sterlin ve KDV dahil.
+- Ücretsiz kargo sadece Standart kargo için. Ertesi gün teslimat hiç ücretsiz değil. Click & Collect her zaman ücretsiz.
+- Klarna sadece Klarna tutarında ve üstünde görünür (normalde £30).

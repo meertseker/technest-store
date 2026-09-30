@@ -1,89 +1,95 @@
-# Script 1: Quick Add, a new product from a photo
+# Script 1: Quick add, a new product from a photo
 
 - **Length:** about 5 minutes
-- **You need:** your phone, logged in to admin.technest.co.uk; one real accessory to photograph (for example a phone case in its packet); a plain, light surface; good light. Use a product you really sell, but you can delete it after the recording.
-- **Status:** Draft written from the brief - verify every step against the final UI before recording.
-- **Goal:** photo to published product in **under 60 seconds**.
+- **You need:** your phone, logged in to admin.technest.co.uk; one real accessory in its packet (a charger is best, so you can show the safety mark); a plain, light surface; good light. You can delete the test product afterwards.
+- **Where:** menu → **Quick add** (address `/app/quick-add`).
+- **Status:** checked against the finished admin code on 2026-09-30. Steps marked ⚠ use Medusa's own product page: check them once on the live admin before recording.
+- **Goal:** photo to saved draft in about a minute, then publish from the product page.
 
 ---
 
-### Scene 1 (0:00-0:30) Why Quick Add
+### Scene 1 (0:00-0:30) What Quick add does
 
-**On screen:** the admin home page on your phone. Tap the menu button top left. Show the sidebar.
+**Tap:** the menu button (top left), then **Quick add**.
 
-**Say:** "This is Quick Add. It is the fastest way to put a new product on the website. You take one photo. The system cleans the photo and writes the text for you. You only type the price and the stock, pick the phones it fits, and publish. The whole thing should take less than a minute."
+**You'll see:** the title "Quick add", a big **Take photo** button, **Choose a photo**, and **Add without a photo**.
 
-### Scene 2 (0:30-1:15) Take the photo
+**Say:** "This is Quick add. I take one photo of a product. The system reads the photo and suggests the title, category, the phones it fits and the safety mark. I check everything, type the price, and save it as a draft. Nothing goes on the website until I publish it."
 
-**On screen:** tap **Quick Add** in the sidebar. Tap the button to take a photo. The phone camera opens. Put the product on the plain surface and take the photo.
+### Scene 2 (0:30-1:00) Take the photo
 
-> ⚠ Verify against the final UI
+**Tap:** **Take photo**. The camera opens. Put the product on the plain surface, label facing you, and take the photo.
 
-**Say:** "Tap Quick Add in the menu. Tap the photo button and the camera opens. Put the product on a plain, light surface. Fill most of the picture with the product. Hold the phone still and take the photo. Don't worry about the background. The system replaces it with pure white."
+**You'll see:** your photo at the top, and a blue box: "Reading the photo… this takes up to half a minute. You can start typing meanwhile."
 
-### Scene 3 (1:15-1:45) The photo is cleaned
+**Say:** "Whole product in the picture, label readable, plain background. The photo is uploaded as it is. That original is always kept."
 
-**On screen:** the progress indicator while the photo is cleaned. Then the clean photo: product on white, square, with a soft shadow.
+### Scene 3 (1:00-2:00) Check the suggestion
 
-> ⚠ Verify against the final UI
+**You'll see:** a purple **AI suggestion** badge, a **Confidence** badge (high, medium or low), the sentence "Check every field. The AI can be wrong…", maybe orange warnings, and the fields filled in: **Title**, **Description**, **Category**, **Product type**, **Fits these devices**.
 
-**Say:** "Now wait a few seconds. You can see it working. It removes the background and puts the product on white, with a soft shadow. It only changes the background. It never changes the product itself, and it never makes anything up. Your original photo is always kept, so nothing is lost."
+**Tap:** change one word in the title. In **Fits these devices**, tap a wrong phone to remove it (it has a ✕), or type "16 pro" in the search and tap **+ Apple iPhone 16 Pro** to add one.
 
-### Scene 4 (1:45-2:45) Check the suggested text
+**Say:** "These are only suggestions. Low confidence means: read everything twice. The category decides where it shows in the shop. The devices decide who sees it after picking their phone, so only keep phones it really fits."
 
-**On screen:** the suggested fields filled in: title, description, category, tags, and the add-on item switch. Scroll through them. Change one word in the title.
+### Scene 4 (2:00-2:45) Price and safety mark
 
-> ⚠ Verify against the final UI
+**You'll see:** **Price (£, incl. VAT)** is empty. Under it: "Suggested: £14.99 (an AI guess, not a rule)" and a **Use £14.99** button.
 
-**Say:** "While the photo was cleaned, the system looked at it and suggested the title, the description, the category and some tags. It also guesses if this is a one-pound add-on item. These are only suggestions. Read them. Fix anything that is wrong. Here I'll change one word in the title. Check the category carefully. It decides where the product appears in the shop. And check the add-on switch. Add-on items can go in any basket, but a customer can't order them for delivery on their own."
+**Tap:** type your price, for example `12.99` (or tap **Use £…** if you agree). In **Safety marking**, read "AI saw: …", then look at the box yourself. Pick **UKCA**, **CE** or **No mark**. If you pick UKCA or CE, tick **I have checked the label: it shows the UKCA mark** (or CE).
 
-### Scene 5 (2:45-3:30) Price, stock and devices
+**Say:** "The price is never filled in for me. I type it in pounds, VAT included. For the safety mark the system only guesses. I check the real label and tick the box. Chargers and power banks without UKCA or CE can be saved as a draft, but they can't be published."
 
-**On screen:** type the price in pounds (for example 9.99). Type the stock (for example 12). Search for a phone model and pick it, then pick a second one.
+### Scene 5 (2:45-3:15) Stock and SKU
 
-> ⚠ Verify against the final UI
+**Tap:** open **More details (SKU, stock, connectors)**. Set **Stock in the shop** (it starts at 1). Add your **SKU** if you use one. Connectors and wattage are optional.
 
-**Say:** "Now the price. Type it in pounds, like 9.99. This is the price the customer pays, VAT included. Then the stock: how many you have in the shop. Then the devices. Type part of the model name, like '16 pro', and pick it from the list. Pick every phone this product really fits. Customers who choose their phone on the website will only see products that fit it, so this matters."
+**Tap:** **Save as draft**.
 
-### Scene 6 (3:30-4:00) Publish
+**You'll see:** a message "… saved as a draft".
 
-**On screen:** tap **Publish**. Show the success message. Open the product on the website on your phone to show it is live.
+### Scene 6 (3:15-4:00) The clean photo
 
-> ⚠ Verify against the final UI
+**You'll see:** "Saved as a draft. Now the photo…", your original on one side and "Cleaning up the background…" on the other, then the white-background photo (usually 5 to 15 seconds).
 
-**Say:** "Last step: tap Publish. That's it. The product is now on the website. Let's open the shop and check. There it is, with the clean white photo. From photo to website in under a minute."
+**Tap:** check the edges of the product in the clean photo. If it's right, tap **Use this photo**. If not, tap **Skip for now** (you can do it later on the product page, script 2).
 
-### Scene 7 (4:00-4:40) Chargers, power banks and vapes
+**Say:** "Only the background changes. The product is never drawn or changed, and my original is kept."
 
-**On screen:** show a charger product. Show the error message when publishing without a safety marking. Show where to set **Safety marking** (UKCA or CE) in the product details, then publish again.
+### Scene 7 (4:00-4:45) Publish ⚠
 
-> ⚠ Verify against the final UI
+**You'll see:** "… is saved as a draft. Check it on the product page, then publish it there when it is ready." and two buttons: **Open product** and **Add another product**.
 
-**Say:** "Chargers and power banks are different. Anything in the Chargers and Cables or Power Banks categories needs a safety mark: UKCA or CE. Look for the mark on the box. If you try to publish one without a safety marking, the system stops you and explains why. Set Safety marking to UKCA or CE in the product details, then publish again. And remember: vapes are never sold online. The system will refuse them."
+**Tap:** **Open product**. On the product page, open the menu (⋯) at the top, tap **Edit**, set **Status** to **Published**, and **Save**. ⚠
 
-### Scene 8 (4:40-5:00) Wrap up
+**Say:** "Now it's on the website. If it's a charger without a safety mark, publishing is refused with a message that says why."
 
-**On screen:** the Quick Add page, ready for the next photo.
+### Scene 8 (4:45-5:00) Wrap up
 
-**Say:** "So: photo, check the text, price, stock, devices, publish. If something goes wrong, look at the message on the screen. It tells you what to do."
+**Say:** "Photo, check the suggestion, price, safety mark, stock, save. Then the photo, then publish. About a minute per product."
 
 ---
 
-## Common mistakes / if something goes wrong
+## What can go wrong
 
-- **"Photo too small, please retake closer"**: the photo is under 1000 pixels on its short side. Move closer and take it again.
-- **"No product found in the photo, please retake it against a plain background"**: put the product on a plain, light surface and try again.
-- **Photo cleaning or suggested text is not available**: if the photo helper or the text helper is switched off or down, Quick Add still lets you upload. The button tells you what is not available. Type the text yourself, or try again in a minute.
-  > ⚠ Verify against the final UI
-- **It takes a long time**: cleaning one photo usually takes 5-15 seconds. Only one photo is cleaned at a time, so wait if someone else is also adding products.
-- **Wrong price**: prices are in pounds, not pence. Type 9.99, not 999.
-- **Charger won't publish**: set Safety marking to UKCA or CE (see Scene 7).
+| You see | What it means / what to do |
+|---|---|
+| "AI suggestions are switched off (ANTHROPIC_API_KEY is not set). You can still add products by hand." | The AI key is not set on the server. Type the details yourself. Tell the lead. |
+| An orange box after the photo (for example "too many requests", "busy", "timed out") | The AI didn't answer. The form stays. Type the details yourself, or try again later. Each person can have about 60 photos read per hour. |
+| "This looks like a vape product. Vapes are never sold online, so it can't be added." | Correct: vapes are never sold online. |
+| "Enter the selling price in pounds, e.g. 12.99." / "Use at most 2 decimals…" | Type pounds, not pence: `12.99`, not `1299`. |
+| "Check the UKCA mark on the label, then tick the box." | You chose UKCA or CE but didn't tick the box. |
+| "This photo is larger than 25 MB…" | Lower the camera resolution, or send a smaller photo. |
+| "Photo too small, please retake closer" / "The product is too small in the photo, please retake closer" | Move closer and take it again. |
+| "No product found in the photo, please retake it against a plain background" | Use a plain, light background. |
+| The product saves but the clean photo fails | The product is safe as a draft. Tap **Try again**, or **Skip for now** and use the photo box later. |
+| Publishing a charger is refused: "… needs a safety marking (UKCA or CE) before it can be published…" | Check the box for the mark. Fix it with a CSV import (script 7), then publish. |
+| SKU refused | That SKU is already used by another product. |
 
 ## Rules to remember
 
-- Only the background of a photo changes. The product is never changed. The original is always kept.
-- Prices are in pounds and include VAT.
-- Chargers and power products need UKCA or CE before they can be published.
+- Quick add always saves a **draft**. You publish on the product page.
+- Prices are in pounds and include VAT. The suggested price is only a guess.
+- You confirm the safety mark by looking at the label. Chargers and power products need UKCA or CE to be published.
 - Vapes are never sold online.
-- Add-on (£1) items can't be a delivery order on their own. Click & Collect is fine.
-- Only tick devices the product really fits.
+- Quick add has no "add-on item" switch. £1 add-ons are set with a CSV import (script 7). [LEAD?]

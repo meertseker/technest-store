@@ -1,81 +1,68 @@
-# Script 2: The photo widget on the product page
+# Script 2: The "Product photo" box on the product page
 
-- **Length:** about 5 minutes
-- **You need:** your phone or laptop, logged in to admin.technest.co.uk; a test product; one photo of it (you can take it during the recording).
-- **Status:** Draft written from the brief - verify every step against the final UI before recording.
-
----
-
-### Scene 1 (0:00-0:30) What the widget is for
-
-**On screen:** the admin, **Products** in the sidebar, open the test product.
-
-**Say:** "Every product page has a photo box. Use it when you want a clean photo for a product that is already in the shop. For example a product you loaded from your stock list, or one with an old photo. You see your original photo and the cleaned photo side by side, and you decide."
-
-### Scene 2 (0:30-1:15) Add a photo
-
-**On screen:** scroll to the photo widget. Tap the button to add or take a photo. Pick or take the photo.
-
-> ⚠ Verify against the final UI
-
-**Say:** "Scroll down to the photo box. Tap the button to add a photo. On a phone you can take a new one. Put the product on a plain, light surface and fill the picture with it."
-
-### Scene 3 (1:15-1:45) Wait for the clean photo
-
-**On screen:** the busy indicator. Then the two images side by side: **original** on one side, **cleaned** on the other.
-
-> ⚠ Verify against the final UI
-
-**Say:** "It takes a few seconds, usually less than fifteen. Now look: your original is on one side and the cleaned photo is on the other. The cleaned one has a pure white background, a soft shadow, and it is square."
-
-### Scene 4 (1:45-2:45) Check it carefully
-
-**On screen:** zoom in on the edges of the product in the cleaned image. Point at the cable, the corners, any clear plastic.
-
-**Say:** "Before you approve, look closely. Check the edges. Is any part of the product cut off? A cable end, a corner, a strap? Clear plastic and shiny packets are the hardest. Is the colour close to the real product? The system only changes the background. It never draws or changes the product. So if part of the product is missing, don't approve it."
-
-### Scene 5 (2:45-3:30) Approve
-
-**On screen:** tap **Approve**. Show the product's main image and thumbnail now using the cleaned photo.
-
-> ⚠ Verify against the final UI
-
-**Say:** "If it looks right, tap Approve. The cleaned photo becomes the main photo and the small photo in lists. Your older photos stay on the product, after the new one. And your original is kept safely in storage. You never lose it."
-
-### Scene 6 (3:30-4:15) Retry
-
-**On screen:** add a second photo that comes out badly. Tap **Retry**. Show the new result.
-
-> ⚠ Verify against the final UI
-
-**Say:** "Sometimes the result is not good. Part of the product is cut away, or a shadow is left behind. Tap Retry to try again. If it is still wrong, take a new photo. Use more light, a plainer background, and move a bit closer."
-
-### Scene 7 (4:15-4:45) Keep original
-
-**On screen:** tap **Keep original**. Show that the product photos did not change.
-
-> ⚠ Verify against the final UI
-
-**Say:** "If the cleaned photo is never right, tap Keep original. Nothing on the product changes. That is fine. A real photo is better than a wrong one."
-
-### Scene 8 (4:45-5:00) Wrap up
-
-**Say:** "So: add a photo, compare the two, then Approve, Retry, or Keep original. Always check the edges before you approve."
+- **Length:** about 4 minutes
+- **You need:** your phone or laptop, logged in to admin.technest.co.uk; a test product; the product in front of you so you can photograph it.
+- **Where:** menu → **Products** → open a product → the **Product photo** box. (Its place on the page can be moved in the admin's layout editor, so it may be lower or higher.)
+- **Status:** checked against the finished admin code on 2026-09-30. Steps marked ⚠ use Medusa's own screens.
 
 ---
 
-## Common mistakes / if something goes wrong
+### Scene 1 (0:00-0:30) What the box is for
 
-- **"Photo too small, please retake closer"**: the short side is under 1000 pixels. Move closer and take it again.
-- **"No product found in the photo..."**: use a plain, light background.
-- **The photo buttons are grey, with a message**: photo cleaning is switched off or the photo helper is not answering. Read the message. Try again in a minute. If it stays off, tell the person who looks after the website.
-  > ⚠ Verify against the final UI
-- **Approved by mistake**: your older photos and the original are still kept. Ask for help to put the old main photo back.
-  > ⚠ Verify against the final UI (how to change the main photo back)
-- **Approving the same photo twice** does not add it twice. No harm done.
+**Tap:** **Products**, open the test product, scroll to **Product photo**.
+
+**You'll see:** two squares: **Original (always kept)** and **White background (only the background changes)**, and a badge top right: **No photo**, **Not processed**, **Waiting for approval** or **Approved**.
+
+**Say:** "Every product has this photo box. I use it to give an existing product a clean white photo, or to finish the photo from Quick add."
+
+### Scene 2 (0:30-1:15) A photo from Quick add that wasn't finished
+
+**You'll see:** if you tapped "Skip for now" in Quick add, the badge says **Not processed** and there is a **Process** button.
+
+**Tap:** **Process**. Wait (usually 5 to 15 seconds, "Working on it…").
+
+**You'll see:** the clean photo appears. The badge says **Waiting for approval**.
+
+### Scene 3 (1:15-2:00) A new photo
+
+**Tap:** **Add photo** (or **New photo** if the product already has one). On a phone, the camera opens. Take the photo.
+
+**You'll see:** "Uploading the photo…", then "Working on it…", then the two photos side by side.
+
+### Scene 4 (2:00-3:00) Check, then Approve or Discard
+
+**Tap:** zoom into the clean photo. Check the edges: cable ends, corners, straps, clear plastic.
+
+**Say:** "Is any part of the product missing? Is the colour right? The system only changes the background. If part of the product is cut off, I don't approve it."
+
+**Tap:** **Approve** if it's right.
+
+**You'll see:** "Photo approved: it is now the main image". The badge says **Approved**. The clean photo is now the main photo and the small photo in lists. Older photos stay on the product, after the new one.
+
+**Tap (other case):** **Discard** if it's wrong. Nothing on the product changes. Try **New photo** with more light and a plainer background.
+
+### Scene 5 (3:00-3:30) Wrap up
+
+**Say:** "Add photo, check the edges, Approve or Discard. My original is always kept, so nothing is lost."
+
+---
+
+## What can go wrong
+
+| You see | What it means / what to do |
+|---|---|
+| Yellow box "Photo processing is switched off…" and grey buttons | The photo service is not set up on the server. Tell the lead. |
+| "The photo worker is not responding. Try again in a minute." | The photo service is busy or restarting. Wait a minute and reload. If it stays, tell the lead. |
+| "Photo too small, please retake closer" | The short side of the photo is under 1000 pixels. Move closer. |
+| "The product is too small in the photo, please retake closer" | Fill more of the picture with the product. |
+| "No product found in the photo, please retake it against a plain background" | Plain, light background, good light. |
+| "Photo has too many pixels (at most 50 megapixels)" / "larger than 25 MB" | Use a normal camera setting, not the maximum. |
+| Another person is also cleaning photos | Only one photo is cleaned at a time. It will just take a little longer. |
+| Approved the wrong photo | The older photos are still on the product and the original is kept. Change the main photo in the product's **Media** section ⚠, or add a better photo and approve it. |
 
 ## Rules to remember
 
-- Only the background changes. Nothing is drawn, added or "improved" by AI.
+- Only the background changes. Nothing is drawn, added or "improved".
 - The original photo is always kept.
 - Never approve a photo where part of the product is missing or looks different.
+- Approving the same photo twice doesn't add it twice.

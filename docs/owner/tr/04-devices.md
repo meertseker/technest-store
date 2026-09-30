@@ -1,65 +1,81 @@
 # Senaryo 4: Cihazlar ve "Fits these devices" (Uyumlu cihazlar)
 
 - **Süre:** yaklaşık 5 dakika
-- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefon veya bilgisayar; bir deneme ürünü (örneğin bir telefon kılıfı); eklenecek yeni bir modelin adı (uydurma bir deneme modeli kullanın, sonra silin).
-- **Durum:** Taslak, plana (brief) göre yazıldı - kayıttan önce her adımı son arayüzle kontrol edin.
+- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefon veya bilgisayar; bir deneme ürünü (ör. telefon kılıfı); ekleyip sonra sileceğiniz uydurma bir deneme cihazı.
+- **Nerede:** menü → **"Devices"** (Cihazlar, adres `/app/devices`) ve her ürün sayfasındaki **"Fits these devices"** kutusu.
+- **Durum:** 2026-09-30'da bitmiş panel koduyla karşılaştırıldı.
 
 ---
 
-### Sahne 1 (0:00-0:40) Cihazlar neden önemli
+### Sahne 1 (0:00-0:30) Cihazlar neden önemli
 
-**Ekranda:** telefonda site. Cihaz seçiciden bir telefon seçin. Mağazanın artık sadece o telefona uyan aksesuarları gösterdiğini gösterin.
+**Dokunun:** siteyi açın, cihaz seçiciden bir telefon seçin.
 
-**Söyleyin:** "Sitemizde müşteri telefonunu ya da konsolunu bir kez seçer. Ondan sonra sadece ona uyan ürünleri görür. Bunun çalışması için iki liste doğru olmalı: cihaz listesi ve her ürüne bağlı cihazlar. İkisi de panelde."
+**Söyleyin:** "Müşteri telefonunu ya da konsolunu bir kez seçiyor, sonra sadece ona uyan ürünleri görüyor. Bunun çalışması için iki liste doğru olmalı: cihaz listesi ve her ürüne bağlı cihazlar."
 
-### Sahne 2 (0:40-1:30) Devices sayfası
+### Sahne 2 (0:30-1:15) Devices sayfası
 
-**Ekranda:** menüden **"Devices"** ("Cihazlar"). Listenin marka, seri, model olarak gruplandığını gösterin (örneğin Apple, sonra iPhone 16, sonra iPhone 16 Pro). Arama kutusuyla "16 pro" bulun.
+**Dokunun:** menü → **"Devices"**.
 
-> ⚠ Son arayüzle kontrol edin
+**Göreceğiniz:** "Devices" başlığı ve **"Add device"** ("Cihaz ekle") düğmesi, bir **"Search"** (arama) kutusu ("Model, web address name or model number"; model, web adı ya da model numarası), ve **"All"** (hepsi), **"Phone"** (telefon), **"Tablet"**, **"Games console"** (oyun konsolu), **"Laptop"** düğmeleri. Her satırda model (ör. "iPhone 16 Pro"), altında "Apple · iPhone 16 · 2024" ve diğer adlar için "Also: 16 pro, A3102".
 
-**Söyleyin:** "Menüden Devices'a basın. Cihazlar üç seviyede gruplanır. Önce marka, Apple ya da Samsung gibi. Sonra seri, iPhone 16 gibi. Sonra model, iPhone 16 Pro gibi. Hızlı bulmak için arama kutusunu kullanın."
+**Dokunun:** aramaya "a3102" yazıp model numarasıyla da bulunduğunu gösterin.
 
-### Sahne 3 (1:30-2:45) Yeni model ekleyin
+### Sahne 3 (1:15-2:30) Cihaz ekleyin
 
-**Ekranda:** cihaz ekleme düğmesine basın. Doldurun: marka, seri, model, tür (phone, tablet, console veya laptop), çıkış yılı. İki takma ad (alias) ekleyin, örneğin "16 pro" ve kutudaki model numarası. Kaydedin.
+**Dokunun:** **"Add device"**.
 
-> ⚠ Son arayüzle kontrol edin
+**Göreceğiniz:** "Add a device" penceresi ve alanlar: **"Brand"** (marka), **"Series"** (seri), **"Model"**, **"Kind of device"** (cihaz türü), **"Other names (optional)"** (diğer adlar), **"Year released (optional)"** (çıkış yılı), **"Web address name (optional)"** (web adı), **"Picture web address (optional)"** (resim adresi).
 
-**Söyleyin:** "Yeni bir telefon çıkınca buraya ekleyin. Cihaz eklemeye basın. Markayı, seriyi ve model adını üreticinin yazdığı gibi girin. Türünü seçin: telefon, tablet, konsol ya da laptop. Çıkış yılını ekleyin; en yeni telefonlar böylece önde görünür. Sonra takma adlar. Takma adlar müşterinin yazabileceği başka kelimelerdir: '16 pro' gibi, ya da telefonun arkasındaki veya kutusundaki model numarası. Aramada telefonlarını bulmalarını sağlar. Sonra kaydedin."
+**Dokunun:** Brand `Apple`, Series `iPhone 16`, Model `iPhone 16 Pro`, Kind `Phone`, Other names `16 pro, A3102`, Year `2024`. Web adını boş bırakın. **"Add device"**a basın.
 
-### Sahne 4 (2:45-3:15) Düzenleme ve silme
+**Göreceğiniz:** "iPhone 16 Pro added." (eklendi)
 
-**Ekranda:** deneme modelini açın. Bir takma adı değiştirip kaydedin. Sonra silme düğmesini gösterin ve deneme modelini silin.
+**Söyleyin:** "Model adını üreticinin yazdığı gibi yazıyorum. Diğer adlara müşterinin yazabileceği şeyleri, virgülle ayırarak, kutudaki model numarasıyla birlikte yazıyorum. Web adını sistem kendisi oluşturuyor."
 
-> ⚠ Son arayüzle kontrol edin
+### Sahne 4 (2:30-3:15) Düzenleme ya da silme
 
-**Söyleyin:** "Bir hatayı düzeltmek için cihazı açın, değiştirin, kaydedin. Silerken dikkatli olun. Bir cihazı silmek onu bağlı olduğu tüm ürünlerden de kaldırır. Sadece yanlışlıkla eklediğiniz bir cihazı silin."
+**Dokunun:** listedeki cihaza.
+
+**Göreceğiniz:** "Edit iPhone 16 Pro", aynı alanlar, **"Products that fit"** (uyan ürünler) listesi ve en altta **"Delete device"** ("Cihazı sil").
+
+**Dokunun:** bir diğer adı değiştirip **"Save"** ("… saved."). Sonra, sadece deneme cihazı için: **"Delete device"** → "Delete …? It is linked to 3 products. Those links are removed too. This can't be undone." (3 ürüne bağlı; bu bağlantılar da silinir; geri alınamaz) → **"Delete"**.
+
+**Söyleyin:** "Bir cihazı silmek onu tüm ürünlerden de kaldırır. Sadece yanlışlıkla eklediğim bir cihazı silerim. Gerçek bir cihazın web adını da değiştirmem; eski bağlantılar çalışmaz olur."
 
 ### Sahne 5 (3:15-4:30) Üründe "Fits these devices"
 
-**Ekranda:** menüden **"Products"**, deneme kılıfını açın. **"Fits these devices"** bölümüne inin. "16" arayın, iPhone 16 ve iPhone 16 Plus'ı işaretleyin. Birine not ekleyin, örneğin "Not compatible with MagSafe". Kaydedin. Bir cihazı kaldırın.
+**Dokunun:** **"Products"** → deneme kılıfını açın → **"Fits these devices"** kutusunu bulun (bilgisayarda sağ sütunda).
 
-> ⚠ Son arayüzle kontrol edin
+**Göreceğiniz:** bağlı cihazlar, her birinin yanında **"Remove"** ("Kaldır") düğmesi; ya da "No devices linked. Customers won't see this product when they pick a device." (Bağlı cihaz yok; müşteri cihaz seçince bu ürünü görmez.)
 
-**Söyleyin:** "Şimdi bir ürün açın. Fits these devices bölümüne inin. Modeli arayın ve ürünün gerçekten uyduğu her cihazı işaretleyin. Bir cihaza kısa bir not ekleyebilirsiniz, 'MagSafe ile uyumlu değil' ya da 'Sadece ince kılıfla' gibi. Müşteri bu notu sitede görür, o yüzden notu İngilizce yazın. Bir cihazı kaldırmak için işaretini kaldırın. Sonra kaydedin. Ürünün uyduğundan emin değilseniz işaretlemeyin. Yanlış uyum, iade ve mutsuz müşteri demek."
+**Dokunun:** **"Add"** ("Ekle"). "Link devices to …" penceresinde "16" arayın, **iPhone 16** ve **iPhone 16 Plus**'ı işaretleyin. **"Note for customers (optional)"** (müşteri notu) alanına "Not compatible with MagSafe" yazın. **"Link 2 devices"** ("2 cihazı bağla").
 
-### Sahne 6 (4:30-5:00) Kapanış
+**Göreceğiniz:** "2 devices linked." İkisi de notuyla birlikte kutuda görünür.
 
-**Söyleyin:** "Özetle: yeni telefonlar çıktıkça cihaz listesini güncel tutun, her üründe de sadece gerçekten uyduğu cihazları işaretleyin. Quick Add de cihazları soruyor; çoğu zaman bunu orada yaparsınız."
+**Dokunun:** birinin yanındaki **"Remove"** ("… removed.").
+
+**Söyleyin:** "Not, o seferde işaretlediğim tüm cihazlara yazılır ve müşteri onu cihazın yanında görür. Zaten bağlı bir cihazı tekrar işaretlersem notu değişir. Uyduğundan emin değilsem işaretlemem: yanlış uyum iade demektir."
+
+### Sahne 6 (4:30-5:00) Toparlama
+
+**Söyleyin:** "Yeni telefon çıkınca Devices'a model numarasıyla eklerim. Her üründe sadece gerçekten uyanları bağlarım. Quick add de cihaz önerdiği için çoğu zaman bu iş zaten yapılmış olur."
 
 ---
 
-## Sık yapılan hatalar / bir şey ters giderse
+## Ne ters gidebilir
 
-- **Cihaz eklerken hata**: cihaz büyük ihtimalle zaten var. Her cihazın benzersiz olması gereken kısa bir web adı var (örneğin `iphone-16-pro`). Önce arayın.
-  > ⚠ Son arayüzle kontrol edin (hata mesajının tam metni)
-- **Müşteri telefonunu bulamıyor**: yazdığı kelimeleri, örneğin model numarasını, takma ad olarak ekleyin.
-- **Bir ürün bir telefonda görünmüyor**: ürünü açıp Fits these devices'ı kontrol edin. Ürünün yayında olduğunu da kontrol edin.
-- **Yanlışlıkla cihaz sildim**: tekrar ekleyin, sonra her üründe yeniden bağlayın. Bağlantılar kendiliğinden geri gelmez.
+| Gördüğünüz | Anlamı / ne yapmalı |
+|---|---|
+| "A device with slug iphone-16-pro already exists" | Bu cihaz zaten var. Önce arayın. |
+| "Use lowercase letters, numbers and dashes only…" | **"Web address name"** alanını boş bırakın; kendiliğinden oluşur. |
+| "No devices match. Add new ones under Devices." (ürün kutusunda) | Cihaz listede yok. Önce Devices sayfasından ekleyin. |
+| Müşteri telefonunu bulamıyor | Yazdığı kelimeyi (çoğunlukla model numarası) **"Other names"**e ekleyin. |
+| Ürün bir telefonda görünmüyor | Üründe **"Fits these devices"**e ve ürünün yayında olup olmadığına bakın. |
+| Bir cihazı yanlışlıkla sildiniz | Tekrar ekleyin ve her üründe yeniden bağlayın. Bağlantılar kendiliğinden geri gelmez. |
 
-## Akılda tutulacak kurallar
+## Unutmayın
 
-- Sadece ürünün gerçekten uyduğu cihazları bağlayın.
-- Üreticinin model adını kullanın; diğer adları takma ad olarak ekleyin.
+- Ürüne sadece gerçekten uyan cihazları bağlayın.
+- **"Model"**e üreticinin model adı; diğer adlar ve model numaraları **"Other names"**e.
 - Bir cihazı silmek onu tüm ürünlerden kaldırır.

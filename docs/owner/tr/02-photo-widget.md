@@ -1,81 +1,68 @@
-# Senaryo 2: Ürün sayfasındaki fotoğraf bölümü
+# Senaryo 2: Ürün sayfasındaki "Product photo" (Ürün fotoğrafı) kutusu
 
-- **Süre:** yaklaşık 5 dakika
-- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefon veya bilgisayar; bir deneme ürünü; ürünün bir fotoğrafı (kayıt sırasında da çekebilirsiniz).
-- **Durum:** Taslak, plana (brief) göre yazıldı - kayıttan önce her adımı son arayüzle kontrol edin.
-
----
-
-### Sahne 1 (0:00-0:30) Bu bölüm ne işe yarar
-
-**Ekranda:** panel, menüden **"Products"** ("Ürünler"), deneme ürününü açın.
-
-**Söyleyin:** "Her ürün sayfasında bir fotoğraf bölümü var. Mağazada zaten olan bir ürüne temiz fotoğraf istediğinizde bunu kullanın. Mesela stok listesinden yüklediğiniz ya da eski fotoğraflı bir ürün. Orijinal fotoğrafınızı ve temizlenmiş halini yan yana görür, karar verirsiniz."
-
-### Sahne 2 (0:30-1:15) Fotoğraf ekleyin
-
-**Ekranda:** fotoğraf bölümüne inin. Fotoğraf ekleme/çekme düğmesine basın. Fotoğrafı seçin veya çekin.
-
-> ⚠ Son arayüzle kontrol edin
-
-**Söyleyin:** "Fotoğraf bölümüne inin. Fotoğraf ekleme düğmesine basın. Telefonda yeni bir tane çekebilirsiniz. Ürünü düz, açık renkli bir zemine koyun ve kareyi ürünle doldurun."
-
-### Sahne 3 (1:15-1:45) Temiz fotoğrafı bekleyin
-
-**Ekranda:** meşgul göstergesi. Sonra iki fotoğraf yan yana: bir yanda **orijinal**, diğer yanda **temizlenmiş**.
-
-> ⚠ Son arayüzle kontrol edin
-
-**Söyleyin:** "Birkaç saniye sürer, genelde on beş saniyeden az. Bakın: bir yanda orijinaliniz, diğer yanda temizlenmiş fotoğraf. Temiz olanın arka planı bembeyaz, hafif gölgeli ve kare."
-
-### Sahne 4 (1:45-2:45) Dikkatle kontrol edin
-
-**Ekranda:** temiz fotoğrafta ürünün kenarlarına yakınlaştırın. Kabloyu, köşeleri, şeffaf plastiği gösterin.
-
-**Söyleyin:** "Onaylamadan önce yakından bakın. Kenarları kontrol edin. Ürünün bir parçası kesilmiş mi? Kablo ucu, bir köşe, bir askı? Şeffaf plastik ve parlak paketler en zorları. Renk gerçeğe yakın mı? Sistem sadece arka planı değiştirir; ürünü çizmez, değiştirmez. Yani ürünün bir parçası eksikse onaylamayın."
-
-### Sahne 5 (2:45-3:30) Onaylayın
-
-**Ekranda:** **"Approve"** ("Onayla") düğmesine basın. Ürünün ana fotoğrafının ve küçük resminin artık temiz fotoğraf olduğunu gösterin.
-
-> ⚠ Son arayüzle kontrol edin
-
-**Söyleyin:** "İyi görünüyorsa Approve'a basın. Temiz fotoğraf ana fotoğraf olur, listelerdeki küçük resim de o olur. Eski fotoğraflar üründe kalır, yenisinin arkasına geçer. Orijinaliniz de güvenle saklanır. Asla kaybolmaz."
-
-### Sahne 6 (3:30-4:15) Tekrar deneyin
-
-**Ekranda:** kötü çıkan ikinci bir fotoğraf ekleyin. **"Retry"** ("Tekrar dene") düğmesine basın. Yeni sonucu gösterin.
-
-> ⚠ Son arayüzle kontrol edin
-
-**Söyleyin:** "Bazen sonuç iyi olmaz. Ürünün bir parçası kesilir ya da bir gölge kalır. Retry'a basıp tekrar deneyin. Yine olmazsa yeni fotoğraf çekin: daha fazla ışık, daha düz bir zemin, biraz daha yakın."
-
-### Sahne 7 (4:15-4:45) Orijinali kullanın
-
-**Ekranda:** **"Keep original"** ("Orijinali koru") düğmesine basın. Ürün fotoğraflarının değişmediğini gösterin.
-
-> ⚠ Son arayüzle kontrol edin
-
-**Söyleyin:** "Temiz fotoğraf bir türlü doğru olmuyorsa Keep original'a basın. Üründe hiçbir şey değişmez. Sorun değil. Gerçek bir fotoğraf, yanlış bir fotoğraftan iyidir."
-
-### Sahne 8 (4:45-5:00) Kapanış
-
-**Söyleyin:** "Özetle: fotoğraf ekle, ikisini karşılaştır, sonra Approve, Retry ya da Keep original. Onaylamadan önce her zaman kenarlara bakın."
+- **Süre:** yaklaşık 4 dakika
+- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefon veya bilgisayar; bir deneme ürünü; fotoğrafını çekebilmek için ürünün kendisi.
+- **Nerede:** menü → **"Products"** (Ürünler) → bir ürün → **"Product photo"** kutusu. (Kutunun sayfadaki yeri panelin düzen editöründen değiştirilebilir; biraz yukarıda ya da aşağıda olabilir.)
+- **Durum:** 2026-09-30'da bitmiş panel koduyla karşılaştırıldı. ⚠ işaretli adımlar Medusa'nın kendi ekranlarıdır.
 
 ---
 
-## Sık yapılan hatalar / bir şey ters giderse
+### Sahne 1 (0:00-0:30) Kutu ne işe yarar
 
-- **"Photo too small, please retake closer"**: kısa kenar 1000 pikselden az. Yaklaşıp tekrar çekin.
-- **"No product found in the photo..."**: düz, açık renkli bir zemin kullanın.
-- **Fotoğraf düğmeleri gri ve bir mesaj var**: fotoğraf temizleme kapalı ya da cevap vermiyor. Mesajı okuyun, bir dakika sonra tekrar deneyin. Kapalı kalırsa siteye bakan kişiye haber verin.
-  > ⚠ Son arayüzle kontrol edin
-- **Yanlışlıkla onayladım**: eski fotoğraflar ve orijinal hâlâ duruyor. Eski ana fotoğrafı geri koymak için yardım isteyin.
-  > ⚠ Son arayüzle kontrol edin (ana fotoğraf nasıl geri alınır)
-- **Aynı fotoğrafı iki kez onaylamak** onu iki kez eklemez. Zararı yok.
+**Dokunun:** **"Products"**, deneme ürününü açın, **"Product photo"** kutusuna inin.
 
-## Akılda tutulacak kurallar
+**Göreceğiniz:** iki kare: **"Original (always kept)"** (orijinal, her zaman saklanır) ve **"White background (only the background changes)"** (beyaz arka plan, sadece arka plan değişir). Sağ üstte bir etiket: **"No photo"** (fotoğraf yok), **"Not processed"** (işlenmedi), **"Waiting for approval"** (onay bekliyor) veya **"Approved"** (onaylandı).
 
-- Sadece arka plan değişir. Yapay zeka hiçbir şey çizmez, eklemez, "güzelleştirmez".
+**Söyleyin:** "Her ürünün bu fotoğraf kutusu var. Mevcut bir ürüne temiz beyaz fotoğraf vermek ya da Quick add'de yarım kalan fotoğrafı bitirmek için kullanıyorum."
+
+### Sahne 2 (0:30-1:15) Quick add'den yarım kalan fotoğraf
+
+**Göreceğiniz:** Quick add'de "Skip for now" dediyseniz etiket **"Not processed"** yazar ve bir **"Process"** ("İşle") düğmesi vardır.
+
+**Dokunun:** **"Process"**. Bekleyin (genelde 5-15 saniye, "Working on it…").
+
+**Göreceğiniz:** temiz fotoğraf çıkar. Etiket **"Waiting for approval"** olur.
+
+### Sahne 3 (1:15-2:00) Yeni fotoğraf
+
+**Dokunun:** **"Add photo"** ("Fotoğraf ekle"; üründe zaten fotoğraf varsa **"New photo"**, "Yeni fotoğraf"). Telefonda kamera açılır. Fotoğrafı çekin.
+
+**Göreceğiniz:** "Uploading the photo…" (yükleniyor), sonra "Working on it…", sonra iki fotoğraf yan yana.
+
+### Sahne 4 (2:00-3:00) Kontrol edin, sonra onaylayın ya da vazgeçin
+
+**Dokunun:** temiz fotoğrafı yakınlaştırın. Kenarlara bakın: kablo uçları, köşeler, askılar, şeffaf plastik.
+
+**Söyleyin:** "Ürünün bir parçası eksik mi? Renk doğru mu? Sistem sadece arka planı değiştirir. Ürünün bir kısmı kesilmişse onaylamam."
+
+**Dokunun:** doğruysa **"Approve"** ("Onayla").
+
+**Göreceğiniz:** "Photo approved: it is now the main image" (fotoğraf onaylandı, artık ana görsel). Etiket **"Approved"** olur. Temiz fotoğraf artık ana fotoğraf ve listelerdeki küçük resim. Eski fotoğraflar üründe, yenisinin arkasında kalır.
+
+**Dokunun (diğer durum):** yanlışsa **"Discard"** ("Vazgeç"). Üründe hiçbir şey değişmez. Daha çok ışık ve daha sade bir zeminle **"New photo"** deneyin.
+
+### Sahne 5 (3:00-3:30) Toparlama
+
+**Söyleyin:** "Fotoğraf ekle, kenarlara bak, Approve ya da Discard. Orijinalim hep saklanır, hiçbir şey kaybolmaz."
+
+---
+
+## Ne ters gidebilir
+
+| Gördüğünüz | Anlamı / ne yapmalı |
+|---|---|
+| Sarı kutu "Photo processing is switched off…" ve gri düğmeler | Fotoğraf servisi sunucuda kurulu değil. Lead'e haber verin. |
+| "The photo worker is not responding. Try again in a minute." | Fotoğraf servisi meşgul ya da yeniden başlıyor. Bir dakika bekleyip sayfayı yenileyin. Devam ederse lead'e haber verin. |
+| "Photo too small, please retake closer" | Fotoğrafın kısa kenarı 1000 pikselden az. Yaklaşın. |
+| "The product is too small in the photo, please retake closer" | Ürün karenin daha büyük kısmını kaplasın. |
+| "No product found in the photo, please retake it against a plain background" | Sade, açık renkli zemin ve iyi ışık. |
+| "Photo has too many pixels (at most 50 megapixels)" / "larger than 25 MB" | Kamerayı en yüksek ayarda değil, normal ayarda kullanın. |
+| Başka biri de aynı anda fotoğraf temizliyor | Aynı anda tek fotoğraf işlenir. Sadece biraz daha uzun sürer. |
+| Yanlış fotoğrafı onayladınız | Eski fotoğraflar üründe duruyor, orijinal de saklı. Ana fotoğrafı ürünün **"Media"** bölümünden değiştirin ⚠ ya da daha iyi bir fotoğraf ekleyip onaylayın. |
+
+## Unutmayın
+
+- Sadece arka plan değişir. Hiçbir şey çizilmez, eklenmez, "güzelleştirilmez".
 - Orijinal fotoğraf her zaman saklanır.
-- Ürünün bir parçası eksik ya da farklı görünen fotoğrafı asla onaylamayın.
+- Ürünün bir parçası eksik ya da farklı görünüyorsa asla onaylamayın.
+- Aynı fotoğrafı iki kez onaylamak onu iki kez eklemez.

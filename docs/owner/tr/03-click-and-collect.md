@@ -2,67 +2,78 @@
 
 - **Süre:** yaklaşık 5 dakika
 - **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefonunuz; bir **deneme** Click & Collect siparişi (kayıttan önce sitede test kartıyla, ödeme adımında Click & Collect seçerek verin). Gerçek müşteri siparişini asla kullanmayın.
-- **Durum:** Taslak, plana (brief) göre yazıldı - kayıttan önce her adımı son arayüzle kontrol edin.
+- **Nerede:** menü → **"Click & Collect"** (adres `/app/click-collect`).
+- **Durum:** 2026-09-30'da bitmiş panel koduyla karşılaştırıldı.
 
 ---
 
 ### Sahne 1 (0:00-0:30) Pano ne işe yarar
 
-**Ekranda:** sol menüyü açın, **"Click & Collect"** seçin. Üç sütunu veya sekmeyi gösterin: **"To pick"** ("Hazırlanacak"), **"Ready"** ("Hazır"), **"Collected"** ("Teslim edildi").
+**Dokunun:** menü → **"Click & Collect"**.
 
-> ⚠ Son arayüzle kontrol edin
+**Göreceğiniz:** "Updates every minute. Last updated …" (her dakika yenilenir, son güncelleme …), bir **"Refresh"** ("Yenile") düğmesi ve telefonda üç düğme: **"To pick"** (hazırlanacak), **"Ready"** (hazır), **"Collected"** (teslim edildi); her birinin yanında sayı. (Bilgisayarda üçü yan yana durur.)
 
-**Söyleyin:** "Bu Click & Collect panosu. Click & Collect seçen müşteri kargo ücreti ödemez, siparişini dükkandan alır. Her sipariş üç adımdan geçer: To pick, Ready ve Collected. Hepsini telefonda tek elle yapabilirsiniz."
+**Söyleyin:** "Click & Collect seçen müşteri kargo ücreti ödemez, siparişini dükkandan alır. Her sipariş önce To pick, sonra Ready, sonra Collected olur. Pano her dakika kendini yeniler."
 
-### Sahne 2 (0:30-1:30) Sipariş kartını okuyun
+### Sahne 2 (0:30-1:15) Sipariş kartını okuyun
 
-**Ekranda:** **"To pick"** seçin. Bir sipariş kartını gösterin: sipariş numarası, müşteri adı, ürünler, ne kadar önce verildiği.
+**Dokunun:** **"To pick"**.
 
-> ⚠ Son arayüzle kontrol edin
+**Göreceğiniz:** en eskisi üstte olacak şekilde kartlar. Her kartta **"Order #1042"** (sipariş no), "Placed 2 hours ago" (2 saat önce verildi), "The collection code is made when you press Mark ready." (teslim kodu Mark ready'e basınca oluşur), müşterinin adı, ürünler (ör. "2 x USB-C cable (1 m)") ve **"Total £9.98 inc. VAT"** (KDV dahil toplam).
 
-**Söyleyin:** "To pick, henüz kimsenin hazırlamadığı yeni siparişleri gösterir. En eskisi en üstte; oradan başlayın. Her kartta sipariş numarası, müşterinin adı, ürünler ve ne kadar önce sipariş verdiği yazar. Ürünleri okuyun ve raftan alın. Rengi ve modeli kontrol edin. 16 Pro kılıfı, 16 kılıfı değildir."
+**Söyleyin:** "En üstteki, en eski siparişten başlıyorum. Ürünleri raftan alıyorum. Rengi ve modeli kontrol ediyorum: 16 Pro kılıfı, 16 kılıfı değildir."
 
-### Sahne 3 (1:30-2:30) Hazır olarak işaretleyin
+### Sahne 3 (1:15-2:15) Hazır olarak işaretleyin
 
-**Ekranda:** ürünleri poşete koyun. Karttaki düğmeye basıp **"Ready"**e taşıyın. Kartın artık Ready sütununda, **teslim kodu** ile (K7MQ2X gibi 6 harf ve rakam) göründüğünü gösterin.
+**Dokunun:** poşeti hazırlayın, sonra karttaki **"Mark ready"** ("Hazır işaretle").
 
-> ⚠ Son arayüzle kontrol edin
+**Göreceğiniz:** "Order #1042 is ready. Code K7MQ2X." Kart **"Ready"** sütununa geçer ve **"Collection code"** (teslim kodu) büyük harflerle görünür.
 
-**Söyleyin:** "Poşet hazır olunca düğmeye basıp Ready'e taşıyın. İki şey olur. Siparişe altı harf ve rakamdan oluşan bir teslim kodu verilir. Müşteriye de siparişin hazır olduğunu söyleyen bir e-posta gider; içinde kod, adresimiz ve bugünkü çalışma saatleri var. Poşete sipariş numarasını ve adı yazıp tezgahın arkasına koyun. Yanlışlıkla iki kez Ready'e basarsanız sorun olmaz; müşteriye tek e-posta gider."
+**Söyleyin:** "Müşteriye şimdi 'siparişiniz hazır' e-postası gidiyor; içinde kod, adresimiz ve bugünkü çalışma saatlerimiz var. Poşetin üstüne sipariş numarasını ve adı yazıp tezgahın arkasına koyuyorum. Yanlışlıkla iki kez Mark ready'e bassam bir şey olmaz: tek kod, tek e-posta."
 
-### Sahne 4 (2:30-3:45) Müşteri geldi
+### Sahne 4 (2:15-3:30) Müşteri geldi
 
-**Ekranda:** **"Ready"** seçin. Siparişi bulun. Karttaki teslim kodunu gösterin. Düğmeye basıp **"Collected"** yapın. Kartın Collected'a geçtiğini gösterin.
+**Dokunun:** **"Ready"**. Siparişi bulun. Müşteriye adını ve kodunu sorun.
 
-> ⚠ Son arayüzle kontrol edin
+**Dokunun:** **"Collected"**.
 
-**Söyleyin:** "Müşteri geldi. Adını ve teslim kodunu sorun. Siparişi Ready'de bulun ve karttaki kodla aynı mı bakın. Sadece kod tutuyorsa poşeti verin. Sonra Collected'a basın. Bu çok önemli: müşterinin kartından para ancak Collected'a bastığınızda çekilir. O zamana kadar para sadece kartında bloke durur. Yani Collected'a poşet dükkandan çıkarken basın, önce değil, ve asla unutmayın."
+**Göreceğiniz:** bir soru: "Hand over order #1042?" (Siparişi teslim ediyor musunuz?) "Check the code K7MQ2X with the customer first. Pressing Collected takes the payment of £9.98 from their card." (Önce kodu müşteriyle kontrol edin. Collected'a basınca kartından £9.98 çekilir.) Düğmeler: **"Not yet"** ("Henüz değil") ve **"Yes, collected"** ("Evet, teslim edildi").
 
-### Sahne 5 (3:45-4:30) Alınmayan siparişler
+**Dokunun:** **"Yes, collected"**.
 
-**Ekranda:** birkaç günlük bir Ready siparişini gösterin.
+**Göreceğiniz:** "Order #1042 collected. Payment taken." (teslim edildi, ödeme alındı). Kart **"Collected"** sütununa geçer.
 
-**Söyleyin:** "Bazıları unutur. Sipariş Ready olduktan üç gün sonra müşteriye otomatik hatırlatma e-postası gider. Yedi gün sonra hâlâ alınmadıysa sipariş otomatik iptal edilir ve kartındaki bloke kalkar. Müşteriden para çekilmez. İptal edilen siparişler panodan kaybolur. Ürünleri rafa geri koyun."
+**Söyleyin:** "Bu önemli: kart ancak Collected'a bastığımda çekilir. O zamana kadar para sadece bloke durur. O yüzden poşet dükkandan çıkarken basarım, önce değil; ve asla unutmam."
 
-> ⚠ Son arayüzle kontrol edin (kartta hatırlatma gönderildiği görünüyor mu)
+### Sahne 5 (3:30-4:30) Alınmayan siparişler
 
-### Sahne 6 (4:30-5:00) Kapanış
+**Göreceğiniz:** Ready kartında **"Reminder: Not sent yet (sent 3 days after ready)"** (hatırlatma henüz gitmedi, hazır olduktan 3 gün sonra gider); daha sonra **"Sent …"** (gönderildi) ve turuncu bir etiket: "Reminder sent. Cancelled automatically 7 days after ready." (Hatırlatma gitti; hazır olduktan 7 gün sonra otomatik iptal edilir.)
 
-**Söyleyin:** "Özetle: To pick, hazırla, Ready. Tezgahta kodu kontrol et, sonra Collected. Bu panoya her sabah ve gün içinde tekrar bakın."
+**Söyleyin:** "Hazır olduktan üç gün sonra müşteriye kendiliğinden hatırlatma e-postası gider. Yedi gün sonra sipariş kendiliğinden iptal olur, karttaki bloke kalkar ve müşteriye iptal e-postası gider. Müşteriden para çekilmez. İptal olan siparişler panodan kaybolur; ürünleri rafa geri koyarım."
+
+### Sahne 6 (4:30-5:00) Toparlama
+
+**Söyleyin:** "To pick, hazırla, Mark ready. Tezgahta: kodu kontrol et, sonra Collected. Bu panoya her sabah ve gün içinde tekrar bakarım."
 
 ---
 
-## Sık yapılan hatalar / bir şey ters giderse
+## Ne ters gidebilir
 
-- **Müşteri gelmeden yanlışlıkla Collected'a bastım**: karttan para çekildi. Başka bir şeye basmayın. Proje liderine söyleyin; iade paneldeki normal sipariş sayfasından yapılır.
-- **"Payment captured but..." ile başlayan bir mesaj**: ödeme alındı ama sonraki bir adım başarısız oldu. **Hiçbir şey otomatik iade edilmez.** Collected'a tekrar basın; kalan adımları ikinci kez para çekmeden tamamlar. Tekrarlarsa mesajı proje liderine gösterin.
-- **Collected kabul edilmiyor**: sipariş henüz Ready yapılmamış, iptal edilmiş ya da karttaki bloke süresi dolmuş olabilir (örneğin 7 gün sonra). Mesajı okuyun. Ödeme olmadan ürün vermeyin; müşteriden kasada ödemesini ya da yeniden sipariş vermesini isteyin.
-- **Kod tutmuyor**: poşeti vermeyin. Adı ve sipariş numarasını kontrol edin, e-postayı göstermesini isteyin.
-- **Bir sipariş panoda yok**: iptal edilen siparişler panoda görünmez. Menüden **"Orders"** ("Siparişler") sayfasına bakın.
+| Gördüğünüz | Anlamı / ne yapmalı |
+|---|---|
+| "Payment could not be captured…" | Kart şirketi ödemeyi reddetti. Hiçbir şey çekilmedi; sipariş Ready'de kalır. Müşteriden kasada ödeme alın ya da daha sonra tekrar **"Collected"**a basın. "Ödeme başarısız" e-postasının bir kopyası dükkana da gelir. |
+| "Payment captured but…" ile başlayan mesaj | Para **çekildi** ama sonraki bir adım başarısız oldu. **Hiçbir şey iade edilmez.** Tekrar **"Collected"**a basın: kalan adımları iki kez çekmeden tamamlar. Tekrarlarsa mesajı lead'e gösterin. |
+| Kırmızı kutu ve "Refresh the board and try again." | Aynı siparişe başka biri (ya da çift dokunuş) aynı anda işlem yaptı. **"Refresh"**e basıp tekrar deneyin. |
+| Collected reddedildi ("not allowed") | Sipariş iptal edilmiş, henüz hazır işaretlenmemiş ya da karttaki bloke süresi dolmuş (ör. 7 günden sonra). Ödemesiz mal vermeyin: kasada ödeme alın ya da yeniden sipariş vermesini isteyin. |
+| Kod tutmuyor | Poşeti vermeyin. Adı ve sipariş numarasını kontrol edin, e-postayı göstermesini isteyin. |
+| Collected'a erken bastınız | Karttan para çekildi. Başka bir şeye basmayın. Müşteri malı hiç almazsa sipariş sayfasından iade edin (senaryo 8). |
+| Bir sipariş panoda yok | İptal edilen siparişler burada hiç görünmez. **"Orders"** (Siparişler) bölümüne bakın. |
+| **"Collected"** sadece son 20'yi gösteriyor | "Showing the latest 20 of …". Eskiler **"Orders"**da. |
 
-## Akılda tutulacak kurallar
+## Unutmayın
 
-- Ödeme sadece **"Collected"**a bastığınızda alınır.
-- Tezgahta teslim kodunu mutlaka kontrol edin.
-- Ready'de 3 gün sonra hatırlatma e-postası. 7 gün sonra otomatik iptal ve karttaki blokenin kalkması.
-- Click & Collect her zaman ücretsizdir. £1'lık ek ürünler tek başına Click & Collect ile alınabilir.
+- Para ancak **"Collected"**a bastığınızda çekilir.
+- Tezgahta teslim kodunu her zaman kontrol edin.
+- Hazır olduktan 3 gün sonra hatırlatma e-postası. 7 gün sonra otomatik iptal ve kart blokesinin kalkması.
+- Click & Collect her zaman ücretsiz. Tek başına £1'lık ek ürünler Click & Collect ile alınabilir.
+- İadeler yönetim panelindeki sipariş sayfasından yapılır, Stripe sitesinden asla (senaryo 8).
