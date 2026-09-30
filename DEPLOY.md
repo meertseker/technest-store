@@ -573,7 +573,7 @@ relay ile gönderin.
 ### 11.3 Sertifika (Caddy)
 
 `mail.technest.co.uk` DNS kaydı **DNS only (gri bulut)** olmalı (bölüm 4.2). Caddy sertifikayı
-alabilsin diye `Caddyfile`'da bu ad için boş bir site bloğu gerekir (dosya E4'ün; E4 ekler):
+alabilsin diye `Caddyfile`'da bu ad için boş bir site bloğu gerekir (Caddyfile'da zaten var):
 
 ```caddyfile
 mail.{$SHOP_DOMAIN} {
