@@ -21,7 +21,7 @@ export default function CheckoutLayout({
             className="flex min-h-11 flex-1 basis-0 items-center gap-x-2 hover:underline"
             data-testid="back-to-cart-link"
           >
-            <ChevronDown className="rotate-90" size={16} />
+            <ChevronDown aria-hidden className="rotate-90" size={16} />
             <span className="hidden small:block">Back to basket</span>
             <span className="block small:hidden">Back</span>
           </a>
