@@ -28,7 +28,7 @@ Not covered by UptimeRobot (weekly manual check, `docker compose ps`):
 | Storefront | `technest-storefront` (Next.js) | `SENTRY_DSN_STOREFRONT` (server), `NEXT_PUBLIC_SENTRY_DSN` (browser, build arg) | Server render / route handler errors (`onRequestError`), browser errors |
 
 Privacy (defence in depth):
-1. `sendDefaultPii: false` in both SDKs; no performance tracing, no session replay.
+1. Sentry v11 `dataCollection` set to collect no user info, cookies, bodies or query params in both SDKs (`SENTRY_DATA_COLLECTION`); no performance tracing, no session replay.
 2. Our `beforeSend` / `beforeBreadcrumb` scrubbers (`apps/backend/src/lib/monitoring/sentry-scrub.ts`,
    storefront copy in `apps/storefront/src/lib/monitoring/sentry-scrub.ts`) remove cookies, request bodies,
    query strings, auth / publishable-key / Stripe-signature / client-IP headers, and user fields other than `id`, and

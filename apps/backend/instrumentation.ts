@@ -1,24 +1,24 @@
-// Uncomment this file to enable instrumentation and observability using OpenTelemetry
-// Refer to the docs for installation instructions: https://docs.medusajs.com/learn/debugging-and-testing/instrumentation
+// Loaded by `medusa start` / `medusa develop` before the app boots (Medusa calls register()).
+// Sentry is OFF unless SENTRY_DSN is set. PII is scrubbed before anything leaves the process.
+import { SENTRY_DATA_COLLECTION, scrubBreadcrumb, scrubEvent } from "./src/lib/monitoring/sentry-scrub"
 
-// import { registerOtel } from "@medusajs/medusa"
-// // If using an exporter other than Zipkin, require it here.
-// import { ZipkinExporter } from "@opentelemetry/exporter-zipkin"
-
-// // If using an exporter other than Zipkin, initialize it here.
-// const exporter = new ZipkinExporter({
-//   serviceName: 'my-medusa-project',
-// })
-
-// export function register() {
-//   registerOtel({
-//     serviceName: 'medusajs',
-//     // pass exporter
-//     exporter,
-//     instrument: {
-//       http: true,
-//       workflows: true,
-//       query: true
-//     },
-//   })
-// }
+export function register() {
+  const dsn = process.env.SENTRY_DSN
+  if (!dsn) {
+    return
+  }
+  // Required lazily so dev and tests never load the SDK.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const Sentry = require("@sentry/node") as typeof import("@sentry/node")
+  Sentry.init({
+    dsn,
+    environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development",
+    release: process.env.SENTRY_RELEASE,
+    dataCollection: SENTRY_DATA_COLLECTION,
+    // Errors only on the free tier: no performance tracing.
+    tracesSampleRate: 0,
+    initialScope: { tags: { medusa_worker_mode: process.env.MEDUSA_WORKER_MODE || "shared" } },
+    beforeSend: (event) => scrubEvent(event),
+    beforeBreadcrumb: (crumb) => scrubBreadcrumb(crumb),
+  })
+}
