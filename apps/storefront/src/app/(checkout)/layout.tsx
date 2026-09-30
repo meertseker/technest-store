@@ -17,7 +17,7 @@ export default function CheckoutLayout({
         >
           {/* Full page loads out of checkout so its strict CSP isn't carried to other pages */}
           <a
-            href="/cart"
+            href="/basket"
             className="flex min-h-11 flex-1 basis-0 items-center gap-x-2 hover:underline"
             data-testid="back-to-cart-link"
           >
