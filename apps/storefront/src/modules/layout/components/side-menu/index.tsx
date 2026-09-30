@@ -1,95 +1,73 @@
 "use client"
 
-import { Popover, PopoverPanel, Transition } from "@headlessui/react"
-import { XMark } from "@medusajs/icons"
-import LocalizedClientLink from "@modules/common/components/localized-client-link"
-import { Fragment } from "react"
+import * as Dialog from "@radix-ui/react-dialog"
+import { X } from "lucide-react"
+import Link from "next/link"
+import { useState } from "react"
 
+const ITEMS = [
+  { name: "Home", href: "/" },
+  { name: "Shop", href: "/search" },
+  { name: "Repairs", href: "/repairs" },
+  { name: "Trade", href: "/trade" },
+  { name: "Account", href: "/account" },
+  // no Basket: it is always in the header, never inside the menu (spec 6)
+]
 
-const SideMenuItems = {
-  Home: "/",
-  Shop: "/search",
-  Repairs: "/repairs",
-  Trade: "/trade",
-  Account: "/account",
-  Basket: "/basket",
-}
-
-const SideMenu = () => {
+/**
+ * Mobile menu (below 1024px): a left-hand panel on Radix Dialog, the same
+ * primitive as the basket drawer, so no second dialog library ships on every
+ * page. Radix gives the focus trap, Escape, inert background and focus return.
+ * Solid tokens for >= 4.5:1 text and 48px links (spec 4, 8).
+ */
+export default function SideMenu() {
+  const [open, setOpen] = useState(false)
   return (
-    <div className="h-full">
-      <div className="flex items-center h-full">
-        <Popover className="h-full flex">
-          {({ open, close }) => (
-            <>
-              <div className="relative flex h-full">
-                <Popover.Button
-                  data-testid="nav-menu-button"
-                  className="relative inline-flex min-h-11 min-w-11 items-center px-1 transition-colors duration-150 hover:underline"
-                >
-                  Menu
-                </Popover.Button>
-              </div>
-
-              {open && (
-                <div
-                  className="fixed inset-0 z-[50] bg-black/0 pointer-events-auto"
-                  onClick={close}
-                  data-testid="side-menu-backdrop"
-                />
-              )}
-
-              <Transition
-                show={open}
-                as={Fragment}
-                enter="transition ease-out duration-150"
-                enterFrom="opacity-0"
-                enterTo="opacity-100 backdrop-blur-2xl"
-                leave="transition ease-in duration-150"
-                leaveFrom="opacity-100 backdrop-blur-2xl"
-                leaveTo="opacity-0"
-              >
-                <PopoverPanel className="flex flex-col absolute w-full pr-4 sm:pr-0 sm:w-1/3 2xl:w-1/4 sm:min-w-min h-[calc(100vh-1rem)] z-[51] inset-x-0 text-sm text-ui-fg-on-color m-2 backdrop-blur-2xl">
-                  <div
-                    data-testid="nav-menu-popup"
-                    className="flex flex-col h-full bg-[rgba(3,7,18,0.5)] rounded-rounded justify-between p-6"
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Trigger
+        data-testid="nav-menu-button"
+        className="inline-flex min-h-11 min-w-11 cursor-pointer items-center px-1 transition-colors duration-150 hover:underline"
+      >
+        Menu
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay
+          data-testid="side-menu-backdrop"
+          className="fixed inset-0 z-[60] bg-foreground/50 data-[state=open]:animate-[tn-fade-in_200ms_ease-out]"
+        />
+        <Dialog.Content
+          data-testid="nav-menu-popup"
+          aria-describedby={undefined}
+          className="fixed inset-y-0 left-0 z-[70] flex w-[min(20rem,calc(100vw-3rem))] flex-col bg-background p-4 text-foreground shadow-lg outline-none data-[state=open]:animate-[tn-slide-in-left_200ms_ease-out]"
+        >
+          <div className="flex items-center justify-between">
+            <Dialog.Title className="text-lg font-semibold">Menu</Dialog.Title>
+            <Dialog.Close
+              aria-label="Close menu"
+              data-testid="close-menu-button"
+              className="inline-flex size-11 cursor-pointer items-center justify-center rounded transition-colors duration-150 hover:bg-surface"
+            >
+              <X aria-hidden className="size-6" />
+            </Dialog.Close>
+          </div>
+          <nav aria-label="Menu" className="mt-4">
+            <ul className="flex flex-col gap-2">
+              {ITEMS.map(({ name, href }) => (
+                <li key={name}>
+                  <Link
+                    href={href}
+                    onClick={() => setOpen(false)}
+                    data-testid={`${name.toLowerCase()}-link`}
+                    className="flex min-h-12 items-center rounded px-2 text-2xl font-semibold transition-colors duration-150 hover:bg-surface"
                   >
-                    <div className="flex justify-end" id="xmark">
-                      <button
-                        type="button"
-                        aria-label="Close menu"
-                        data-testid="close-menu-button"
-                        onClick={close}
-                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded"
-                      >
-                        <XMark aria-hidden />
-                      </button>
-                    </div>
-                    <ul className="flex flex-col gap-6 items-start justify-start">
-                      {Object.entries(SideMenuItems).map(([name, href]) => {
-                        return (
-                          <li key={name}>
-                            <LocalizedClientLink
-                              href={href}
-                              className="text-3xl leading-10 hover:text-ui-fg-disabled"
-                              onClick={close}
-                              data-testid={`${name.toLowerCase()}-link`}
-                            >
-                              {name}
-                            </LocalizedClientLink>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  </div>
-                </PopoverPanel>
-              </Transition>
-            </>
-          )}
-        </Popover>
-      </div>
-    </div>
+                    {name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
-
-export default SideMenu
