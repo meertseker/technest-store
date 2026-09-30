@@ -2,6 +2,7 @@ import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
 import { collection, paymentFailed } from "./collection-sources"
 import * as lifecycle from "./lifecycle-sources"
+import { lowStockDigest, repairBooking, tradeApplication } from "./trade-sources"
 import { loadOrderEmailData, safeFirstName, shopNotifyEmail } from "./order-email-data"
 
 export type EmailRecipient = "customer" | "shop"
@@ -11,7 +12,9 @@ export type ResolvedEmail = { to: string; data: Record<string, unknown> }
 type Source = (
   container: MedusaContainer,
   resourceId: string,
-  recipient: EmailRecipient
+  recipient: EmailRecipient,
+  /** Extra non-PII ids (e.g. the variants in a low-stock digest). */
+  ids?: string[]
 ) => Promise<ResolvedEmail | null>
 
 const orderEmail: Source = async (container, orderId, recipient) => {
@@ -50,6 +53,12 @@ const sources: Record<string, Source> = {
   "ready-for-collection": collection,
   "collection-reminder": collection,
   "payment-failed": paymentFailed,
+  "trade-application-received": tradeApplication,
+  "trade-application-approved": tradeApplication,
+  "trade-application-rejected": tradeApplication,
+  "shop-trade-application": tradeApplication,
+  "shop-repair-booking": repairBooking,
+  "shop-low-stock-digest": lowStockDigest,
 }
 
 /** null = nothing to send (e.g. guest customer, order without an email). */
@@ -57,7 +66,8 @@ export async function resolveEmail(
   container: MedusaContainer,
   template: string,
   resourceId: string,
-  recipient: EmailRecipient
+  recipient: EmailRecipient,
+  ids?: string[]
 ): Promise<ResolvedEmail | null> {
   // Reject anything else (e.g. inputs stored by an older version of the
   // workflow) rather than guess, so a shop alert never reaches a customer.
@@ -68,5 +78,5 @@ export async function resolveEmail(
   if (!source) {
     throw new MedusaError(MedusaError.Types.INVALID_DATA, `No email source for template "${template}"`)
   }
-  return source(container, resourceId, recipient)
+  return source(container, resourceId, recipient, ids)
 }

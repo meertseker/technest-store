@@ -9,10 +9,17 @@ import * as paymentFailed from "./templates/payment-failed"
 import * as readyForCollection from "./templates/ready-for-collection"
 import * as refundIssued from "./templates/refund-issued"
 import * as returnReceived from "./templates/return-received"
+import * as shopLowStockDigest from "./templates/shop-low-stock-digest"
+import * as shopRepairBooking from "./templates/shop-repair-booking"
+import * as shopTradeApplication from "./templates/shop-trade-application"
+import * as tradeApplicationApproved from "./templates/trade-application-approved"
+import * as tradeApplicationReceived from "./templates/trade-application-received"
+import * as tradeApplicationRejected from "./templates/trade-application-rejected"
 import * as shopNewOrder from "./templates/shop-new-order"
 import * as welcome from "./templates/welcome"
 
 export type * from "./order-types"
+export type * from "./trade-types"
 export { todaysHours } from "./brand"
 
 type Template<D> = { subject: (data: D) => string; Email: ComponentType<D> }
@@ -30,6 +37,12 @@ const templates = {
   "ready-for-collection": readyForCollection,
   "collection-reminder": collectionReminder,
   "payment-failed": paymentFailed,
+  "trade-application-received": tradeApplicationReceived,
+  "trade-application-approved": tradeApplicationApproved,
+  "trade-application-rejected": tradeApplicationRejected,
+  "shop-trade-application": shopTradeApplication,
+  "shop-repair-booking": shopRepairBooking,
+  "shop-low-stock-digest": shopLowStockDigest,
 } satisfies Record<string, Template<any>>
 
 export type TemplateId = keyof typeof templates
