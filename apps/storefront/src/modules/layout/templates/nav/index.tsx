@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import Link from "next/link"
 import { User } from "lucide-react"
+import { getCurrentDevice } from "@lib/data/devices"
 import CartButton from "@modules/layout/components/cart-button"
 import DeviceChip from "@modules/layout/components/device-chip"
 import Logo from "@modules/layout/components/logo"
@@ -8,7 +9,8 @@ import Search from "@modules/layout/components/search"
 import SideMenu from "@modules/layout/components/side-menu"
 
 export default async function Nav() {
-  const device = null // device-picker story: read the tn_device cookie here
+  const current = await getCurrentDevice().catch(() => null)
+  const device = current ? { label: current.model } : null
 
   return (
     <header className="sticky inset-x-0 top-0 z-50 border-b border-border bg-background">
