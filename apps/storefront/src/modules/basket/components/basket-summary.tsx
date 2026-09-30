@@ -1,9 +1,10 @@
 import { Lock } from "lucide-react"
 import { HttpTypes } from "@medusajs/types"
 import { buttonVariants } from "@/components/ui/button"
-import { formatGbp, formatPenceExact } from "@lib/basket/money"
+import { formatGbp, formatPenceExact, toPence } from "@lib/basket/money"
 import { cheapestDeliveryPence } from "@lib/basket/shipping-options"
 import type { BasketView } from "@lib/data/basket"
+import KlarnaBasketHint from "@modules/checkout/payment/klarna-basket-hint"
 
 /** "Delivery from £3.49 · Click & Collect free" (no drip pricing: shown before checkout) */
 export function deliveryLine(view: Pick<BasketView, "choices" | "addon_only">): string {
@@ -55,6 +56,7 @@ export default function BasketSummary({
       <p className="text-center text-sm text-muted-foreground">
         Secure card payment by Stripe · 14-day returns
       </p>
+      <KlarnaBasketHint total_pence={toPence(cart.total ?? cart.item_total)} min_pence={view.klarna_min_basket_pence} />
     </div>
   )
 }

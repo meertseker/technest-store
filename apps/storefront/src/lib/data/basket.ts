@@ -24,6 +24,8 @@ export type BasketView = {
   addon_only: boolean
   addon_rule_source: "backend" | "storefront"
   choices: DeliveryChoice[]
+  /** Klarna minimum from GET /store/technest-settings for the basket hint (display only); null when unknown */
+  klarna_min_basket_pence?: number | null
 }
 
 /**
@@ -95,5 +97,6 @@ export async function getBasketView(cart: HttpTypes.StoreCart | null): Promise<B
     addon_only,
     addon_rule_source: backendRules ? "backend" : "storefront",
     choices: groupDeliveryChoices((options ?? []) as unknown as ShippingOptionLike[]),
+    klarna_min_basket_pence: settings?.klarna_min_basket_pence ?? null,
   }
 }
