@@ -15,7 +15,7 @@ Generic Medusa starter conventions (code style, lint, commands) are in [AGENTS.m
 - `apps/storefront`: Next.js 15 as shipped by the starter (do NOT upgrade to 16 before launch), React 19, TS strict, Tailwind, shadcn/ui
 - Payments: Medusa Stripe provider (`pp_stripe_stripe`), Stripe Payment Element, `capture: false`
 - Email: custom `smtp` notification provider (Nodemailer) -> Mailpit in dev, docker-mailserver in prod
-- Photos: `photo-worker` (rembg + BiRefNet-general, never `bria-rmbg`) + `sharp`
+- Photos: `photo-worker` (rembg + BiRefNet-general; never rembg's default BRIA model, enforced by `scripts/check-no-bria.sh`) + `sharp`
 - Files: local provider in dev, Cloudflare R2 via S3 provider in prod
 - Hosting: one Hetzner box, Docker Compose, Caddy, Cloudflare. Images built by GitHub Actions -> GHCR.
 
