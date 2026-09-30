@@ -5,6 +5,7 @@ import { adminProductAttributesMiddlewares } from './admin/products/[id]/attribu
 import { adminPhotoMiddlewares } from './admin/photos/middlewares'
 import { adminProductImportMiddlewares } from './admin/product-import/middlewares'
 import { adminTechnestSettingsMiddlewares } from './admin/technest-settings/middlewares'
+import { verifyStripeWebhookSignature } from './hooks/payment/verify-stripe-signature'
 import { rejectClientPaymentData } from './store/payment-collections/reject-client-payment-data'
 import { storeDeviceMiddlewares } from './store/devices/middlewares'
 import { sentryErrorHandler } from '../lib/monitoring/sentry-error-handler'
@@ -23,6 +24,14 @@ export default defineMiddlewares({
       method: ['POST'],
       matcher: '/store/payment-collections/:id/payment-sessions',
       middlewares: [rejectClientPaymentData],
+    },
+    {
+      // E2: Stripe webhooks must carry a valid signature over the raw body
+      // (Medusa's core hooks middleware preserves it for this path).
+      method: ['POST'],
+      matcher: '/hooks/payment/stripe_stripe',
+      bodyParser: { preserveRawBody: true },
+      middlewares: [verifyStripeWebhookSignature],
     },
     // The product index declares filterable `status` and `sales_channel_ids`, so
     // the route narrows it to published products in the key's sales channels.
