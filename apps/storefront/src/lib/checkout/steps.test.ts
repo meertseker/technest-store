@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { firstIncompleteStep, resolveStep } from "./steps"
+import { firstIncompleteStep, needsStepRedirect, resolveStep } from "./steps"
 import { validateContact, validateDelivery, type DeliveryInput } from "./validate"
 
 const empty = {}
@@ -7,6 +7,17 @@ const withEmail = { email: "a@b.co" }
 const done = { email: "a@b.co", shipping_address: { first_name: "Sam" }, shipping_methods: [{}] }
 
 describe("checkout steps", () => {
+  it("renders a bare /checkout in place for our own sections, redirects for E2's", () => {
+    expect(needsStepRedirect(undefined, "contact")).toBe(false)
+    expect(needsStepRedirect(undefined, "delivery")).toBe(false)
+    // payment/review read ?step= in the browser
+    expect(needsStepRedirect(undefined, "payment")).toBe(true)
+    expect(needsStepRedirect("payment", "payment")).toBe(false)
+    // a step that isn't allowed yet, or junk, goes to the right URL
+    expect(needsStepRedirect("payment", "delivery")).toBe(true)
+    expect(needsStepRedirect("nope", "contact")).toBe(true)
+  })
+
   it("finds the first incomplete step", () => {
     expect(firstIncompleteStep(empty)).toBe("contact")
     expect(firstIncompleteStep(withEmail)).toBe("delivery")

@@ -6,7 +6,7 @@ import { CHECKOUT_CART_FIELDS, getBasketView } from "@lib/data/basket"
 import { retrieveCustomer } from "@lib/data/customer"
 import { formatGbp } from "@lib/basket/money"
 import { DELIVERY_LABEL, deliveryKind, type ShippingOptionLike } from "@lib/basket/shipping-options"
-import { resolveStep, stepRank } from "@lib/checkout/steps"
+import { needsStepRedirect, resolveStep, stepRank } from "@lib/checkout/steps"
 import { siteConfig } from "@lib/site-config"
 import ContactForm from "@modules/checkout/sections/contact-form"
 import DeliveryForm, { type DeliveryDefaults } from "@modules/checkout/sections/delivery-form"
@@ -16,6 +16,7 @@ import StepSection from "@modules/checkout/sections/step-section"
 
 export const metadata: Metadata = {
   title: "Checkout",
+  description: "Secure checkout for Tech Nest: delivery or free Click & Collect from our shop on Southwark Park Road, London SE16.",
   robots: { index: false },
 }
 
@@ -36,7 +37,7 @@ export default async function Checkout(props: { searchParams: Promise<{ step?: s
 
   const { step: requested, payment_error } = await props.searchParams
   const step = resolveStep(requested, cart)
-  if (requested !== step) redirect(`/checkout?step=${step}`)
+  if (needsStepRedirect(requested, step)) redirect(`/checkout?step=${step}`)
 
   const [customer, view] = await Promise.all([retrieveCustomer(), getBasketView(cart)])
   const rank = stepRank(step)

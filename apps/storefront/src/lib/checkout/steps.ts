@@ -46,3 +46,16 @@ export function resolveStep(requested: unknown, cart: CartProgressLike): Checkou
 export function stepRank(step: CheckoutStep): number {
   return RANK[step]
 }
+
+/**
+ * Whether /checkout must redirect to `?step=<step>`. A bare /checkout renders
+ * our own server-rendered sections (contact, delivery) in place, which saves a
+ * redirect round trip on the way in (Lighthouse "Avoid redirects"). E2's
+ * payment/review components read `?step=` in the browser, so those steps, and
+ * any request for a step that isn't allowed yet, still redirect.
+ */
+export function needsStepRedirect(requested: unknown, step: CheckoutStep): boolean {
+  if (requested === step) return false
+  if (requested === undefined && (step === "contact" || step === "delivery")) return false
+  return true
+}
