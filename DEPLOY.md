@@ -20,7 +20,7 @@ Kod ve dosya adları İngilizcedir; açıklamalar Türkçedir.
 8. Yedekleme ve geri yükleme
 9. İzleme: Sentry ve UptimeRobot
 10. Cloudflare hız sınırı (rate limit) kuralları
-11. E-posta sunucusu (E2 bölümü)
+11. Mail (E-posta) sunucusu (E2 bölümü)
 12. Canlıya geçiş (cutover) kontrol listesi
 
 ---
@@ -39,7 +39,7 @@ Tek bir Hetzner CX43 sunucusu (8 vCPU, 16 GB RAM), Docker Compose ile şu servis
 | `redis` | Kuyruk, olaylar, kilitler (Redis 7) | Hayır |
 | `photo-worker` | Arka plan silme (rembg) | Hayır, asla |
 | `backup` | Her gece 03:15'te veritabanı yedeği → R2 | Hayır |
-| `mailserver` | E-posta gönderimi (docker-mailserver, E2). Şimdilik yer tutucu: `profiles: [mail]`, port yayınlamıyor | Henüz hayır (E2 açınca 25/465/587) |
+| `mailserver` | E-posta (docker-mailserver, E2). `profiles: [mail]`: `--profile mail` ile başlar (bölüm 11) | Evet: 25 (gelen posta) ve 993 (IMAPS). 587 yalnızca iç ağda |
 
 Alan adları:
 
@@ -86,7 +86,7 @@ silinebilir. Geri yükleme tatbikatı (bölüm 8.4) için de bu boyutta yeni bir
 4. **Firewall** oluşturun (`technest-fw`) ve sunucuya bağlayın. Gelen (inbound) kurallar:
    - TCP 22: yalnızca kendi IP adresiniz
    - TCP 80, TCP 443, UDP 443: herkes (Cloudflare proxy'si buradan gelir)
-   - TCP 25, 465, 587: herkes (yalnızca e-posta sunucusu açılınca, bölüm 11)
+   - TCP 25 ve 993: herkes (yalnızca e-posta sunucusu açılınca, bölüm 11). 465/587 açmayın
    - Diğer her şey kapalı.
 
 ### 2.2 Sunucu hazırlığı (her iki sunucuda aynı)
@@ -403,7 +403,7 @@ Amaç: sunucu tamamen kaybolursa mağazanın 1 saatten kısa sürede geri geldi�
      Canlı anahtarla bu kopya gerçek ödemeleri alabilir veya iptal edebilir. Boş bırakmayın:
      backend üretim modunda bu ikisi olmadan açılmaz.
    - `SMTP_HOST=localhost`: bu sunucuda e-posta sunucusu yok, gönderim başarısız olur, müşterilere
-     e-posta gitmez. (Boş bırakmak işe yaramaz: compose boş değeri `mailserver` yapar.)
+     e-posta gitmez. (Boş bırakmak işe yaramaz: compose boş değeri `mail.<SHOP_DOMAIN>` yapar.)
 3. Yalnızca veritabanını başlatıp yedeği geri yükleyin:
    ```bash
    docker compose pull
@@ -527,14 +527,209 @@ Test: kuralı kaydettikten sonra kendi bilgisayarınızdan
 
 ---
 
-## 11. E-posta sunucusu (E2 bölümü)
+## 11. Mail (E-posta) sunucusu (E2 bölümü)
 
-> Bu bölümü E2 (Payments & Email) dolduracak: docker-mailserver kurulumu, DKIM anahtarı,
-> MX/SPF/DKIM/DMARC DNS kayıtları, PTR, port 25 açma talebi (Hetzner yeni hesaplarda port 25'i
-> kapalı tutar; destek talebiyle açılır) ve teslim testleri (mail-tester.com).
->
-> Şimdilik: `docker-compose.yml` içindeki `mailserver` servisi `profiles: [mail]` ile kapalıdır.
-> Açmak için: `docker compose --profile mail up -d mailserver`.
+Mağazanın tüm e-postaları (sipariş onayı, "siparişiniz hazır", iade, parola sıfırlama vb.)
+`orders@technest.co.uk` adresinden, kendi sunucumuzdaki `mailserver` servisiyle gönderilir
+(docker-mailserver 15: Postfix + Dovecot + OpenDKIM). Hangi olayda hangi e-postanın gittiği:
+`docs/contracts/emails.md`.
+
+| Parça | Nerede |
+|---|---|
+| `mailserver` servisi | `docker-compose.yml`, `profiles: [mail]` (yalnızca `--profile mail` ile başlar) |
+| Backend → mailserver | İç ağ, port 587, STARTTLS zorunlu, `orders@` ile giriş. `SMTP_HOST=mail.technest.co.uk` (Docker içinde mailserver'ın takma adı) |
+| Dışarı açık portlar | **25** (gelen posta: yanıtlar, geri dönen e-postalar, DMARC raporları), **993** (IMAPS: `orders@` kutusunu bir e-posta uygulamasıyla okumak için). 587 dışarı **açık değil** |
+| Sertifika | Caddy alır ve yeniler; mailserver onu Caddy'nin `caddy_data` biriminden salt okunur okur |
+| Hesaplar, DKIM özel anahtarı | `mail_config` biriminde (git'te **asla** yok). Parolalar yalnızca `/opt/technest/.env` içinde |
+
+> **Önce kontrol edin: `hello@technest.co.uk` şu an nerede?** MX kaydını bu sunucuya
+> çevirdiğiniz anda `@technest.co.uk` adresine gelen **tüm** e-postalar bu sunucuya gelir.
+> `hello@` şu an başka bir yerdeyse (Gmail, Outlook, hosting firması), aşağıdaki 11.4'te
+> `hello@` için ya bir kutu açın ya da mevcut adrese yönlendirme (alias) ekleyin. Emin
+> değilseniz MX'i değiştirmeden önce E2'ye sorun.
+
+### 11.1 Sıra (özet)
+
+1. IP itibarını kontrol edin ve PTR'yi ayarlayın (bölüm 3, aşağıda 11.5'te tekrar).
+2. Hetzner'de port 25'in açık olup olmadığını kontrol edin (11.2). Kapalıysa talep açın; beklerken relay kullanın (11.7).
+3. Caddy'ye `mail.` sertifikasını aldırın (11.3).
+4. Servisi başlatın, `orders@` kutusunu açın, `.env`'e parolayı yazın (11.4).
+5. DKIM anahtarını üretin, DNS kayıtlarını girin (11.5).
+6. Teslim testi (11.6): mail-tester.com puanı **9/10 veya üzeri**.
+
+### 11.2 Port 25 (Hetzner)
+
+Hetzner yeni hesaplarda **giden** port 25 ve 465'i kapalı tutar (gelen 25 açıktır). Kontrol:
+
+```bash
+ssh deploy@SUNUCU_IP 'timeout 5 bash -c "</dev/tcp/gmail-smtp-in.l.google.com/25" && echo ACIK || echo KAPALI'
+```
+
+`KAPALI` ise: ilk fatura ödendikten sonra Hetzner Console → **Support** → yeni talep
+("Unblock port 25", sunucu adını ve "transactional e-mail for our own online shop, low volume,
+SPF/DKIM/DMARC configured" açıklamasını yazın). Onay bir iki gün sürebilir; bu arada 11.7'deki
+relay ile gönderin.
+
+### 11.3 Sertifika (Caddy)
+
+`mail.technest.co.uk` DNS kaydı **DNS only (gri bulut)** olmalı (bölüm 4.2). Caddy sertifikayı
+alabilsin diye `Caddyfile`'da bu ad için boş bir site bloğu gerekir (dosya E4'ün; E4 ekler):
+
+```caddyfile
+mail.{$SHOP_DOMAIN} {
+	respond "Tech Nest mail" 200
+}
+```
+
+Kontrol (sertifika dosyası oluştu mu):
+
+```bash
+docker compose exec caddy ls /data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/mail.technest.co.uk/
+```
+
+`mail.technest.co.uk.crt` ve `.key` görünmeli. Caddy sertifikayı kendisi yeniler; mailserver
+dosyadaki değişikliği görüp yeniden yükler. Emin olmak için yenilemeden sonra
+`docker compose restart mailserver` zararsızdır.
+
+### 11.4 Servisi başlatma ve `orders@` kutusu
+
+```bash
+cd /opt/technest
+docker compose --profile mail up -d mailserver
+
+# orders@ kutusu (parola sorar; openssl rand -hex 24 ile üretin ve bir yere not edin)
+docker compose exec mailserver setup email add orders@technest.co.uk
+
+# Zorunlu adresler: postmaster@ ve DMARC raporları orders@'a gelsin
+docker compose exec mailserver setup alias add postmaster@technest.co.uk orders@technest.co.uk
+docker compose exec mailserver setup alias add dmarc@technest.co.uk orders@technest.co.uk
+
+# hello@ bu sunucuda yaşayacaksa: ya kutu açın...
+docker compose exec mailserver setup email add hello@technest.co.uk
+# ...ya da mevcut adrese yönlendirin (örnek):
+# docker compose exec mailserver setup alias add hello@technest.co.uk dukkan@gmail.com
+
+docker compose exec mailserver setup email list
+```
+
+Sonra `/opt/technest/.env` içinde:
+
+```bash
+SMTP_USER=orders@technest.co.uk
+SMTP_PASS=<orders@ parolası>
+MAIL_FROM=Tech Nest <orders@technest.co.uk>
+```
+
+`MAIL_FROM` adresi `SMTP_USER` ile **aynı** olmalı: sunucu başka bir gönderen adını reddeder
+(sahte gönderene karşı koruma). Ardından backend'i yeniden başlatın:
+`docker compose up -d server worker`.
+
+`orders@` kutusunu okumak için (isteğe bağlı): telefon/bilgisayar e-posta uygulamasında IMAP,
+sunucu `mail.technest.co.uk`, port 993, SSL/TLS, kullanıcı adı tam e-posta adresi.
+
+### 11.5 DKIM anahtarı ve DNS kayıtları
+
+DKIM anahtarını bir kez üretin (2048 bit, seçici adı `mail`):
+
+```bash
+docker compose exec mailserver setup config dkim
+docker compose exec mailserver cat /tmp/docker-mailserver/opendkim/keys/technest.co.uk/mail.txt
+docker compose restart mailserver
+```
+
+`mail.txt` içindeki tırnaklı parçaları birleştirin: `v=DKIM1; h=sha256; k=rsa; p=MIIBIjAN...`
+(tırnaksız, tek satır). Bu değer DKIM kaydına girer.
+
+Cloudflare → **DNS → Records** (hepsi **DNS only**, gri bulut; TXT/MX zaten proxy'lenemez):
+
+| Tür | Ad | Değer | Not |
+|---|---|---|---|
+| A | `mail` | ÜRETİM_IPv4 | Bölüm 4.2'de var |
+| AAAA | `mail` | ÜRETİM_IPv6 | Sunucu IPv6 ile de gönderir |
+| MX | `@` | `mail.technest.co.uk`, öncelik `10` | Gelen posta |
+| TXT | `@` | `v=spf1 mx -all` | SPF. Relay kullanıyorsanız relay'in `include:` ekini ekleyin (11.7) |
+| TXT | `mail._domainkey` | `v=DKIM1; h=sha256; k=rsa; p=...` | DKIM (yukarıdaki `mail.txt`) |
+| TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:dmarc@technest.co.uk; adkim=s; aspf=s` | DMARC, ilk 2-4 hafta `p=none` |
+
+**PTR / Reverse DNS (Hetzner):** Hetzner Console → sunucu → **Networking** → IPv4 adresinin
+yanındaki "Edit Reverse DNS" → `mail.technest.co.uk`. IPv6 için de aynısı (adresin kendisi,
+örneğin `2a01:4f8:...::1` → `mail.technest.co.uk`). PTR, A/AAAA kaydı ve sunucunun adı
+(`hostname`) **aynı** olmalı; aksi halde Gmail ve Outlook e-postayı reddedebilir.
+
+Kontrol (kendi bilgisayarınızdan):
+
+```bash
+dig +short MX technest.co.uk
+dig +short TXT technest.co.uk
+dig +short TXT mail._domainkey.technest.co.uk
+dig +short TXT _dmarc.technest.co.uk
+dig +short -x ÜRETİM_IPv4          # mail.technest.co.uk. dönmeli
+```
+
+2-4 hafta sonra DMARC raporları (`orders@` kutusuna gelir) temizse `_dmarc` kaydını
+`p=quarantine` yapın.
+
+### 11.6 Teslim testi
+
+1. https://www.mail-tester.com adresini açın, verdiği adresi kopyalayın (`test-xxxx@srv1.mail-tester.com`).
+2. Sunucudan o adrese bir deneme gönderin:
+   ```bash
+   docker compose exec mailserver sh -c 'printf "Subject: Tech Nest test\nFrom: Tech Nest <orders@technest.co.uk>\n\nMerhaba, bu bir test.\n" | sendmail -f orders@technest.co.uk test-xxxx@srv1.mail-tester.com'
+   ```
+3. Sitede "Then check your score" → **9/10 veya üzeri** olmalı. SPF, DKIM, DMARC satırları yeşil olmalı.
+4. Gerçek akış: staging'de (veya canlıda küçük bir siparişle) sipariş verin → sipariş onayı
+   kendi Gmail adresinize gelmeli. Gmail'de e-postayı açın → ⋮ → **Show original**:
+   `SPF: PASS`, `DKIM: PASS`, `DMARC: PASS` görmelisiniz. Spam klasörüne düşmemeli.
+5. Gelen posta: kendi adresinizden `orders@technest.co.uk`'ya bir e-posta atın; IMAP ile
+   (11.4) veya `docker compose logs mailserver | tail -50` ile geldiğini görün.
+
+Sorun giderme:
+
+```bash
+docker compose logs --tail=100 mailserver          # "status=sent" iyi, "status=deferred/bounced" kötü
+docker compose exec mailserver postqueue -p        # bekleyen e-postalar
+docker compose exec mailserver postqueue -f        # kuyruğu şimdi yeniden dene
+```
+
+Backend loglarında yalnızca bildirim kimliği ve şablon adı görünür, alıcı adresi görünmez
+(kişisel veri kuralı).
+
+### 11.7 Port 25 kapalıysa: relay (aktarma) servisi
+
+Hetzner port 25'i açmazsa veya IP itibarı kötüyse, mailserver e-postaları bir relay
+üzerinden gönderir. DKIM imzamız korunur; müşteri yine `orders@technest.co.uk`'dan alır.
+Seçenekler (hepsinde AB/UK sunucusu seçin): **Brevo** (ücretsiz, günde 300 e-posta),
+**Mailgun EU**, **Amazon SES (eu-west-2, Londra)**.
+
+1. Relay'de hesap açın, `technest.co.uk` alan adını doğrulayın (size vereceği DNS kayıtlarını
+   Cloudflare'e girin) ve bir **SMTP anahtarı** oluşturun.
+2. `/opt/technest/.env`:
+   ```bash
+   MAIL_RELAY_HOST=[smtp-relay.brevo.com]:587    # köşeli parantez önemli (MX araması yapılmaz)
+   MAIL_RELAY_USER=<relay SMTP kullanıcı adı>
+   MAIL_RELAY_PASSWORD=<relay SMTP anahtarı>
+   ```
+3. SPF kaydına relay'in ekini ekleyin, örneğin Brevo: `v=spf1 mx include:spf.brevo.com -all`
+   (Mailgun: `include:mailgun.org`, SES: `include:amazonses.com`).
+4. `docker compose --profile mail up -d mailserver` → 11.6'daki testi tekrarlayın.
+
+Port 25 açıldığında relay'i bırakmak için üç `MAIL_RELAY_*` değerini boşaltın, SPF'den
+`include:` ekini çıkarın ve servisi yeniden başlatın.
+
+### 11.8 Yedek
+
+Hesaplar ve DKIM anahtarı `mail_config` biriminde; gece yedeği (bölüm 8) yalnızca
+veritabanını alır. Kurulumdan sonra ve her hesap değişikliğinden sonra bir kopya alın:
+
+```bash
+docker run --rm -v technest_mail_config:/src:ro -v /opt/technest:/out alpine \
+  tar czf /out/mail-config-$(date +%F).tar.gz -C /src .
+chmod 600 /opt/technest/mail-config-*.tar.gz
+```
+
+Bu dosyayı parola yöneticinize veya şifreli bir yere taşıyın (içinde DKIM özel anahtarı var).
+Kaybolursa: yeni DKIM anahtarı üretip DNS'teki `mail._domainkey` kaydını güncellemek ve
+kutuları yeniden açmak yeterlidir; siparişler etkilenmez.
 
 ---
 
