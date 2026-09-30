@@ -1,16 +1,17 @@
 # Contract: product photo pipeline (admin)
 
 Owner: E4 (backend, branch `e4/photo-pipeline`). Consumer: E4 admin UI (`apps/backend/src/admin/**`).
-Status: **draft v1 (2026-09-30)**. Build against the shapes below. Any change is posted as `[CONTRACT]`.
+Status: **draft v1.1 (2026-09-30)**: output is "up to 2000 px" (was a fixed 2000), no colour correction,
+two new `invalid_data` messages, `PHOTO_MODEL`. Build against the shapes below. Any change is posted as `[CONTRACT]`.
 
 All routes are admin routes: they need an admin session or bearer token. From the admin UI use
 `sdk.client.fetch(...)` (never plain `fetch`). Errors use Medusa's standard shape:
 `{ "type": "invalid_data" | "not_allowed" | "not_found" | "unexpected_state", "message": string }`.
 
-What the pipeline does (see ADR 0003): keep the original untouched, ask the in-house `photo-worker`
-for a cut-out mask, then with `sharp`: global exposure / white-balance correction (clamped, small),
-auto-crop to 1:1 with 8% padding, soft shadow, pure white `#FFFFFF` background, 2000 x 2000 px,
-WebP (primary) + AVIF. Only the background changes; nothing is generated, nothing is AI-upscaled.
+What the pipeline does (see ADR 0003): keep the original untouched as its own file, ask the in-house
+`photo-worker` for a cut-out mask, then with `sharp`: auto-crop to 1:1 with 8% padding, soft shadow, pure
+white `#FFFFFF` background, up to 2000 x 2000 px, WebP (primary) + AVIF, saved as new files. Only the
+background changes: no colour correction, nothing generated, the product is only ever downscaled.
 
 ## Types
 
@@ -24,8 +25,8 @@ type StoredFile = {
 
 type ProcessedFile = StoredFile & {
   format: "webp" | "avif"
-  width: 2000
-  height: 2000
+  width: number       // square (width === height), at most 2000. Smaller when the product is small in the
+  height: number      // photo: the product is never upscaled, so the canvas shrinks around it instead.
 }
 ```
 
@@ -47,6 +48,9 @@ Response `200`:
 ```json
 { "enabled": false, "reason": "The photo worker is not responding. Try again in a minute.", "provider": "rembg-http", "default_model": "birefnet-general" }
 ```
+
+`default_model` follows the backend's `PHOTO_MODEL` (default `birefnet-general`, fallback `isnet-general-use`).
+A `PHOTO_MODEL` outside the allow-list gives `provider: "disabled"` with a reason naming the bad value.
 
 `reason` is a human-readable English sentence, safe to show as-is. `null` when `enabled` is true.
 
@@ -74,6 +78,9 @@ Rules:
 - The shorter side (after EXIF rotation) must be at least **1000 px**, otherwise
   `400 invalid_data` with the exact message `"Photo too small, please retake closer"`.
 - If the worker finds no product: `400 invalid_data`, `"No product found in the photo, please retake it against a plain background"`.
+- If the product's longer side is under 600 px in the photo: `400 invalid_data`, `"The product is too small in the photo, please retake closer"`.
+- More than 50 megapixels: `400 invalid_data`, `"Photo has too many pixels (at most 50 megapixels)"`.
+- `file_id` values are File Module keys: absolute paths, `..` segments and backslashes are rejected (`"Invalid file id"`).
 - On any failure after the original was uploaded in form 1, everything this request stored is deleted again
   (workflow compensation). Form 2 never deletes the caller's file.
 

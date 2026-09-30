@@ -160,6 +160,11 @@ module.exports = defineConfig({
     { resolve: "./src/modules/product-attributes" },
     { resolve: "./src/modules/trade" },
     { resolve: "./src/modules/repair" },
+    // Photos (E4): unset PHOTO_WORKER_URL = processing disabled; PHOTO_MODEL defaults to birefnet-general.
+    {
+      resolve: "./src/modules/photo",
+      options: { workerUrl: process.env.PHOTO_WORKER_URL, defaultModel: process.env.PHOTO_MODEL },
+    },
     fileModule,
     ...redisModules,
     ...paymentModules,
