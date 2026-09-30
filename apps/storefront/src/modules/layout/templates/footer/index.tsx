@@ -40,7 +40,7 @@ export default async function Footer() {
           <ul className="mt-3">
             {categories.map((c) => (
               <li key={c.id}>
-                <Link href={`/categories/${c.handle}`} className={linkClass}>
+                <Link href={`/c/${c.handle}`} className={linkClass}>
                   {c.name}
                 </Link>
               </li>

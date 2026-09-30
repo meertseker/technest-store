@@ -8,7 +8,7 @@ import { Fragment } from "react"
 
 const SideMenuItems = {
   Home: "/",
-  Shop: "/store",
+  Shop: "/search",
   Repairs: "/repairs",
   Trade: "/trade",
   Account: "/account",

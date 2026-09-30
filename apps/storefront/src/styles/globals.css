@@ -37,6 +37,15 @@
     scroll-padding-bottom: 96px;
     -webkit-text-size-adjust: 100%;
   }
+  /* Listing pages: the sticky Filters/Sort toolbar (52px) sits under the header on mobile */
+  html:has([data-sticky-toolbar]) {
+    scroll-padding-top: calc(var(--header-h) + 53px + 52px);
+  }
+  @media (min-width: 1024px) {
+    html:has([data-sticky-toolbar]) {
+      scroll-padding-top: calc(var(--header-h) + 16px);
+    }
+  }
   body {
     @apply bg-background text-foreground font-sans text-base leading-relaxed antialiased;
   }

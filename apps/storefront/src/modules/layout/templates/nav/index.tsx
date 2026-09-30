@@ -5,8 +5,8 @@ import { getCurrentDevice } from "@lib/data/devices"
 import CartButton from "@modules/layout/components/cart-button"
 import DeviceChipSlot from "@modules/layout/components/device-chip/slot"
 import Logo from "@modules/layout/components/logo"
-import Search from "@modules/layout/components/search"
 import SideMenu from "@modules/layout/components/side-menu"
+import HeaderSearch from "@modules/search/components/header-search"
 
 export default async function Nav() {
   const current = await getCurrentDevice().catch(() => null)
@@ -24,7 +24,7 @@ export default async function Nav() {
         <Logo />
         <DeviceChipSlot device={device} className="hidden lg:inline-flex" />
         <div className="ml-auto flex items-center gap-0 sm:gap-2">
-          <Search />
+          <HeaderSearch />
           <Link
             href="/account"
             className="hidden min-h-11 items-center gap-2 px-2 hover:underline lg:inline-flex"
