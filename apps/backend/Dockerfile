@@ -15,11 +15,12 @@ FROM base AS build
 COPY . .
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm install --frozen-lockfile --filter "@technest/backend..."
-RUN pnpm --filter @technest/backend build
+# Build workspace dependencies (e.g. @technest/emails) before the backend.
+RUN pnpm --filter "@technest/backend..." build
 # Drop devDependencies but keep the lockfile-exact pnpm layout (relative symlinks),
 # so the runtime keeps the same monorepo paths: /app/node_modules, /app/apps/backend/...
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    CI=true pnpm install --frozen-lockfile --prod --filter "@technest/backend..." \
+    CI=true pnpm install --frozen-lockfile --prod --ignore-scripts --filter "@technest/backend..." \
  && mkdir -p packages
 
 FROM node:22-bookworm-slim AS runtime
