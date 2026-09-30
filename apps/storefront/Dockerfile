@@ -7,7 +7,8 @@ FROM node:22-bookworm-slim AS base
 ENV PNPM_HOME=/pnpm \
     PATH=/pnpm:$PATH \
     COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
-    NEXT_TELEMETRY_DISABLED=1
+    NEXT_TELEMETRY_DISABLED=1 \
+    NEXT_OUTPUT=standalone
 RUN corepack enable && corepack prepare pnpm@10.11.1 --activate
 WORKDIR /repo
 
