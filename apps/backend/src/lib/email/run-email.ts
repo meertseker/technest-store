@@ -1,5 +1,6 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { safeErrorMessage } from "./safe-error"
 import { sendEmailWorkflow, type SendEmailInput } from "../../workflows/send-email"
 
 /**
@@ -14,7 +15,7 @@ export async function runEmail(container: MedusaContainer, input: SendEmailInput
     container
       .resolve(ContainerRegistrationKeys.LOGGER)
       .error(
-        `${input.trigger_type} email failed: template=${input.template} ${input.resource_type}=${input.resource_id}: ${(e as Error).message}`
+        `${input.trigger_type} email failed: template=${input.template} ${input.resource_type}=${input.resource_id}: ${safeErrorMessage(e)}`
       )
   }
 }
