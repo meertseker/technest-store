@@ -187,7 +187,12 @@ export async function seedDevices(container: MedusaContainer) {
     entity: "product",
     // Options are shared across products, so read the values each product
     // actually uses from its variants.
-    fields: ["id", "metadata", "variants.options.value", "variants.options.option.title"],
+    fields: [
+      "id",
+      "product_attributes.platform",
+      "variants.options.value",
+      "variants.options.option.title",
+    ],
   })
 
   let linked = 0
@@ -197,7 +202,8 @@ export async function seedDevices(container: MedusaContainer) {
         .filter((o) => o?.option?.title === "Model")
         .map((o) => o?.value as string)
     )
-    const platforms = ((product.metadata?.platform as string[] | undefined) ?? [])
+    const attributes = (product as Record<string, any>).product_attributes
+    const platforms = ((attributes?.platform as string[] | undefined) ?? [])
       .flatMap((p) => PLATFORM_DEVICES[p] ?? [])
 
     const deviceIds = [
