@@ -1,0 +1,146 @@
+# CI: install, licence guard, lint, typecheck, tests (Postgres + Redis + Mailpit services), build.
+# Runs on every push and pull request. Nothing here deploys or pushes images (see deploy.yml).
+name: CI
+
+on:
+  push:
+    branches: [main, "e*/**"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "22"
+  MEDUSA_DISABLE_TELEMETRY: "true"
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  licence-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: No non-commercial background-removal models
+        run: bash scripts/licence-guard.sh
+
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+      mailpit:
+        image: axllent/mailpit:v1.21
+        ports: ["1025:1025", "8025:8025"]
+    env:
+      # Test-only values; the integration runner creates and drops its own databases.
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: ci
+      COOKIE_SECRET: ci
+      SMTP_HOST: localhost
+      SMTP_PORT: "1025"
+      MAILPIT_API_URL: http://localhost:8025/api/v1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build workspace packages (emails)
+        run: pnpm --filter "./packages/**" build
+      - name: Lint
+        run: pnpm --filter @technest/backend lint
+      - name: Unit tests
+        run: pnpm --filter @technest/backend test:unit
+      - name: Module integration tests
+        run: pnpm --filter @technest/backend test:integration:modules -- --passWithNoTests
+      - name: HTTP integration tests
+        run: pnpm --filter @technest/backend test:integration:http
+      - name: Build (typecheck + admin bundle)
+        run: pnpm --filter @technest/backend build
+
+  storefront:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Build-time placeholders only; the real values are build args in deploy.yml.
+      NEXT_PUBLIC_MEDUSA_BACKEND_URL: http://localhost:9000
+      NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: pk_ci_placeholder
+      NEXT_PUBLIC_BASE_URL: http://localhost:8000
+      NEXT_PUBLIC_DEFAULT_REGION: gb
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm --filter @technest/storefront lint
+      - name: Typecheck
+        run: pnpm --filter @technest/storefront typecheck
+      - name: Unit tests
+        run: pnpm --filter @technest/storefront test
+      - name: Build
+        run: pnpm --filter @technest/storefront build
+
+  emails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @technest/emails test
+
+  compose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker compose config (dummy values)
+        env:
+          POSTGRES_PASSWORD: x
+          JWT_SECRET: x
+          COOKIE_SECRET: x
+          S3_FILE_URL: x
+          S3_ACCESS_KEY_ID: x
+          S3_SECRET_ACCESS_KEY: x
+          S3_BUCKET: x
+          S3_ENDPOINT: x
+          GHCR_OWNER: ci
+        run: docker compose --profile ops --profile mail --profile backup config --quiet
+      - name: Caddyfile validates
+        run: |
+          docker run --rm -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            -e SHOP_DOMAIN=technest.co.uk -e ACME_EMAIL=ci@example.com \
+            caddy:2.10-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
