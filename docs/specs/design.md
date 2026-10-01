@@ -78,7 +78,7 @@ Letter-spacing -0.01em on H1/Display. Max text width 68ch.
 | Sheet | Basket drawer (right, 100% width <768, 420px ≥768), filter sheet (bottom <768) |
 | Command | Search autocomplete |
 | Accordion | PDP specs, FAQ |
-| Sonner | Toasts ("Added to basket" plus the basket count `aria-live="polite"`) |
+| Add confirmation | "Added to basket" at the top of the basket drawer, which opens on every add (no floating toast: it covered the free-delivery bar on phones), plus the basket count `aria-live="polite"` |
 | Icons | `lucide-react`, 20/24px, `aria-hidden` with a visible label next to them |
 
 ## 5. Imagery

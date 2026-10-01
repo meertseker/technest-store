@@ -11,8 +11,8 @@ export type AddState = "idle" | "pending" | "added" | "error"
 /**
  * Adds a variant with the existing cart server action (lib/data/cart.ts), then
  * refreshes the server components so the header basket count updates, and
- * announces it so the header opens the basket drawer with the "Added to basket"
- * toast (spec 7.4). The shopper stays on the page. "added" falls back to idle
+ * announces it so the header opens the basket drawer, which shows "Added to
+ * basket" at the top (spec 7.4). The shopper stays on the page. "added" falls back to idle
  * after a few seconds.
  */
 export function useAddToBasket() {

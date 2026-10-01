@@ -47,10 +47,9 @@ test.describe("basket and checkout", () => {
     await expect(add).toBeEnabled()
     await add.click()
 
-    // toast + drawer + one live status phrase
-    // the sonner toast (the PDP button also reads "Added to basket" for a moment)
-    await expect(page.locator("[data-sonner-toast]").getByText("Added to basket")).toBeVisible()
+    // drawer with the confirmation at the top + one live status phrase
     const drawer = page.getByRole("dialog", { name: /Your basket \(1\)/ })
+    await expect(drawer.getByTestId("basket-added")).toHaveText("Added to basket")
     await expect(drawer).toBeVisible()
     await expect(status).toHaveText("1 item in your basket")
     const bar = drawer.getByRole("progressbar")

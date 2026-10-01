@@ -1,3 +1,4 @@
+import { CircleCheck } from "lucide-react"
 import { HttpTypes } from "@medusajs/types"
 import { toPence } from "@lib/basket/money"
 import type { BasketView } from "@lib/data/basket"
@@ -14,16 +15,19 @@ export function itemCount(cart: HttpTypes.StoreCart | null | undefined) {
 /**
  * Drawer body (spec 7.4, 375 and 1280): free-delivery bar, add-on notice,
  * lines, then a sticky footer with the summary. The heading is passed in so the
- * drawer can use the dialog title and /basket an <h1>.
+ * drawer can use the dialog title and /basket an <h1>. `justAdded` shows the
+ * "Added to basket" confirmation in the flow, so it never covers anything.
  */
 export default function BasketPanel({
   cart,
   view,
   heading,
+  justAdded,
 }: {
   cart: HttpTypes.StoreCart | null
   view: BasketView
   heading: React.ReactNode
+  justAdded?: boolean
 }) {
   const count = itemCount(cart)
   return (
@@ -32,6 +36,15 @@ export default function BasketPanel({
       {cart && count > 0 ? (
         <>
           <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
+            {justAdded && (
+              <p
+                className="flex items-center gap-2 rounded bg-success-subtle px-3 py-2 font-semibold text-success"
+                data-testid="basket-added"
+              >
+                <CircleCheck aria-hidden className="size-5 shrink-0" />
+                Added to basket
+              </p>
+            )}
             <FreeDeliveryBar
               subtotal_pence={toPence(cart.item_total)}
               threshold_pence={view.threshold_pence}

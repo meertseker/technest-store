@@ -286,7 +286,7 @@ export default function BuyBox({ product, initial, fitBox, addOnNote }: Props) {
               Added {qty > 1 ? `${qty} × ` : ""}
               {product.title} to your basket.
             </span>
-            <Link href="/cart" className="inline-flex min-h-11 items-center font-semibold underline underline-offset-4">
+            <Link href="/basket" className="inline-flex min-h-11 items-center font-semibold underline underline-offset-4">
               View basket
             </Link>
           </p>

@@ -10,7 +10,6 @@ import CookieBanner from "@modules/consent/cookie-banner"
 import CartMismatchBanner from "@modules/layout/components/cart-mismatch-banner"
 import Footer from "@modules/layout/templates/footer"
 import Nav from "@modules/layout/templates/nav"
-import { Toaster } from "@/components/ui/sonner"
 
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseURL()),
@@ -29,8 +28,6 @@ export default async function PageLayout(props: { children: React.ReactNode }) {
         <CartMismatchBanner customer={customer} cart={cart} />
       )}
 
-      {/* "Added to basket" toasts; the free-delivery progress lives in the basket drawer */}
-      <Toaster />
       <main id="main" tabIndex={-1} className="relative outline-none">
         {props.children}
       </main>

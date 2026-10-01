@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { HttpTypes } from "@medusajs/types"
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
-import { toast } from "@/components/ui/sonner"
 import { BASKET_ADDED_EVENT } from "@lib/basket/events"
 import type { BasketView } from "@lib/data/basket"
 import BasketPanel, { itemCount } from "./basket-panel"
@@ -15,8 +14,9 @@ import BasketPanel, { itemCount } from "./basket-panel"
  * - The button is a real link to /basket (works without JS); with JS it opens the Sheet.
  * - The count is announced by ONE visually hidden status region with a full
  *   phrase ("2 items in your basket"); the visible badge is aria-hidden.
- * - An "Add to basket" anywhere dispatches BASKET_ADDED_EVENT: we show the
- *   "Added to basket" toast and open the drawer.
+ * - An "Add to basket" anywhere dispatches BASKET_ADDED_EVENT: we open the
+ *   drawer with "Added to basket" at the top of it (no floating toast: on a
+ *   phone it covered the free-delivery bar).
  */
 export default function BasketDrawer({
   cart,
@@ -26,6 +26,7 @@ export default function BasketDrawer({
   view: BasketView
 }) {
   const [open, setOpen] = useState(false)
+  const [justAdded, setJustAdded] = useState(false)
   const triggerRef = useRef<HTMLAnchorElement>(null)
   const returnFocusRef = useRef<HTMLElement | null>(null)
   const pathname = usePathname()
@@ -40,7 +41,7 @@ export default function BasketDrawer({
 
   useEffect(() => {
     const onAdded = () => {
-      toast.success("Added to basket")
+      setJustAdded(true)
       openDrawer()
     }
     window.addEventListener(BASKET_ADDED_EVENT, onAdded)
@@ -79,7 +80,13 @@ export default function BasketDrawer({
       <span role="status" aria-atomic="true" className="sr-only" data-testid="basket-status">
         {phrase}
       </span>
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next)
+          if (!next) setJustAdded(false)
+        }}
+      >
         <SheetContent
           closeLabel="Close basket"
           onCloseAutoFocus={(e) => {
@@ -92,6 +99,7 @@ export default function BasketDrawer({
           <BasketPanel
             cart={cart}
             view={view}
+            justAdded={justAdded}
             heading={
               <>
                 <SheetTitle className="text-lg font-semibold leading-[44px] lg:text-xl">
