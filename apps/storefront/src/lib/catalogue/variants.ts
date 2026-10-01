@@ -158,7 +158,8 @@ const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "")
  * The starting choice on the product page: the variant from ?v_id= if it
  * exists; else, when a "Model" option has the shopper's device, the first
  * buyable variant for it; else the first buyable variant for products with
- * one choice to make; else nothing (the shopper picks).
+ * one choice to make, unless that choice is the model (a guessed model is a
+ * wrong-fit order); else nothing (the shopper picks).
  */
 export function initialSelection(
   p: ProductLike,
@@ -167,18 +168,16 @@ export function initialSelection(
   const variants = p.variants ?? []
   const byId = opts.variantId ? variants.find((v) => v.id === opts.variantId) : null
   if (byId) return selectionOf(p, byId)
-  if (opts.deviceModel) {
+  const modelOption = (p.options ?? []).find((o) => /model|device/i.test(o.title ?? ""))
+  if (opts.deviceModel && modelOption) {
     const want = norm(opts.deviceModel)
-    const modelOption = (p.options ?? []).find((o) => /model|device/i.test(o.title ?? ""))
-    if (modelOption) {
-      const forDevice = variants.filter((v) => norm(valueFor(v, modelOption.id) ?? "") === want)
-      const pick = forDevice.find(isPurchasable) ?? forDevice[0]
-      if (pick) return selectionOf(p, pick)
-    }
+    const forDevice = variants.filter((v) => norm(valueFor(v, modelOption.id) ?? "") === want)
+    const pick = forDevice.find(isPurchasable) ?? forDevice[0]
+    if (pick) return selectionOf(p, pick)
   }
   if (variants.length === 1) return selectionOf(p, variants[0])
   const choices = optionChoices(p, {})
-  if (choices.length === 1) {
+  if (choices.length === 1 && choices[0].id !== modelOption?.id) {
     const first = variants.find(isPurchasable) ?? variants[0]
     return first ? selectionOf(p, first) : {}
   }

@@ -91,6 +91,33 @@ describe("variant choice", () => {
     })
     expect(initialSelection(case_, {})).toEqual({})
   })
+
+  const glass = product({
+    id: "glass",
+    options: ["Model"],
+    variants: [
+      { id: "g14", options: { Model: "iPhone 14" } },
+      { id: "g15", options: { Model: "iPhone 15" } },
+    ],
+  })
+
+  it("never guesses the phone model when it is the only choice", () => {
+    expect(initialSelection(glass, {})).toEqual({})
+    expect(initialSelection(glass, { deviceModel: "Galaxy S24" })).toEqual({})
+    expect(initialSelection(glass, { deviceModel: "iPhone 15" })).toEqual({ opt_Model: "iPhone 15" })
+  })
+
+  it("still starts on the first buyable variant when the only choice is not the model", () => {
+    const cable = product({
+      id: "cable",
+      options: ["Length"],
+      variants: [
+        { id: "1m", options: { Length: "1m" }, qty: 0 },
+        { id: "2m", options: { Length: "2m" } },
+      ],
+    })
+    expect(initialSelection(cable, {})).toEqual({ opt_Length: "2m" })
+  })
 })
 
 describe("attributes", () => {
