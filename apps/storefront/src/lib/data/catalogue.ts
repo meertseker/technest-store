@@ -129,6 +129,16 @@ export async function listCategoryProducts(categoryIds: string[]) {
   )
 }
 
+/** Every published product in a collection (e.g. the admin-curated "Best sellers") */
+export async function listCollectionProducts(collectionId: string) {
+  const region = await getStoreRegion()
+  return fetchAll(
+    "/store/products",
+    { collection_id: [collectionId], region_id: region.id, fields: LIST_FIELDS, order: "-created_at" },
+    ["products"]
+  )
+}
+
 export async function listAllProducts() {
   const region = await getStoreRegion()
   return fetchAll(

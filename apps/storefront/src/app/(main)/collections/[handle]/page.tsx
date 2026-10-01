@@ -1,80 +1,85 @@
-import { Metadata } from "next"
-import { STORE_COUNTRY } from "@lib/constants/store"
+import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-
-import { getCollectionByHandle, listCollections } from "@lib/data/collections"
-import { StoreCollection } from "@medusajs/types"
-import CollectionTemplate from "@modules/collections/templates"
-import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
-import { parseOptionValueIds } from "@lib/util/product-option-filters"
+import { listCollectionProducts, listDeviceProductIds } from "@lib/data/catalogue"
+import { getCollectionByHandle } from "@lib/data/collections"
+import { getCurrentDevice } from "@lib/data/devices"
+import { getBaseURL } from "@lib/util/env"
+import { breadcrumbJsonLd, type Crumb } from "@/lib/catalogue/json-ld"
+import { buildListing } from "@/lib/catalogue/listing"
+import {
+  activeFilterCount,
+  listingQuery,
+  parseListingParams,
+  SORTS,
+  type RawSearchParams,
+} from "@/lib/catalogue/listing-params"
+import { pickerHref } from "@/lib/devices/cookie"
+import ListingTemplate from "@modules/catalogue/templates/listing"
 
 type Props = {
   params: Promise<{ handle: string }>
-  searchParams: Promise<
-    Record<string, string | string[] | undefined> & {
-      page?: string
-      sortBy?: SortOptions
-      optionValueIds?: string | string[]
-    }
-  >
+  searchParams: Promise<RawSearchParams>
 }
 
-export const PRODUCT_LIMIT = 12
-
-export async function generateStaticParams() {
-  // No backend at image-build time (CI/Docker): render on demand instead
-  const collections = await listCollections({ fields: "*products" })
-    .then((res) => res.collections)
-    .catch(() => null)
-
-  if (!collections) {
-    return []
-  }
-
-  const collectionHandles = collections.map(
-    (collection: StoreCollection) => collection.handle
-  )
-
-  return collectionHandles.map((handle: string | undefined) => ({ handle }))
+/**
+ * An admin-curated collection (e.g. "Best sellers", linked from the home
+ * page), shown with the same listing as a category. Rendered on demand: it
+ * reads the device cookie, and a build has no backend to list collections from.
+ */
+async function load(handle: string) {
+  const collection = await getCollectionByHandle(handle)
+  if (!collection) notFound()
+  return collection
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
-  const params = await props.params
-  const collection = await getCollectionByHandle(params.handle)
-
-  if (!collection) {
-    notFound()
+  const [{ handle }, sp] = await Promise.all([props.params, props.searchParams])
+  const collection = await load(handle)
+  const state = parseListingParams(sp)
+  const canonical = `/collections/${collection.handle}`
+  // Filtered and sorted variants are not separate pages for search engines
+  const refined = activeFilterCount(state.filters) > 0 || state.sort !== "featured" || state.showAll
+  return {
+    title: collection.title,
+    description: `${collection.title} from Tech Nest, Southwark Park Road, London SE16. Free Click & Collect, and delivery across the UK.`,
+    alternates: { canonical: state.page > 1 && !refined ? `${canonical}?page=${state.page}` : canonical },
+    robots: refined ? { index: false, follow: true } : undefined,
   }
-
-  const metadata = {
-    title: `${collection.title} | Medusa Store`,
-    description: `${collection.title} collection`,
-  } as Metadata
-
-  return metadata
 }
 
 export default async function CollectionPage(props: Props) {
-  const searchParams = await props.searchParams
-  const params = await props.params
-  const { sortBy, page } = searchParams
-  const optionValueIds = parseOptionValueIds(searchParams)
+  const [{ handle }, sp] = await Promise.all([props.params, props.searchParams])
+  const collection = await load(handle)
+  const state = parseListingParams(sp)
 
-  const collection = await getCollectionByHandle(params.handle).then(
-    (collection) => collection
-  )
+  const device = await getCurrentDevice().catch(() => null)
+  const [{ products }, deviceIds] = await Promise.all([
+    listCollectionProducts(collection.id),
+    device ? listDeviceProductIds(device.slug) : Promise.resolve(null),
+  ])
+  const listing = buildListing(products, state, {
+    device: device ? { label: device.model, productIds: deviceIds } : null,
+  })
 
-  if (!collection) {
-    notFound()
-  }
+  const pathname = `/collections/${collection.handle}`
+  const crumbs: Crumb[] = [
+    { name: "Home", path: "/" },
+    { name: collection.title, path: pathname },
+  ]
 
   return (
-    <CollectionTemplate
-      collection={collection}
-      page={page}
-      sortBy={sortBy}
-      countryCode={STORE_COUNTRY}
-      optionValueIds={optionValueIds}
+    <ListingTemplate
+      title={collection.title}
+      what="products"
+      crumbs={crumbs}
+      breadcrumbLd={breadcrumbJsonLd(getBaseURL(), crumbs)}
+      listing={listing}
+      state={state}
+      pathname={pathname}
+      defaultSort="featured"
+      sortOptions={[...SORTS]}
+      deviceLabel={device?.model ?? null}
+      pickerHref={pickerHref(pathname, listingQuery(state))}
     />
   )
 }
