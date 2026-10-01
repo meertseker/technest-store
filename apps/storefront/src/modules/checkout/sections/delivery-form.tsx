@@ -3,7 +3,7 @@
 import { AlertCircle, Store } from "lucide-react"
 import { useActionState, useState } from "react"
 import { formatGbp } from "@lib/basket/money"
-import { DELIVERY_LABEL, type DeliveryChoice } from "@lib/basket/shipping-options"
+import { DELIVERY_LABEL, choiceDescription, type DeliveryChoice } from "@lib/basket/shipping-options"
 import { errorFor } from "@lib/checkout/validate"
 import { saveDelivery, type CheckoutFormState } from "@lib/data/checkout-actions"
 import { cn } from "@/lib/utils"
@@ -26,7 +26,7 @@ export type DeliveryDefaults = {
 }
 
 /**
- * Step 2 (spec 7.5): the choice first (Collect from shop, free | Standard |
+ * Step 2 (spec 7.5): the choice first (Collect from shop | Standard |
  * Next-day, with Medusa's prices), then only the fields that choice needs.
  * The address is asked only for delivery. Autocomplete tokens on every field.
  */
@@ -107,13 +107,14 @@ export default function DeliveryForm({
                 <span className="flex items-baseline justify-between gap-3">
                   <span className="font-semibold">
                     {DELIVERY_LABEL[c.kind]}
-                    {c.kind === "collect" && ", free"}
                   </span>
                   <span className="font-semibold tabular-nums">
                     {c.amount_pence === 0 ? "Free" : formatGbp(c.amount)}
                   </span>
                 </span>
-                {c.description && <span className="text-muted-foreground">{c.description}</span>}
+                {choiceDescription(c) && (
+                  <span className="text-muted-foreground">{choiceDescription(c)}</span>
+                )}
                 {blocked && addonOnly && c.kind !== "collect" && (
                   <span className="text-muted-foreground">Not available for £1 items on their own</span>
                 )}

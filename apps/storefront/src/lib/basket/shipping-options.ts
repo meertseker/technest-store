@@ -83,6 +83,17 @@ export function cheapestDeliveryPence(choices: readonly DeliveryChoice[]): numbe
   return Math.min(...delivery.map((c) => c.amount_pence))
 }
 
+/**
+ * The option's description as shown under its name. The price column already
+ * says "Free" for a free option, so a description that opens with "Free." is
+ * trimmed rather than saying it twice.
+ */
+export function choiceDescription(c: Pick<DeliveryChoice, "description" | "amount_pence">): string | null {
+  const text = c.description?.trim() ?? ""
+  const rest = c.amount_pence === 0 ? text.replace(/^free[.,:]?(\s+|$)/i, "") : text
+  return rest ? rest.charAt(0).toUpperCase() + rest.slice(1) : null
+}
+
 export const DELIVERY_LABEL: Record<DeliveryKind, string> = {
   collect: "Collect from shop",
   standard: "Standard delivery",

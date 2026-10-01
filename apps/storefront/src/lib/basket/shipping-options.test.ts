@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { cheapestDeliveryPence, deliveryKind, groupDeliveryChoices } from "./shipping-options"
+import { cheapestDeliveryPence, choiceDescription, deliveryKind, groupDeliveryChoices } from "./shipping-options"
 
 // Shapes as returned by GET /store/shipping-options?cart_id= on the seeded backend
 const standard = {
@@ -47,5 +47,23 @@ describe("shipping options", () => {
   it("finds the cheapest home delivery, ignoring collection", () => {
     expect(cheapestDeliveryPence(groupDeliveryChoices([collect, standard, nextDay]))).toBe(349)
     expect(cheapestDeliveryPence(groupDeliveryChoices([collect]))).toBeNull()
+  })
+})
+
+describe("choiceDescription", () => {
+  const free = (description: string | null) => ({ description, amount_pence: 0 })
+
+  it("does not repeat 'Free' when the price column already says it", () => {
+    expect(choiceDescription(free("Free. Collect from the shop in Southwark Park Rd, usually same day."))).toBe(
+      "Collect from the shop in Southwark Park Rd, usually same day."
+    )
+    expect(choiceDescription(free("Free."))).toBeNull()
+  })
+
+  it("leaves a paid option's description alone", () => {
+    expect(choiceDescription({ description: "Free returns. Royal Mail.", amount_pence: 349 })).toBe(
+      "Free returns. Royal Mail."
+    )
+    expect(choiceDescription(free(null))).toBeNull()
   })
 })
