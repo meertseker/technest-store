@@ -1,9 +1,11 @@
 "use client"
 
 import Image from "next/image"
-import { Loader2, Package, Search as SearchIcon, X } from "lucide-react"
+import { Loader2, Search as SearchIcon, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useId, useRef, useState } from "react"
+import PhotoPlaceholder from "@/components/ui/photo-placeholder"
+import { iconKeyFor } from "@/lib/catalogue/category-icon"
 import { formatGbp } from "@/lib/home/select"
 import { cn } from "@/lib/utils"
 import { MIN_QUERY, nextActive, type Suggestion } from "./suggestions"
@@ -213,7 +215,7 @@ export default function SearchCombobox({ variant, autoFocus, onNavigate }: Props
               {item.thumbnail ? (
                 <Image src={item.thumbnail} alt="" fill sizes="48px" className="object-contain p-1" />
               ) : (
-                <Package aria-hidden className="m-3 size-6 text-muted-foreground" strokeWidth={1.5} />
+                <PhotoPlaceholder icon={iconKeyFor(item.title)} size="sm" className="absolute inset-0" />
               )}
             </span>
             <span className="line-clamp-2 flex-1">{item.title}</span>

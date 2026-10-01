@@ -28,7 +28,7 @@ export function SummaryBody({
         {sortLines(items as HttpTypes.StoreCartLineItem[]).map((item) => (
           <li key={item.id} className="flex items-center gap-3">
             <div className="relative">
-              <LineThumb src={item.thumbnail} size={56} />
+              <LineThumb src={item.thumbnail} title={item.product_title ?? item.title} size={56} />
               <span
                 aria-hidden
                 className="absolute -right-2 -top-2 min-w-6 rounded-full bg-foreground px-1.5 text-center text-sm font-semibold leading-6 text-background"

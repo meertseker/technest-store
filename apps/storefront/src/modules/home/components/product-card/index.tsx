@@ -1,7 +1,9 @@
 import Image from "next/image"
 import Link from "next/link"
-import { CircleCheck, Package } from "lucide-react"
+import { CircleCheck } from "lucide-react"
 import type { HttpTypes } from "@medusajs/types"
+import PhotoPlaceholder from "@/components/ui/photo-placeholder"
+import { iconKeyFor } from "@/lib/catalogue/category-icon"
 import { formatGbp, isOnePoundItem, minPrice } from "@/lib/home/select"
 
 type Props = {
@@ -40,8 +42,10 @@ export default function ProductCard({ product, fitsDevice, eager }: Props) {
             className="object-contain p-4"
           />
         ) : (
-          <div className="flex size-full items-center justify-center text-muted-foreground">
-            <Package aria-hidden className="size-10" strokeWidth={1.5} />
+          <div className="flex size-full items-center justify-center">
+            <PhotoPlaceholder
+              icon={iconKeyFor(product.title, ...(product.categories ?? []).map((c) => c.handle))}
+            />
           </div>
         )}
         {addOn && (

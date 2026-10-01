@@ -23,7 +23,7 @@ export default function BasketLines({ items }: { items: HttpTypes.StoreCartLineI
             : null
         return (
           <li key={item.id} className="flex gap-3 py-4 first:pt-0" data-testid="basket-line">
-            <LineThumb src={item.thumbnail} />
+            <LineThumb src={item.thumbnail} title={title} />
             <div className="flex min-w-0 flex-1 flex-col gap-2">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

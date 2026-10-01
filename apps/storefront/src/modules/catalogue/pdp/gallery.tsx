@@ -1,8 +1,9 @@
 "use client"
 
 import Image from "next/image"
-import { Package } from "lucide-react"
 import { useRef, useState } from "react"
+import PhotoPlaceholder from "@/components/ui/photo-placeholder"
+import type { IconKey } from "@/lib/catalogue/category-icon"
 import { cn } from "@/lib/utils"
 
 export type GalleryImage = { id: string; url: string }
@@ -15,16 +16,25 @@ const SIZES = "(min-width: 1024px) 700px, 100vw"
  * thumbnails. Photos show the product on white (photo-worker output) on the
  * surface tile; alt text is the product title (the image adds nothing a
  * screen reader user misses otherwise, but an empty alt on the only image
- * of a product page reads as broken).
+ * of a product page reads as broken). Without a photo yet, a short banner
+ * with the product's icon, so the buy box stays near the top of the page.
  */
-export default function Gallery({ images, title }: { images: GalleryImage[]; title: string }) {
+export default function Gallery({
+  images,
+  title,
+  placeholderIcon = "box",
+}: {
+  images: GalleryImage[]
+  title: string
+  placeholderIcon?: IconKey
+}) {
   const [active, setActive] = useState(0)
   const track = useRef<HTMLUListElement>(null)
 
   if (!images.length) {
     return (
-      <div className="flex aspect-square w-full flex-col items-center justify-center gap-2 rounded bg-surface text-muted-foreground">
-        <Package aria-hidden className="size-16" strokeWidth={1.25} />
+      <div className="flex aspect-[16/9] w-full flex-col items-center justify-center gap-3 rounded bg-surface text-muted-foreground lg:aspect-[16/10]">
+        <PhotoPlaceholder icon={placeholderIcon} size="lg" />
         <span>Photo coming soon</span>
       </div>
     )
