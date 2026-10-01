@@ -11,6 +11,7 @@ import {
 } from "@medusajs/ui"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { FormEvent, useState } from "react"
+import { TAP } from "../../../components/shop-ui"
 import { sdk } from "../../../lib/client"
 import { formatPence, penceToPoundsInput, poundsInputToPence } from "../../../lib/pence"
 
@@ -117,11 +118,11 @@ function EditDrawer({
                   aria-describedby={`${key}-help${errors[key] ? ` ${key}-error` : ""}`}
                   onChange={(e) => setValues((v) => ({ ...v, [key]: e.target.value }))}
                 />
-                <Text id={`${key}-help`} size="small" className="text-ui-fg-subtle">
+                <Text id={`${key}-help`} size="large" className="text-ui-fg-subtle">
                   {help}
                 </Text>
                 {errors[key] && (
-                  <Text id={`${key}-error`} size="small" className="text-ui-fg-error">
+                  <Text id={`${key}-error`} size="large" className="text-ui-fg-error" role="alert">
                     {errors[key]}
                   </Text>
                 )}
@@ -130,11 +131,11 @@ function EditDrawer({
           </Drawer.Body>
           <Drawer.Footer>
             <Drawer.Close asChild>
-              <Button size="small" variant="secondary" type="button" disabled={save.isPending}>
+              <Button variant="secondary" type="button" className={TAP} disabled={save.isPending}>
                 Cancel
               </Button>
             </Drawer.Close>
-            <Button size="small" type="submit" isLoading={save.isPending} disabled={save.isPending}>
+            <Button type="submit" className={TAP} isLoading={save.isPending} disabled={save.isPending}>
               Save
             </Button>
           </Drawer.Footer>
@@ -153,16 +154,16 @@ const TechnestSettingsPage = () => {
 
   return (
     <Container className="divide-y p-0">
-      <div className="flex items-center justify-between px-6 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 md:px-6">
         <div className="flex flex-col gap-y-1">
           <Heading level="h1">Shop settings</Heading>
-          <Text size="small" className="text-ui-fg-subtle">
-            Free delivery and Klarna thresholds. Amounts include VAT.
+          <Text size="large" className="text-ui-fg-subtle">
+            The basket amounts for free delivery and for Klarna. Amounts include VAT.
           </Text>
         </div>
         <Button
-          size="small"
           variant="secondary"
+          className={TAP}
           onClick={() => setOpen(true)}
           disabled={!data}
         >
@@ -170,27 +171,27 @@ const TechnestSettingsPage = () => {
         </Button>
       </div>
       {isLoading && (
-        <div className="px-6 py-4">
-          <Text size="small" className="text-ui-fg-subtle">
+        <div className="px-4 py-4 md:px-6">
+          <Text size="large" className="text-ui-fg-subtle" role="status">
             Loading…
           </Text>
         </div>
       )}
       {isError && (
-        <div className="px-6 py-4">
-          <Text size="small" className="text-ui-fg-error">
+        <div className="px-4 py-4 md:px-6">
+          <Text size="large" className="text-ui-fg-error" role="alert">
             Couldn't load the settings. Refresh the page to try again.
           </Text>
         </div>
       )}
       {data &&
         FIELDS.map(({ key, label, help }) => (
-          <div key={key} className="grid grid-cols-1 gap-2 px-6 py-4 md:grid-cols-2">
+          <div key={key} className="grid grid-cols-1 gap-2 px-4 py-4 md:grid-cols-2 md:px-6">
             <div className="flex flex-col gap-y-1">
-              <Text size="small" leading="compact" weight="plus">
+              <Text size="large" weight="plus">
                 {label}
               </Text>
-              <Text size="small" leading="compact" className="text-ui-fg-subtle">
+              <Text size="large" className="text-ui-fg-subtle">
                 {help}
               </Text>
             </div>

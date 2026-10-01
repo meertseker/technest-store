@@ -133,6 +133,10 @@ const ImportProductsPage = () => {
         `Import finished: ${result.created} added, ${result.updated} updated.`
       )
     },
+    // The Import button is at the bottom of a long list; the message at the top is out of sight.
+    onError: (error: Error) => {
+      toast.error("The import didn't run. Nothing was changed.", { description: error.message })
+    },
   })
 
   // Move focus to the result so screen readers and keyboard users land on it.
@@ -194,6 +198,8 @@ const ImportProductsPage = () => {
           type="file"
           accept=".csv,text/csv"
           className="sr-only"
+          tabIndex={-1}
+          aria-hidden
           onChange={onFile}
         />
         <Button
@@ -347,6 +353,7 @@ const ImportProductsPage = () => {
 export const config = defineRouteConfig({
   label: "Import products",
   icon: ArrowUpTray,
+  rank: 5,
 })
 
 export default ImportProductsPage

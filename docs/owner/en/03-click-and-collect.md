@@ -25,7 +25,7 @@
 
 ### Scene 3 (1:15-2:15) Mark ready
 
-**Tap:** pack the bag, then tap **Mark ready** on the card.
+**Tap:** pack the bag, then tap **Mark ready** on the card. A box asks "Is order #1042 picked and ready?": tap **Yes, mark ready** (or **Not yet** if you pressed it by mistake).
 
 **You'll see:** "Order #1042 is ready. Code K7MQ2X." The card moves to **Ready** and shows the **Collection code** in big letters.
 

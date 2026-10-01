@@ -118,6 +118,7 @@ const TradeApplicationsPage = () => {
 export const config = defineRouteConfig({
   label: "Trade applications",
   icon: Buildings,
+  rank: 4,
 })
 
 export default TradeApplicationsPage

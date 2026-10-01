@@ -4,6 +4,7 @@ import { Alert, Badge, Button, Container, Heading, Text, toast } from "@medusajs
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ChangeEvent, useRef, useState } from "react"
 import { PhotoCompare } from "../components/photo-compare"
+import { ownerMessage } from "../lib/today"
 import {
   approvePhoto,
   errorMessage,
@@ -115,7 +116,7 @@ const ProductPhotoWidget = ({ data: product }: DetailWidgetProps<AdminProduct>) 
         ) : (
           disabled && (
             <Alert variant="warning">
-              {status?.reason ?? "Photo processing is not available right now."}
+              {ownerMessage(status?.reason) ?? "Photo processing is not available right now."}
             </Alert>
           )
         )}

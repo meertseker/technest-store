@@ -12,6 +12,7 @@ A Turkish copy of every file is in [`tr/`](./tr/README.md).
 
 | File | What it is | Menu |
 |---|---|---|
+| (no script) | **Today**, the page the admin opens on: what needs doing now (orders to pick, repairs to call back, trade applications, draft products) and shortcuts to the pages below | Today |
 | [en/01-quick-add.md](./en/01-quick-add.md) | A product from a phone photo, with AI suggestions, saved as a draft | Quick add |
 | [en/02-photo-widget.md](./en/02-photo-widget.md) | The "Product photo" box: Process, Approve, Discard | Products → a product |
 | [en/03-click-and-collect.md](./en/03-click-and-collect.md) | The board: To pick, Mark ready, Collected (takes payment); day-3 reminder, day-7 cancel | Click & Collect |

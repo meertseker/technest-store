@@ -116,6 +116,7 @@ const RepairBookingsPage = () => {
 export const config = defineRouteConfig({
   label: "Repair bookings",
   icon: Tools,
+  rank: 3,
 })
 
 export default RepairBookingsPage

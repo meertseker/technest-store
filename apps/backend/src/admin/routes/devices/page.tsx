@@ -434,6 +434,7 @@ const DevicesPage = () => {
 export const config = defineRouteConfig({
   label: "Devices",
   icon: LaptopMobile,
+  rank: 6,
 })
 
 export default DevicesPage

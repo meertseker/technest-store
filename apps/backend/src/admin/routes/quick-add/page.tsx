@@ -20,6 +20,7 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { PhotoCompare } from "../../components/photo-compare"
 import { sdk } from "../../lib/client"
+import { ownerMessage } from "../../lib/today"
 import {
   approvePhoto,
   errorMessage,
@@ -367,7 +368,7 @@ const QuickAddPage = () => {
           draft. Nothing goes live until you publish it from the product page.
         </Text>
         {aiStatus && !aiStatus.ai_enabled && (
-          <Alert variant="info">{aiStatus.reason}</Alert>
+          <Alert variant="info">{ownerMessage(aiStatus.reason)}</Alert>
         )}
       </div>
 
@@ -784,6 +785,7 @@ const QuickAddPage = () => {
 export const config = defineRouteConfig({
   label: "Quick add",
   icon: Camera,
+  rank: 2,
 })
 
 export default QuickAddPage

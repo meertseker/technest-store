@@ -25,7 +25,7 @@
 
 ### Sahne 3 (1:15-2:15) Hazır olarak işaretleyin
 
-**Dokunun:** poşeti hazırlayın, sonra karttaki **"Mark ready"** ("Hazır işaretle").
+**Dokunun:** poşeti hazırlayın, sonra karttaki **"Mark ready"** ("Hazır işaretle"). "Is order #1042 picked and ready?" diye bir kutu çıkar: **"Yes, mark ready"** deyin (yanlışlıkla bastıysanız **"Not yet"**).
 
 **Göreceğiniz:** "Order #1042 is ready. Code K7MQ2X." Kart **"Ready"** sütununa geçer ve **"Collection code"** (teslim kodu) büyük harflerle görünür.
 

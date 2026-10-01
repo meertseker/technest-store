@@ -15,6 +15,7 @@ Ekrandaki İngilizce mesajları da aynen yazdık ki tanıyabilesiniz.
 
 | Dosya | Ne işe yarar | Menü |
 |---|---|---|
+| (senaryo yok) | **"Today"**, panelin açıldığı sayfa: şu an yapılacak işler (toplanacak siparişler, geri aranacak tamirler, toptan başvuruları, taslak ürünler) ve aşağıdaki sayfalara kısayollar | "Today" |
 | [01-quick-add.md](./01-quick-add.md) | Telefon fotoğrafından yapay zekâ önerisiyle ürün, taslak olarak | "Quick add" |
 | [02-photo-widget.md](./02-photo-widget.md) | "Product photo" kutusu: "Process", "Approve", "Discard" | "Products" → ürün |
 | [03-click-and-collect.md](./03-click-and-collect.md) | Pano: "To pick", "Mark ready", "Collected" (parayı çeker); 3. gün hatırlatma, 7. gün iptal | "Click & Collect" |

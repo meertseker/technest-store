@@ -42,6 +42,7 @@ function useColumn(status: CollectStatus, limit: number) {
 function OrderCard({ order }: { order: ClickCollectOrder }) {
   const queryClient = useQueryClient()
   const [confirming, setConfirming] = useState(false)
+  const [confirmingReady, setConfirmingReady] = useState(false)
   const [error, setError] = useState<{ message: string; status?: number } | null>(null)
 
   const onError = (e: unknown) => {
@@ -187,7 +188,7 @@ function OrderCard({ order }: { order: ClickCollectOrder }) {
           type="button"
           size="large"
           className={clx(TAP, "w-full")}
-          onClick={() => markReady.mutate()}
+          onClick={() => setConfirmingReady(true)}
           isLoading={markReady.isPending}
           disabled={busy}
         >
@@ -206,6 +207,24 @@ function OrderCard({ order }: { order: ClickCollectOrder }) {
           Collected
         </Button>
       )}
+
+      <ConfirmDialog
+        open={confirmingReady}
+        title={`Is order #${order.display_id} picked and ready?`}
+        description={
+          <>
+            Pressing Mark ready emails {order.customer_name ?? "the customer"} now to say the order
+            can be collected, with their collection code. It can't be undone.
+          </>
+        }
+        confirmText="Yes, mark ready"
+        cancelText="Not yet"
+        onCancel={() => setConfirmingReady(false)}
+        onConfirm={() => {
+          setConfirmingReady(false)
+          markReady.mutate()
+        }}
+      />
 
       <ConfirmDialog
         open={confirming}
@@ -301,7 +320,7 @@ const ClickCollectPage = () => {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-col gap-1">
             <Heading level="h1">Click & Collect</Heading>
-            <Text size="large" className="text-ui-fg-subtle" aria-live="polite">
+            <Text size="large" className="text-ui-fg-subtle">
               Updates every minute.
               {updatedAt > 0 &&
                 ` Last updated ${new Date(updatedAt).toLocaleTimeString("en-GB", {
@@ -355,6 +374,7 @@ const ClickCollectPage = () => {
 export const config = defineRouteConfig({
   label: "Click & Collect",
   icon: BuildingStorefront,
+  rank: 1,
 })
 
 export default ClickCollectPage
