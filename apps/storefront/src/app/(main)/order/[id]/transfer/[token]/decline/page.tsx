@@ -1,41 +1,21 @@
+import { Metadata } from "next"
 import { declineTransferRequest } from "@lib/data/orders"
-import { Heading, Text } from "@modules/common/components/ui"
-import TransferImage from "@modules/order/components/transfer-image"
+import { TransferOutcome, TransferShell } from "@modules/order/components/transfer-result"
 
-export default async function TransferPage({
-  params,
-}: {
-  params: { id: string; token: string }
-}) {
-  const { id, token } = params
+export const metadata: Metadata = {
+  title: "Move an order",
+  robots: { index: false, follow: false },
+}
 
-  const { success, error } = await declineTransferRequest(id, token)
+type Props = { params: Promise<{ id: string; token: string }> }
+
+export default async function DeclineTransferPage({ params }: Props) {
+  const { id, token } = await params
+  const { success } = await declineTransferRequest(id, token)
 
   return (
-    <div className="flex flex-col gap-y-4 items-start w-2/5 mx-auto mt-10 mb-20">
-      <TransferImage />
-      <div className="flex flex-col gap-y-6">
-        {success && (
-          <>
-            <Heading level="h1" className="text-xl text-zinc-900">
-              Order transfer declined!
-            </Heading>
-            <Text className="text-zinc-600">
-              Transfer of order {id} has been successfully declined.
-            </Text>
-          </>
-        )}
-        {!success && (
-          <>
-            <Text className="text-zinc-600">
-              There was an error declining the transfer. Please try again.
-            </Text>
-            {error && (
-              <Text className="text-red-500">Error message: {error}</Text>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+    <TransferShell title={success ? "The order stays with you" : "We couldn't decline the request"}>
+      <TransferOutcome success={success} done="The request was declined. Nothing has changed." />
+    </TransferShell>
   )
 }

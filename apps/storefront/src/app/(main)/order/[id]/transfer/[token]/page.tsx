@@ -1,38 +1,28 @@
-import { Heading, Text } from "@modules/common/components/ui"
+import { Metadata } from "next"
 import TransferActions from "@modules/order/components/transfer-actions"
-import TransferImage from "@modules/order/components/transfer-image"
+import { TransferShell } from "@modules/order/components/transfer-result"
 
-export default async function TransferPage({
-  params,
-}: {
-  params: { id: string; token: string }
-}) {
-  const { id, token } = params
+export const metadata: Metadata = {
+  title: "Move an order",
+  robots: { index: false, follow: false },
+}
+
+type Props = { params: Promise<{ id: string; token: string }> }
+
+/** The page behind the link in a "move this order to another account" email */
+export default async function TransferPage({ params }: Props) {
+  const { id, token } = await params
 
   return (
-    <div className="flex flex-col gap-y-4 items-start w-2/5 mx-auto mt-10 mb-20">
-      <TransferImage />
-      <div className="flex flex-col gap-y-6">
-        <Heading level="h1" className="text-xl text-zinc-900">
-          Transfer request for order {id}
-        </Heading>
-        <Text className="text-zinc-600">
-          You&#39;ve received a request to transfer ownership of your order ({id}).
-          If you agree to this request, you can approve the transfer by clicking
-          the button below.
-        </Text>
-        <div className="w-full h-px bg-zinc-200" />
-        <Text className="text-zinc-600">
-          If you accept, the new owner will take over all responsibilities and
-          permissions associated with this order.
-        </Text>
-        <Text className="text-zinc-600">
-          If you do not recognize this request or wish to retain ownership, no
-          further action is required.
-        </Text>
-        <div className="w-full h-px bg-zinc-200" />
-        <TransferActions id={id} token={token} />
-      </div>
-    </div>
+    <TransferShell title="Move this order to another account?">
+      <p className="mt-4 max-w-[68ch]">
+        Someone asked to move one of your orders to their Tech Nest account. If you agree, the
+        order will show in their account instead of yours.
+      </p>
+      <p className="mt-3 max-w-[68ch] text-muted-foreground">
+        If you do not recognise this request, choose No. Nothing changes.
+      </p>
+      <TransferActions id={id} token={token} />
+    </TransferShell>
   )
 }

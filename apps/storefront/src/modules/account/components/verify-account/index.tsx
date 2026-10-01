@@ -1,13 +1,17 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import Link from "next/link"
+import { CircleAlert } from "lucide-react"
 import { useSearchParams } from "next/navigation"
-import { Button } from "@modules/common/components/ui"
+import { useEffect, useRef, useState } from "react"
+import { buttonVariants } from "@/components/ui/button"
+import Notice from "@/components/ui/notice"
+import { h1Class } from "@/lib/typography"
 import { confirmEmailVerification } from "@lib/data/customer"
-import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
 type VerificationState = "verifying" | "success" | "error"
 
+/** The page behind the link in the "verify your email" message */
 const VerifyAccount = () => {
   const searchParams = useSearchParams()
   const token = searchParams.get("token")
@@ -33,38 +37,38 @@ const VerifyAccount = () => {
   }, [token])
 
   return (
-    <div
-      className="max-w-sm w-full flex flex-col items-center text-center gap-y-4"
-      data-testid="verify-account-page"
-    >
-      <h1 className="text-large-semi uppercase">Email verification</h1>
+    <div className="content-container max-w-xl py-10 lg:py-14" data-testid="verify-account-page">
+      <h1 className={h1Class}>Verify your email</h1>
 
       {state === "verifying" && (
-        <p className="text-base-regular text-ui-fg-base">
-          Verifying your email...
+        <p role="status" className="mt-4 text-muted-foreground">
+          Checking your link…
         </p>
       )}
 
       {state === "success" && (
         <>
-          <p className="text-base-regular text-ui-fg-base">
-            Your email is verified. You can now sign in to your account.
-          </p>
-          <LocalizedClientLink href="/account">
-            <Button variant="primary">Go to sign in</Button>
-          </LocalizedClientLink>
+          <Notice tone="success" title="Your email is verified" className="mt-6">
+            You can now sign in to your account.
+          </Notice>
+          <Link href="/account/login" className={buttonVariants({ className: "mt-6 w-full sm:w-auto" })}>
+            Sign in
+          </Link>
         </>
       )}
 
       {state === "error" && (
         <>
-          <p className="text-base-regular text-ui-fg-base">
-            This verification link is invalid or has expired. Sign in to receive
-            a new verification email.
-          </p>
-          <LocalizedClientLink href="/account">
-            <Button variant="secondary">Go to sign in</Button>
-          </LocalizedClientLink>
+          <div role="alert" className="mt-6 flex gap-3 rounded border border-destructive p-4">
+            <CircleAlert aria-hidden className="mt-0.5 size-6 shrink-0 text-destructive" />
+            <p>This link is invalid or has expired. Sign in and we will send you a new one.</p>
+          </div>
+          <Link
+            href="/account/login"
+            className={buttonVariants({ variant: "secondary", className: "mt-6 w-full sm:w-auto" })}
+          >
+            Go to sign in
+          </Link>
         </>
       )}
     </div>

@@ -1,79 +1,40 @@
 "use client"
 
-import { acceptTransferRequest, declineTransferRequest } from "@lib/data/orders"
-import { Button, Text } from "@modules/common/components/ui"
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { acceptTransferRequest, declineTransferRequest } from "@lib/data/orders"
+import { TransferOutcome } from "@modules/order/components/transfer-result"
 
-type TransferStatus = "pending" | "success" | "error"
+type Choice = "accept" | "decline"
 
+const DONE: Record<Choice, string> = {
+  accept: "The order has been moved. It now shows in the other account.",
+  decline: "The request was declined. The order stays with you.",
+}
+
+/** The two choices on the order transfer page, then what happened */
 const TransferActions = ({ id, token }: { id: string; token: string }) => {
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [status, setStatus] = useState<{
-    accept: TransferStatus | null
-    decline: TransferStatus | null
-  } | null>({
-    accept: null,
-    decline: null,
-  })
+  const [pending, setPending] = useState<Choice | null>(null)
+  const [result, setResult] = useState<{ choice: Choice; success: boolean } | null>(null)
 
-  const acceptTransfer = async () => {
-    setStatus({ accept: "pending", decline: null })
-    setErrorMessage(null)
-
-    const { success, error } = await acceptTransferRequest(id, token)
-
-    if (error) setErrorMessage(error)
-    setStatus({ accept: success ? "success" : "error", decline: null })
+  const run = async (choice: Choice) => {
+    setPending(choice)
+    const action = choice === "accept" ? acceptTransferRequest : declineTransferRequest
+    const { success } = await action(id, token)
+    setPending(null)
+    setResult({ choice, success })
   }
 
-  const declineTransfer = async () => {
-    setStatus({ accept: null, decline: "pending" })
-    setErrorMessage(null)
-
-    const { success, error } = await declineTransferRequest(id, token)
-
-    if (error) setErrorMessage(error)
-    setStatus({ accept: null, decline: success ? "success" : "error" })
-  }
+  if (result) return <TransferOutcome success={result.success} done={DONE[result.choice]} />
 
   return (
-    <div className="flex flex-col gap-y-4">
-      {status?.accept === "success" && (
-        <Text className="text-emerald-500">
-          Order transferred successfully!
-        </Text>
-      )}
-      {status?.decline === "success" && (
-        <Text className="text-emerald-500">
-          Order transfer declined successfully!
-        </Text>
-      )}
-      {status?.accept !== "success" && status?.decline !== "success" && (
-        <div className="flex gap-x-4">
-          <Button
-            size="large"
-            onClick={acceptTransfer}
-            isLoading={status?.accept === "pending"}
-            disabled={
-              status?.accept === "pending" || status?.decline === "pending"
-            }
-          >
-            Accept transfer
-          </Button>
-          <Button
-            size="large"
-            variant="secondary"
-            onClick={declineTransfer}
-            isLoading={status?.decline === "pending"}
-            disabled={
-              status?.accept === "pending" || status?.decline === "pending"
-            }
-          >
-            Decline transfer
-          </Button>
-        </div>
-      )}
-      {errorMessage && <Text className="text-red-500">{errorMessage}</Text>}
+    <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+      <Button type="button" onClick={() => run("accept")} disabled={pending !== null}>
+        {pending === "accept" ? "Moving…" : "Yes, move the order"}
+      </Button>
+      <Button type="button" variant="secondary" onClick={() => run("decline")} disabled={pending !== null}>
+        {pending === "decline" ? "Declining…" : "No, keep it"}
+      </Button>
     </div>
   )
 }
