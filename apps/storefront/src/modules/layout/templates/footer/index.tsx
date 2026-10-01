@@ -1,9 +1,12 @@
 import Link from "next/link"
 import { MapPin, Phone } from "lucide-react"
 import { listCategories } from "@lib/data/categories"
+import { buildShopMenu } from "@/lib/layout/menu"
 import { formatTime, getOpenStatus, siteConfig } from "@/lib/site-config"
 
 const HELP = [
+  { href: "/legal/delivery", label: "Delivery" },
+  { href: "/legal/returns", label: "Returns" },
   { href: "/click-and-collect", label: "Click & Collect" },
   { href: "/contact", label: "Contact us" },
   { href: "/legal/accessibility", label: "Accessibility statement" },
@@ -20,12 +23,15 @@ const LEGAL = [
   { href: "/legal/repair-terms", label: "Repair terms" },
 ]
 
+/** Named in words, so no logo is the only cue (and no third-party artwork to keep current) */
+const PAYMENT_METHODS = ["Visa", "Mastercard", "Apple Pay", "Google Pay", "Klarna"]
+
 const linkClass = "inline-flex min-h-11 items-center hover:underline"
 
 export default async function Footer() {
   // The footer must still render when the backend is down
-  const categories = await listCategories()
-    .then((all) => all.filter((c) => !c.parent_category_id).slice(0, 8))
+  const categories = await listCategories({ fields: "id,name,handle,rank,parent_category_id" })
+    .then((all) => buildShopMenu(all).slice(0, 8))
     .catch(() => [])
   const status = getOpenStatus(new Date())
   const { address, phone, mapsUrl, hours } = siteConfig
@@ -39,8 +45,8 @@ export default async function Footer() {
           </h2>
           <ul className="mt-3">
             {categories.map((c) => (
-              <li key={c.id}>
-                <Link href={`/c/${c.handle}`} className={linkClass}>
+              <li key={c.href}>
+                <Link href={c.href} className={linkClass}>
                   {c.name}
                 </Link>
               </li>
@@ -126,6 +132,20 @@ export default async function Footer() {
       </div>
 
       <div className="border-t border-border">
+        <div className="content-container flex flex-wrap items-center gap-x-4 gap-y-2 pt-6">
+          <p className="font-semibold">Secure payment by Stripe. We accept</p>
+          <ul aria-label="Ways to pay" className="flex flex-wrap gap-2">
+            {PAYMENT_METHODS.map((m) => (
+              <li
+                key={m}
+                data-small-text
+                className="rounded border border-border bg-background px-2 py-1 text-sm font-semibold"
+              >
+                {m}
+              </li>
+            ))}
+          </ul>
+        </div>
         <div className="content-container flex flex-col gap-3 py-6 text-muted-foreground lg:flex-row lg:items-center lg:justify-between">
           <p>
             &copy; {new Date().getFullYear()} {siteConfig.legalName ?? siteConfig.name}

@@ -18,7 +18,15 @@ export type SitemapData = {
  * Add /repairs and /trade here when those routes ship. /search is noindex
  * (result pages) and /welcome (till poster) is noindex on purpose.
  */
-export const STATIC_PATHS = ["/", "/devices", "/about", "/contact"] as const
+export const STATIC_PATHS = [
+  "/",
+  "/devices",
+  "/repairs",
+  "/trade",
+  "/click-and-collect",
+  "/about",
+  "/contact",
+] as const
 
 /** Paths search engines must not crawl: basket, checkout, accounts, orders, APIs */
 export const PRIVATE_PATHS = [

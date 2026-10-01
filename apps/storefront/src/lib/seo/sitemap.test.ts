@@ -13,6 +13,13 @@ describe("buildSitemap", () => {
     }
   })
 
+  it("includes the service pages shoppers search for", () => {
+    const urls = buildSitemap("https://technest.co.uk", empty).map((e) => e.url)
+    for (const p of ["/repairs", "/trade", "/click-and-collect"]) {
+      expect(urls).toContain(`https://technest.co.uk${p}`)
+    }
+  })
+
   it("leaves draft legal pages out", () => {
     const urls = buildSitemap("https://technest.co.uk", empty).map((e) => e.url)
     expect(urls.some((u) => u.includes("/legal/"))).toBe(false)

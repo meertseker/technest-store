@@ -92,7 +92,7 @@ export default function ListingTemplate({
         <div className="min-w-0">
           <div
             data-sticky-toolbar
-            className="sticky top-[calc(var(--header-h)+53px)] z-30 -mx-4 flex min-h-[52px] items-center justify-between gap-3 border-b border-border bg-background px-4 py-1 lg:static lg:mx-0 lg:justify-end lg:border-0 lg:px-0"
+            className="sticky top-[var(--header-stack)] z-30 -mx-4 flex min-h-[52px] items-center justify-between gap-3 border-b border-border bg-background px-4 py-1 lg:static lg:mx-0 lg:justify-end lg:border-0 lg:px-0"
           >
             <FilterSheet
               facets={listing.facets}

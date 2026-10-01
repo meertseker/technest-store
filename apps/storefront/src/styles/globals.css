@@ -23,6 +23,9 @@
   --ring: #1D4ED8;
   --radius: 0.5rem;
   --header-h: 64px;
+  /* The header has a second row at every width (device chip on a phone;
+     Shop / Repairs / Trade and the chip from 1024px): 52px + 1px border */
+  --header-stack: calc(var(--header-h) + 53px);
 }
 
 @media (min-width: 1024px) {
@@ -33,17 +36,17 @@
 
 @layer base {
   html {
-    scroll-padding-top: calc(var(--header-h) + 52px);
+    scroll-padding-top: var(--header-stack);
     scroll-padding-bottom: 96px;
     -webkit-text-size-adjust: 100%;
   }
   /* Listing pages: the sticky Filters/Sort toolbar (52px) sits under the header on mobile */
   html:has([data-sticky-toolbar]) {
-    scroll-padding-top: calc(var(--header-h) + 53px + 52px);
+    scroll-padding-top: calc(var(--header-stack) + 52px);
   }
   @media (min-width: 1024px) {
     html:has([data-sticky-toolbar]) {
-      scroll-padding-top: calc(var(--header-h) + 16px);
+      scroll-padding-top: calc(var(--header-stack) + 16px);
     }
   }
   body {

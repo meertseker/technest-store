@@ -51,7 +51,7 @@ export default async function BookRepairPage() {
           </div>
         </div>
         <aside aria-labelledby="rather-call" className="lg:col-span-4">
-          <div className="rounded border border-border bg-surface p-4 lg:sticky lg:top-[calc(var(--header-h)+24px)]">
+          <div className="rounded border border-border bg-surface p-4 lg:sticky lg:top-[calc(var(--header-stack)+24px)]">
             <h2 id="rather-call" className="flex items-center gap-2 text-lg font-semibold">
               <PhoneCall aria-hidden className="size-5" />
               Rather talk to us?

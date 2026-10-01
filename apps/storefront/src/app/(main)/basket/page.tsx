@@ -62,7 +62,7 @@ export default async function BasketPage(props: {
             <BasketLines items={cart.items} />
           </section>
           <aside aria-labelledby="basket-summary-title" className="lg:col-span-4">
-            <div className="flex flex-col gap-4 rounded border border-border bg-surface p-4 lg:sticky lg:top-[calc(var(--header-h)+24px)]">
+            <div className="flex flex-col gap-4 rounded border border-border bg-surface p-4 lg:sticky lg:top-[calc(var(--header-stack)+24px)]">
               <h2 id="basket-summary-title" className="text-lg font-semibold">
                 Order summary
               </h2>

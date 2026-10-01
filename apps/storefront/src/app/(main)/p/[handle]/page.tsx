@@ -120,7 +120,7 @@ export default async function ProductPage(props: Props) {
         <div className="lg:col-span-7">
           <Gallery images={images} title={product.title} />
         </div>
-        <div className="mt-6 lg:sticky lg:top-[calc(var(--header-h)+24px)] lg:col-span-5 lg:mt-0 lg:self-start">
+        <div className="mt-6 lg:sticky lg:top-[calc(var(--header-stack)+24px)] lg:col-span-5 lg:mt-0 lg:self-start">
           <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em] lg:text-4xl">
             {product.title}
           </h1>
