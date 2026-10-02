@@ -4,9 +4,10 @@ import { makePhoto } from "../helpers/photo"
 
 jest.setTimeout(10 * 60 * 1000)
 
-// No worker configured: the app must boot and the photo routes must explain why they're off.
+// Neither fal nor a worker configured: the app must boot and the photo routes must explain why they're off.
 // (An existing empty variable is never overridden by .env files.)
 process.env.PHOTO_WORKER_URL = ""
+process.env.FAL_KEY = ""
 
 medusaIntegrationTestRunner({
   inApp: true,
@@ -22,7 +23,7 @@ medusaIntegrationTestRunner({
       const { data } = await api.get("/admin/photos/status", admin)
       expect(data).toEqual({
         enabled: false,
-        reason: "Photo processing is switched off (PHOTO_WORKER_URL is not set).",
+        reason: "Photo processing is switched off (FAL_KEY is not set).",
         provider: "disabled",
         default_model: null,
       })
@@ -35,7 +36,7 @@ medusaIntegrationTestRunner({
       expect(res.status).toBe(400)
       expect(res.data).toEqual({
         type: "not_allowed",
-        message: "Photo processing is switched off (PHOTO_WORKER_URL is not set).",
+        message: "Photo processing is switched off (FAL_KEY is not set).",
       })
     })
   },

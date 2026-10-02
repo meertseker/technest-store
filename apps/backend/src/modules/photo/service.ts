@@ -1,4 +1,5 @@
 import { DisabledProvider } from "./providers/disabled"
+import { FalProvider } from "./providers/fal"
 import { RembgHttpProvider } from "./providers/rembg-http"
 import {
   BackgroundRemovalProvider,
@@ -8,9 +9,11 @@ import {
 } from "./providers/types"
 
 export type PhotoModuleOptions = {
-  /** photo-worker base URL. Unset or empty: processing is disabled, the rest of the app works. */
+  /** FAL_KEY: background removal on fal.ai (production). Unset with no worker URL: processing is disabled. */
+  falKey?: string
+  /** PHOTO_WORKER_URL: our own photo-worker (local use and tests). When set, it is used instead of fal. */
   workerUrl?: string
-  /** PHOTO_MODEL. Unset or empty: birefnet-general. isnet-general-use is the lighter fallback. */
+  /** PHOTO_MODEL, photo-worker only. Unset or empty: birefnet-general. isnet-general-use is the lighter fallback. */
   defaultModel?: PhotoModel | string
   timeoutMs?: number
 }
@@ -25,7 +28,8 @@ export type PhotoStatus = {
 export function createProvider(options: PhotoModuleOptions = {}): BackgroundRemovalProvider {
   const url = options.workerUrl?.trim()
   if (!url) {
-    return new DisabledProvider()
+    const falKey = options.falKey?.trim()
+    return falKey ? new FalProvider({ apiKey: falKey, timeoutMs: options.timeoutMs }) : new DisabledProvider()
   }
   const model = options.defaultModel?.trim() || undefined
   if (model && !PHOTO_MODELS.includes(model as PhotoModel)) {

@@ -1,9 +1,9 @@
 import { MedusaError } from "@medusajs/framework/utils"
 import { BackgroundRemovalProvider, ProviderStatus } from "./types"
 
-export const DISABLED_REASON = "Photo processing is switched off (PHOTO_WORKER_URL is not set)."
+export const DISABLED_REASON = "Photo processing is switched off (FAL_KEY is not set)."
 
-/** Used when no worker is configured: reports why, and refuses to process. */
+/** Used when neither fal nor a photo-worker is configured: reports why, and refuses to process. */
 export class DisabledProvider implements BackgroundRemovalProvider {
   readonly id = "disabled"
   readonly defaultModel = null

@@ -170,10 +170,15 @@ module.exports = defineConfig({
     { resolve: "./src/modules/product-attributes" },
     { resolve: "./src/modules/trade" },
     { resolve: "./src/modules/repair" },
-    // Photos (E4): unset PHOTO_WORKER_URL = processing disabled; PHOTO_MODEL defaults to birefnet-general.
+    // Photos (E4): FAL_KEY = background removal on fal.ai (production). PHOTO_WORKER_URL = our own
+    // photo-worker instead (local use, tests; PHOTO_MODEL picks its model). Neither = processing disabled.
     {
       resolve: "./src/modules/photo",
-      options: { workerUrl: process.env.PHOTO_WORKER_URL, defaultModel: process.env.PHOTO_MODEL },
+      options: {
+        falKey: process.env.FAL_KEY,
+        workerUrl: process.env.PHOTO_WORKER_URL,
+        defaultModel: process.env.PHOTO_MODEL,
+      },
     },
     { resolve: "./src/modules/settings" },
     fileModule,

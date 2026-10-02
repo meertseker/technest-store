@@ -17,9 +17,21 @@ function fakeFetch(handler: (url: string, init?: RequestInit) => Response | Prom
 }
 
 describe("createProvider", () => {
-  it("is disabled when PHOTO_WORKER_URL is unset or blank", () => {
+  it("is disabled when neither FAL_KEY nor PHOTO_WORKER_URL is set", () => {
     expect(createProvider({}).id).toBe("disabled")
-    expect(createProvider({ workerUrl: "  " }).id).toBe("disabled")
+    expect(createProvider({ workerUrl: "  ", falKey: " " }).id).toBe("disabled")
+  })
+
+  it("uses fal with birefnet-general when only FAL_KEY is set", () => {
+    const p = createProvider({ falKey: " key " })
+    expect(p.id).toBe("fal")
+    expect(p.defaultModel).toBe("birefnet-general")
+    // PHOTO_MODEL belongs to the photo-worker; fal ignores it.
+    expect(createProvider({ falKey: "key", defaultModel: "u2net" }).id).toBe("fal")
+  })
+
+  it("prefers our own photo-worker when PHOTO_WORKER_URL is set as well", () => {
+    expect(createProvider({ falKey: "key", workerUrl: "http://w" }).id).toBe("rembg-http")
   })
 
   it("uses the rembg HTTP provider with birefnet-general when a URL is set", () => {

@@ -1,4 +1,7 @@
-/** Models the photo-worker may run. Both MIT. rembg's default model is never used. */
+/**
+ * Models we may run. Both MIT. rembg's default model is never used.
+ * fal (production) runs birefnet-general only; the photo-worker can run either.
+ */
 export const PHOTO_MODELS = ["birefnet-general", "isnet-general-use"] as const
 export type PhotoModel = (typeof PHOTO_MODELS)[number]
 export const DEFAULT_PHOTO_MODEL: PhotoModel = "birefnet-general"
@@ -17,7 +20,7 @@ export type RemoveBackgroundResult = {
 
 /**
  * Anything that can turn a photo into a transparent cut-out. Swap the
- * implementation (another in-house model, a GPU box) without touching the
+ * implementation (fal.ai, our own photo-worker, a GPU box) without touching the
  * workflow. Implementations must not alter the product: the pipeline only
  * reads their alpha channel.
  */

@@ -1,15 +1,16 @@
 # Contract: product photo pipeline (admin)
 
 Owner: E4 (backend, branch `e4/photo-pipeline`). Consumer: E4 admin UI (`apps/backend/src/admin/**`).
-Status: **draft v1.1 (2026-09-30)**: output is "up to 2000 px" (was a fixed 2000), no colour correction,
-two new `invalid_data` messages, `PHOTO_MODEL`. Build against the shapes below. Any change is posted as `[CONTRACT]`.
+Status: **draft v1.2 (2026-10-02)**: background removal is hosted on fal.ai in production (`provider: "fal"`,
+ADR 0004); the disabled reason now names `FAL_KEY`. v1.1: output is "up to 2000 px" (was a fixed 2000), no colour
+correction, two new `invalid_data` messages, `PHOTO_MODEL`. Build against the shapes below. Any change is posted as `[CONTRACT]`.
 
 All routes are admin routes: they need an admin session or bearer token. From the admin UI use
 `sdk.client.fetch(...)` (never plain `fetch`). Errors use Medusa's standard shape:
 `{ "type": "invalid_data" | "not_allowed" | "not_found" | "unexpected_state", "message": string }`.
 
-What the pipeline does (see ADR 0003): keep the original untouched as its own file, ask the in-house
-`photo-worker` for a cut-out mask, then with `sharp`: auto-crop to 1:1 with 8% padding, soft shadow, pure
+What the pipeline does (see ADR 0003): keep the original untouched as its own file, ask the background-removal
+provider (fal.ai in production, our own `photo-worker` locally; ADR 0004) for a cut-out mask, then with `sharp`: auto-crop to 1:1 with 8% padding, soft shadow, pure
 white `#FFFFFF` background, up to 2000 x 2000 px, WebP (primary) + AVIF, saved as new files. Only the
 background changes: no colour correction, nothing generated, the product is only ever downscaled.
 
@@ -32,25 +33,32 @@ type ProcessedFile = StoredFile & {
 
 ## `GET /admin/photos/status`
 
-Lets the UI enable or disable the photo buttons and explain why. Cheap: pings the worker's
-`/health` with a 2 s timeout. Poll it when the photo screen opens; don't poll in a loop.
+Lets the UI enable or disable the photo buttons and explain why. Cheap: with fal it makes no
+network call (a bad key or an empty balance shows on the first photo instead); with the
+photo-worker it pings `/health` with a 2 s timeout. Poll it when the photo screen opens; don't poll in a loop.
 
 Response `200`:
+
+```json
+{ "enabled": true, "reason": null, "provider": "fal", "default_model": "birefnet-general" }
+```
 
 ```json
 { "enabled": true, "reason": null, "provider": "rembg-http", "default_model": "birefnet-general" }
 ```
 
 ```json
-{ "enabled": false, "reason": "Photo processing is switched off (PHOTO_WORKER_URL is not set).", "provider": "disabled", "default_model": null }
+{ "enabled": false, "reason": "Photo processing is switched off (FAL_KEY is not set).", "provider": "disabled", "default_model": null }
 ```
 
 ```json
 { "enabled": false, "reason": "The photo worker is not responding. Try again in a minute.", "provider": "rembg-http", "default_model": "birefnet-general" }
 ```
 
-`default_model` follows the backend's `PHOTO_MODEL` (default `birefnet-general`, fallback `isnet-general-use`).
-A `PHOTO_MODEL` outside the allow-list gives `provider: "disabled"` with a reason naming the bad value.
+With `provider: "fal"` the model is always `birefnet-general`; asking for `isnet-general-use` in
+`POST /admin/photos/process` is refused as `invalid_data`. With the photo-worker, `default_model` follows the
+backend's `PHOTO_MODEL` (default `birefnet-general`, fallback `isnet-general-use`), and a `PHOTO_MODEL` outside
+the allow-list gives `provider: "disabled"` with a reason naming the bad value.
 
 `reason` is a human-readable English sentence, safe to show as-is. `null` when `enabled` is true.
 

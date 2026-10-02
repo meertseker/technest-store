@@ -62,7 +62,7 @@ describe("ownerMessage", () => {
     ).toBe(
       "AI suggestions are switched off. You can still add products by hand. Whoever set up the shop can switch this on."
     )
-    expect(ownerMessage("Photo processing is switched off (PHOTO_WORKER_URL is not set).")).toBe(
+    expect(ownerMessage("Photo processing is switched off (FAL_KEY is not set).")).toBe(
       "Photo processing is switched off. Whoever set up the shop can switch this on."
     )
     expect(
