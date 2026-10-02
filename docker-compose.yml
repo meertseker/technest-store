@@ -1,4 +1,6 @@
-# Tech Nest production stack (Hetzner CX43: 8 vCPU, 16 GB). See DEPLOY.md.
+# Tech Nest production stack (one Hetzner box; the limits below suit 8 GB). See DEPLOY.md.
+# On a 4 GB box add infra/staging/docker-compose.staging.yml (COMPOSE_FILE in .env).
+# Background removal (fal.ai) and email (Resend) are hosted services: nothing heavy runs here.
 # Images are built by GitHub Actions and pulled from GHCR; nothing is built on the server.
 #   docker compose pull && docker compose run --rm migrate && docker compose up -d --remove-orphans
 # Secrets live in /opt/technest/.env (chmod 600), never in git. See .env.production.template.
@@ -29,10 +31,9 @@ x-backend-env: &backend-env
   S3_BUCKET: ${S3_BUCKET:?}
   S3_ENDPOINT: ${S3_ENDPOINT:?}
   S3_REGION: auto
-  PHOTO_WORKER_URL: http://photo-worker:7000
-  # birefnet-general is the default (lead's decision); it needs the 6 GB photo-worker limit below.
-  # Fallback on a smaller box: PHOTO_MODEL=isnet-general-use (fits 4 GB). See infra/photo-worker/README.md.
-  PHOTO_MODEL: ${PHOTO_MODEL:-birefnet-general}
+  # Photos (E4): background removal runs on fal.ai (hosted BiRefNet), server-side only.
+  # Empty = photo processing is switched off; the rest of the shop works.
+  FAL_KEY: ${FAL_KEY:-}
   # Quick Add (E4): Claude vision suggestions, server-side only (never sent to the browser or logged).
   # Empty = Quick Add without AI suggestions. Optional per-admin limit (default 60 analyses/hour).
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
@@ -44,14 +45,15 @@ x-backend-env: &backend-env
   # Payments and email (E2)
   STRIPE_API_KEY: ${STRIPE_API_KEY:-}
   STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
-  # mailserver's network alias, so STARTTLS sees the certificate's own name.
-  SMTP_HOST: ${SMTP_HOST:-mail.${SHOP_DOMAIN:-technest.co.uk}}
+  # Email goes out through Resend over SMTP (587 + STARTTLS). SMTP_PASS is the Resend API key;
+  # the user name is literally "resend". Any SMTP provider works: override the four values in .env.
+  SMTP_HOST: ${SMTP_HOST:-smtp.resend.com}
   SMTP_PORT: ${SMTP_PORT:-587}
-  SMTP_USER: ${SMTP_USER:-orders@${SHOP_DOMAIN:-technest.co.uk}}
+  SMTP_USER: ${SMTP_USER:-resend}
   SMTP_PASS: ${SMTP_PASS:-}
   SMTP_SECURE: ${SMTP_SECURE:-false}
   SMTP_REQUIRE_TLS: ${SMTP_REQUIRE_TLS:-true}
-  # Must be the SMTP_USER address: the mailserver refuses other senders (SPOOF_PROTECTION).
+  # The address's domain must be verified in Resend (DEPLOY.md section 11).
   MAIL_FROM: ${MAIL_FROM:-Tech Nest <orders@${SHOP_DOMAIN:-technest.co.uk}>}
   MAIL_REPLY_TO: ${MAIL_REPLY_TO:-hello@technest.co.uk}
   SHOP_NOTIFY_EMAIL: ${SHOP_NOTIFY_EMAIL:-hello@technest.co.uk}
@@ -152,18 +154,6 @@ services:
       retries: 5
     deploy: { resources: { limits: { memory: 512m } } }
 
-  # Background removal. Internal only: no ports, never exposed to the internet.
-  photo-worker:
-    <<: *defaults
-    image: ghcr.io/${GHCR_OWNER:?}/technest-photo-worker:${IMAGE_TAG:-main}
-    environment:
-      OMP_NUM_THREADS: "2"
-      # Keep in step with PHOTO_MODEL above (the backend always names the model; this is the preload).
-      PHOTO_WORKER_DEFAULT_MODEL: ${PHOTO_MODEL:-birefnet-general}
-    # 6 GB: birefnet-general was OOM-killed at 4 GB (docs/plans/2026-09-29-e4-photo-pipeline.md).
-    # Fallback: set PHOTO_MODEL=isnet-general-use in .env and lower this to 4g if the server is short of RAM.
-    deploy: { resources: { limits: { cpus: "2", memory: 6g } } }
-
   # Nightly pg_dump -> R2 (technest-backups), 30-day retention. See infra/backup and DEPLOY.md.
   #   docker compose run --rm backup backup.sh          take a backup now
   #   docker compose run --rm backup restore.sh --list  list backups
@@ -190,71 +180,6 @@ services:
       postgres: { condition: service_healthy }
     deploy: { resources: { limits: { cpus: "0.5", memory: 256m } } }
 
-  # Outgoing mail for the shop (E2): docker-mailserver = Postfix + Dovecot + OpenDKIM.
-  # Setup, DNS (MX/SPF/DKIM/DMARC/PTR) and the port 25 relay fallback: DEPLOY.md section 11.
-  # server/worker send through it on the internal network (587 + STARTTLS + auth as orders@).
-  # Accounts, DKIM keys and mail live in named volumes; nothing secret is in this file.
-  mailserver:
-    <<: *defaults
-    image: ghcr.io/docker-mailserver/docker-mailserver:15.1
-    profiles: [mail]
-    hostname: mail.${SHOP_DOMAIN:-technest.co.uk}
-    networks:
-      internal:
-        # The backend connects as mail.<domain> so the TLS certificate name matches
-        # (Docker's DNS answers this alias inside the network).
-        aliases: ["mail.${SHOP_DOMAIN:-technest.co.uk}"]
-    # 25: inbound mail for @domain (MX: replies, bounces, DMARC reports).
-    # 993: IMAPS, to read the orders@ mailbox from a mail app.
-    # 587 is NOT published: only server/worker submit mail, over the internal network.
-    ports: ["25:25", "993:993"]
-    environment:
-      TZ: Europe/London
-      LOG_LEVEL: info
-      POSTMASTER_ADDRESS: postmaster@${SHOP_DOMAIN:-technest.co.uk}
-      # Certificate: Caddy obtains and renews it for mail.<domain> (Caddyfile site block,
-      # DEPLOY.md 11.2); this container reads it read-only from Caddy's data volume.
-      SSL_TYPE: manual
-      SSL_CERT_PATH: /caddy-data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/mail.${SHOP_DOMAIN:-technest.co.uk}/mail.${SHOP_DOMAIN:-technest.co.uk}.crt
-      SSL_KEY_PATH: /caddy-data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/mail.${SHOP_DOMAIN:-technest.co.uk}/mail.${SHOP_DOMAIN:-technest.co.uk}.key
-      # Senders may only use their own address (the backend logs in as orders@).
-      SPOOF_PROTECTION: "1"
-      PERMIT_DOCKER: none
-      ENABLE_OPENDKIM: "1"
-      ENABLE_OPENDMARC: "1"
-      ENABLE_POLICYD_SPF: "1"
-      ENABLE_IMAP: "1"
-      ENABLE_POP3: "0"
-      ENABLE_MANAGESIEVE: "0"
-      # Low-volume transactional mail: skip the memory-heavy filters.
-      ENABLE_AMAVIS: "0"
-      ENABLE_CLAMAV: "0"
-      ENABLE_SPAMASSASSIN: "0"
-      ENABLE_RSPAMD: "0"
-      ENABLE_FAIL2BAN: "1"
-      ENABLE_UPDATE_CHECK: "0"
-      # Only when Hetzner keeps port 25 closed (DEPLOY.md 11.7), e.g. [smtp-relay.brevo.com]:587.
-      DEFAULT_RELAY_HOST: ${MAIL_RELAY_HOST:-}
-      RELAY_USER: ${MAIL_RELAY_USER:-}
-      RELAY_PASSWORD: ${MAIL_RELAY_PASSWORD:-}
-    volumes:
-      - mail_data:/var/mail
-      - mail_state:/var/mail-state
-      - mail_logs:/var/log/mail
-      # Accounts (password hashes) and DKIM private keys: back this volume up, never commit it.
-      - mail_config:/tmp/docker-mailserver
-      - caddy_data:/caddy-data:ro
-      - /etc/localtime:/etc/localtime:ro
-    cap_add: [NET_ADMIN] # fail2ban bans by IP
-    stop_grace_period: 1m
-    healthcheck:
-      test: ["CMD-SHELL", "ss --listening --tcp | grep -P 'LISTEN.+:submission' || exit 1"]
-      interval: 1m
-      timeout: 5s
-      retries: 3
-      start_period: 2m
-    deploy: { resources: { limits: { memory: 1g } } }
-
 networks:
   internal: {}
 
@@ -263,7 +188,3 @@ volumes:
   redis_data: {}
   caddy_data: {}
   caddy_config: {}
-  mail_data: {}
-  mail_state: {}
-  mail_logs: {}
-  mail_config: {}

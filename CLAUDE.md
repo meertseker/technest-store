@@ -14,8 +14,8 @@ Generic Medusa starter conventions (code style, lint, commands) are in [AGENTS.m
 - `apps/backend`: Medusa v2 (2.21.x), Node 22, Postgres 16, Redis 7 (Redis modules in production only)
 - `apps/storefront`: Next.js 15 as shipped by the starter (do NOT upgrade to 16 before launch), React 19, TS strict, Tailwind, shadcn/ui
 - Payments: Medusa Stripe provider (`pp_stripe_stripe`), Stripe Payment Element, `capture: false`
-- Email: custom `smtp` notification provider (Nodemailer) -> Mailpit in dev, docker-mailserver in prod
-- Photos: `photo-worker` (rembg + BiRefNet-general; never rembg's default BRIA model, enforced by `scripts/check-no-bria.sh`) + `sharp`
+- Email: custom `smtp` notification provider (Nodemailer) -> Mailpit in dev, Resend (SMTP) in prod
+- Photos: background removal on fal.ai (hosted BiRefNet) in prod, or our own `photo-worker` locally (rembg + BiRefNet-general; never rembg's default BRIA model, enforced by `scripts/check-no-bria.sh`) + `sharp`
 - Files: local provider in dev, Cloudflare R2 via S3 provider in prod
 - Hosting: one Hetzner box, Docker Compose, Caddy, Cloudflare. Images built by GitHub Actions -> GHCR.
 
@@ -110,7 +110,7 @@ store/
 | Area | Owner |
 |---|---|
 | `apps/backend/medusa-config.ts`, custom backend modules (`device`, `trade`, `repair`, product attributes, settings), seed scripts, `docker-compose.dev.yml`, root `CLAUDE.md` | E1 |
-| Stripe config and webhooks, checkout payment step (`apps/storefront/src/modules/checkout/payment*`), notification provider `smtp`, `packages/emails`, all email subscribers, collection workflows and jobs, `mailserver` service in production compose | E2 |
+| Stripe config and webhooks, checkout payment step (`apps/storefront/src/modules/checkout/payment*`), notification provider `smtp`, `packages/emails`, all email subscribers, collection workflows and jobs, email settings in production compose | E2 |
 | Everything else in `apps/storefront` (pages, layout, device picker, search UI, basket, checkout layout, accounts, legal pages, SEO, cookie banner) | E3 |
 | `apps/backend/src/admin/**`, the `photo-worker` service and photo workflow, CSV import, `docker-compose.yml` (production), `Caddyfile`, `.github/workflows/**`, `DEPLOY.md`, backups and monitoring | E4 |
 

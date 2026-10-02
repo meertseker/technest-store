@@ -1,7 +1,6 @@
-# Staging override for the temporary CX23 (2 vCPU, 4 GB) and for the restore drill.
+# Small-box override: a CX23 (2 vCPU, 4 GB), used for staging and for the restore drill.
 # On the server, set in /opt/technest/.env:
 #   COMPOSE_FILE=docker-compose.yml:docker-compose.staging.yml
-#   PHOTO_MODEL=isnet-general-use   (BiRefNet does not fit here)
 services:
   server:
     deploy: { resources: { limits: { cpus: "1", memory: 1g } } }
@@ -14,5 +13,3 @@ services:
   redis:
     command: ["redis-server", "--appendonly", "yes", "--maxmemory", "128mb", "--maxmemory-policy", "noeviction"]
     deploy: { resources: { limits: { memory: 192m } } }
-  photo-worker:
-    deploy: { resources: { limits: { cpus: "1", memory: 2560m } } }

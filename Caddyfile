@@ -56,9 +56,3 @@ admin.{$SHOP_DOMAIN} {
 	respond @notAdmin 404
 	reverse_proxy server:9000
 }
-
-# Mail (E2): an empty site so Caddy obtains the mail.<domain> certificate that docker-mailserver reads
-# (DEPLOY.md 11.3). The DNS record must be "DNS only" (grey cloud).
-mail.{$SHOP_DOMAIN} {
-	respond "Tech Nest mail" 200
-}

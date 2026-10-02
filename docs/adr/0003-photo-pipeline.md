@@ -1,6 +1,6 @@
 # ADR 0003: In-house photo pipeline - provider interface and model choice
 
-- Status: accepted (E4)
+- Status: accepted (E4); the in-house worker and the "no third-party service" rule are superseded by ADR 0004 (2026-10-02). The provider interface, the render rules and the licence guard still apply.
 - Date: 2026-09-30
 - Deciders: E4 (owner), human lead (fixed decisions: no Photoroom, no remove.bg, in-house worker)
 

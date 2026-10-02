@@ -47,9 +47,6 @@ jobs:
           - name: technest-storefront
             file: apps/storefront/Dockerfile
             context: .
-          - name: technest-photo-worker
-            file: infra/photo-worker/Dockerfile
-            context: infra/photo-worker
           - name: technest-backup
             file: infra/backup/Dockerfile
             context: infra/backup
@@ -85,8 +82,6 @@ jobs:
             NEXT_PUBLIC_STRIPE_KEY=${{ secrets.NEXT_PUBLIC_STRIPE_KEY }}
             NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
             NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
-      # The photo-worker build (bake_models.py) itself fails if any model other than
-      # birefnet-general and isnet-general-use ends up in the image, so a bad image is never pushed.
 
   deploy:
     needs: images

@@ -22,7 +22,7 @@ Alert contacts: the lead's email + the UptimeRobot mobile app. Alert after 2 fai
 Not covered by UptimeRobot (weekly manual check, `docker compose ps`):
 - `worker` (no public URL): healthy = `/health` inside the container.
 - `backup`: turns unhealthy when the last successful dump is older than 26 h.
-- `photo-worker`: internal only; the product "Product photo" box shows "The photo worker is not responding. Try again in a minute." if it's down (and Quick add skips the photo step).
+- Background removal (fal.ai, hosted): nothing runs on the server. If fal is down, the key is wrong or the balance is empty, the product "Product photo" box shows the reason (for example "The photo service refused our account (check the key and the balance)") and the original photo is kept.
 
 ## Sentry (free plan, errors only)
 

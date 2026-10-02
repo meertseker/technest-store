@@ -31,7 +31,7 @@ const isTrue = (v: unknown) => v === true || v === "true"
 
 /**
  * Email channel provider for the Notification module. Sends through any SMTP
- * server: Mailpit in dev, our docker-mailserver in production, or a paid relay
+ * server: Mailpit in dev, Resend in production, or any other SMTP relay
  * by changing SMTP_* env vars only.
  */
 class SmtpNotificationService extends AbstractNotificationProviderService {

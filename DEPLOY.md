@@ -18,8 +18,8 @@ Kod ve dosya adları İngilizcedir; açıklamalar Türkçedir.
 ## İçindekiler
 
 1. Genel mimari
-2. Hetzner sunucuları (CX43 üretim, CX23 staging)
-3. IP itibarını kontrol (Spamhaus, MXToolbox)
+2. Hetzner sunucuları
+3. IP itibarı (artık gerekmiyor)
 4. Cloudflare DNS, proxy ve R2
 5. Gizli bilgiler (secrets)
 6. İlk yayın (first deploy)
@@ -27,7 +27,7 @@ Kod ve dosya adları İngilizcedir; açıklamalar Türkçedir.
 8. Yedekleme ve geri yükleme
 9. İzleme: Sentry ve UptimeRobot
 10. Cloudflare hız sınırı (rate limit) kuralları
-11. Mail (E-posta) sunucusu (E2 bölümü)
+11. E-posta: Resend ve Cloudflare Email Routing
 12. Canlı öncesi kontrol listesi (pre-launch)
 13. Canlıya geçiş (cutover) kontrol listesi
 
@@ -35,7 +35,7 @@ Kod ve dosya adları İngilizcedir; açıklamalar Türkçedir.
 
 ## 1. Genel mimari
 
-Tek bir Hetzner CX43 sunucusu (8 vCPU, 16 GB RAM), Docker Compose ile şu servisleri çalıştırır:
+Tek bir Hetzner sunucusu (boyut için bölüm 2.1), Docker Compose ile şu servisleri çalıştırır:
 
 | Servis | Görevi | Dışarı açık mı? |
 |---|---|---|
@@ -45,16 +45,21 @@ Tek bir Hetzner CX43 sunucusu (8 vCPU, 16 GB RAM), Docker Compose ile şu servis
 | `storefront` | Next.js mağaza | Hayır (Caddy üzerinden) |
 | `postgres` | Veritabanı (Postgres 16) | Hayır |
 | `redis` | Kuyruk, olaylar, kilitler (Redis 7) | Hayır |
-| `photo-worker` | Arka plan silme (rembg) | Hayır, asla |
 | `backup` | Her gece 03:15'te veritabanı yedeği → R2 | Hayır |
-| `mailserver` | E-posta (docker-mailserver, E2). `profiles: [mail]`: `--profile mail` ile başlar (bölüm 11) | Evet: 25 (gelen posta) ve 993 (IMAPS). 587 yalnızca iç ağda |
+
+Sunucuda **çalışmayan**, dışarıdan alınan iki hizmet (lead kararı, 2026-10-02,
+`docs/adr/0004-hosted-background-removal-and-email.md`):
+
+| Hizmet | Görevi | Anahtar |
+|---|---|---|
+| **fal.ai** | Ürün fotoğrafında arka plan silme (BiRefNet). Yalnızca fotoğraf gider, yalnızca maske kullanılır; orijinal saklanır | `FAL_KEY` |
+| **Resend** | Mağazanın tüm e-postalarını SMTP ile gönderir (bölüm 11) | `SMTP_PASS` |
 
 Alan adları:
 
 - `technest.co.uk` → mağaza (`www.` adresi buraya yönlenir)
 - `api.technest.co.uk` → Medusa API ve Stripe webhook'ları
 - `admin.technest.co.uk` → yönetim paneli (`/app`)
-- `mail.technest.co.uk` → e-posta gönderimi
 
 İmajlar (Docker image) **GitHub Actions** üzerinde derlenir ve **GHCR**'ye gönderilir.
 Sunucuda hiçbir şey derlenmez; sunucu yalnızca imajları çeker (`docker compose pull`).
@@ -85,7 +90,10 @@ silinebilir. Geri yükleme tatbikatı (bölüm 8.4) için de bu boyutta yeni bir
 3. **Add Server**:
    - Location: **Falkenstein** veya **Nuremberg** (Almanya; UK'ye yakın ve ucuz). Londra yok.
    - Image: **Ubuntu 24.04**
-   - Type: **CX23** (staging) / **CX43** (üretim)
+   - Type: **Cost-Optimized → x86 → CX23** (2 vCPU, 4 GB) staging için. Üretim için: staging'de
+     `docker stats` ile gerçek bellek kullanımına bakın; 3 GB'ın rahat altındaysa CX23 yeter
+     (`docker-compose.staging.yml` sınırlarıyla), değilse **CX33** (4 vCPU, 8 GB). Sunucu sonradan
+     Hetzner'de "Rescale" ile büyütülebilir. Arm64 seçmeyin (imajlar x86)
    - Networking: IPv4 + IPv6 açık
    - SSH key: az önce eklediğiniz anahtar
    - Backups: üretimde **açın** (sunucu fiyatının +%20'si; günlük snapshot, 7 adet tutulur).
@@ -94,7 +102,6 @@ silinebilir. Geri yükleme tatbikatı (bölüm 8.4) için de bu boyutta yeni bir
 4. **Firewall** oluşturun (`technest-fw`) ve sunucuya bağlayın. Gelen (inbound) kurallar:
    - TCP 22: yalnızca kendi IP adresiniz
    - TCP 80, TCP 443, UDP 443: herkes (Cloudflare proxy'si buradan gelir)
-   - TCP 25 ve 993: herkes (yalnızca e-posta sunucusu açılınca, bölüm 11). 465/587 açmayın
    - Diğer her şey kapalı.
 
 ### 2.2 Sunucu hazırlığı (her iki sunucuda aynı)
@@ -144,23 +151,11 @@ bilgisayarınızdan silinebilir.
 
 ---
 
-## 3. IP itibarını kontrol (Spamhaus, MXToolbox)
+## 3. IP itibarı (artık gerekmiyor)
 
-Hetzner IP adresleri bazen önceki kullanıcılar yüzünden kara listede olur. Kara listedeki
-bir IP'den gönderilen e-postalar (sipariş onayı vb.) spam'e düşer. **Sunucuyu açar açmaz**,
-DNS ayarlamadan önce kontrol edin:
-
-1. https://check.spamhaus.org → IPv4 adresini girin. "No issues" görmelisiniz.
-2. https://mxtoolbox.com/blacklists.aspx → IPv4 adresini girin. Hepsi yeşil olmalı
-   (bir-iki önemsiz listede "listed" olabilir; **Spamhaus, Barracuda, SpamCop** temiz olmalı).
-3. IPv6 adresini de aynı şekilde kontrol edin.
-
-**Listelenmişse:** IP'yi değiştirin. Hetzner Console → **Primary IPs** → yeni bir IPv4
-oluşturun → sunucuyu kapatın → eski IP'yi ayırıp yenisini bağlayın → sunucuyu açın →
-eski IP'yi silin → yeni IP'yi tekrar kontrol edin. Temiz bir IP bulana kadar tekrarlayın.
-
-Son olarak Hetzner Console'da sunucunun **Reverse DNS** (PTR) kaydını
-`mail.technest.co.uk` yapın (e-posta teslimi için gerekli).
+E-postalar artık bu sunucudan değil **Resend** üzerinden gider (bölüm 11). Bu yüzden sunucunun IP
+itibarı (Spamhaus, MXToolbox), Reverse DNS (PTR) kaydı ve Hetzner'in giden port 25 engeli e-posta
+teslimini **etkilemez**. Yapılacak bir şey yok.
 
 ---
 
@@ -181,12 +176,11 @@ Son olarak Hetzner Console'da sunucunun **Reverse DNS** (PTR) kaydını
 | CNAME | `www` | `technest.co.uk` | Proxied |
 | A | `api` | ÜRETİM_IPv4 | Proxied |
 | A | `admin` | ÜRETİM_IPv4 | Proxied |
-| A | `mail` | ÜRETİM_IPv4 | **DNS only (gri bulut)**: e-posta proxy'den geçemez |
 | A | `staging` | STAGING_IPv4 | Proxied |
 | A | `api.staging` | STAGING_IPv4 | Proxied |
 | A | `admin.staging` | STAGING_IPv4 | Proxied |
 
-E-posta kayıtları (MX, SPF, DKIM, DMARC) için bölüm 11'e bakın.
+E-posta kayıtları (Resend'in DKIM/SPF kayıtları, DMARC, Cloudflare Email Routing) için bölüm 11'e bakın.
 
 > Not: `api.staging.technest.co.uk` gibi iki seviyeli alt alan adları Cloudflare'in ücretsiz
 > Universal SSL sertifikasına dahil değildir. Staging için bunun yerine tek seviyeli adlar
@@ -264,7 +258,7 @@ karşılaştırıldı (2026-09-30). "Zorunlu" = boşsa compose başlamaz ya da �
 
 | Değişken | Zorunlu mu | Nereden / not |
 |---|---|---|
-| `SHOP_DOMAIN` | Evet | `technest.co.uk` (staging'de staging alan adı). `api.`, `admin.`, `mail.` bundan türetilir |
+| `SHOP_DOMAIN` | Evet | `technest.co.uk` (staging'de staging alan adı). `api.` ve `admin.` bundan türetilir |
 | `GHCR_OWNER` | Evet | GitHub kullanıcı/organizasyon adı, **küçük harf** (`meertseker`) |
 | `IMAGE_TAG` | — | deploy.yml yazar; elle değiştirmeyin (yalnızca elle geri alma, bölüm 7) |
 | `ACME_EMAIL` | Hayır | Let's Encrypt bildirimleri; varsayılan `hello@technest.co.uk` |
@@ -292,28 +286,24 @@ karşılaştırıldı (2026-09-30). "Zorunlu" = boşsa compose başlamaz ya da �
 | `STRIPE_WEBHOOK_SECRET` | Evet | `whsec_…`, Stripe'taki webhook uç noktasından (5.4). Üretimde yoksa backend **açılmaz** |
 | `KLARNA_MIN_BASKET_PENCE` | Hayır | Yalnızca yedek varsayılan (3000). Asıl değer admin → Settings → Shop settings. Compose bunu geçirmez; gerek de yok |
 
-**E-posta (E2, bölüm 11)**
+**E-posta (Resend, bölüm 11)**
 
 | Değişken | Zorunlu mu | Nereden / not |
 |---|---|---|
-| `SMTP_PASS` | Evet | `orders@` kutusunun parolası (11.4) |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_SECURE`, `SMTP_REQUIRE_TLS` | Hayır | Varsayılanlar doğru: `mail.<SHOP_DOMAIN>`, `587`, `orders@<SHOP_DOMAIN>`, `false`, `true` |
-| `MAIL_FROM` | Hayır | `Tech Nest <orders@technest.co.uk>`; **`SMTP_USER` ile aynı adres** olmalı |
+| `SMTP_PASS` | Evet | Resend **API key** (`re_…`), bölüm 11.2 |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_SECURE`, `SMTP_REQUIRE_TLS` | Hayır | Varsayılanlar Resend içindir: `smtp.resend.com`, `587`, `resend`, `false`, `true`. Başka bir SMTP sağlayıcısına geçerseniz bunları `.env`'de değiştirin |
+| `MAIL_FROM` | Hayır | varsayılan `Tech Nest <orders@SHOP_DOMAIN>`. Adresin alan adı Resend'de **doğrulanmış** olmalı |
 | `MAIL_REPLY_TO`, `SHOP_NOTIFY_EMAIL` | Hayır | ikisi de varsayılan `hello@technest.co.uk`. Dükkan bildirimleri (yeni sipariş, trade, tamir, düşük stok) `SHOP_NOTIFY_EMAIL`'e gider |
-| `MAIL_RELAY_HOST`, `MAIL_RELAY_USER`, `MAIL_RELAY_PASSWORD` | Hayır | yalnızca port 25 kapalıysa (11.7) |
 | `STOREFRONT_URL` | — | compose `https://<SHOP_DOMAIN>` olarak kendisi verir; `.env`'e yazmayın |
 
 **Fotoğraf ve Hızlı Ekle (E4)**
 
 | Değişken | Zorunlu mu | Nereden / not |
 |---|---|---|
-| `PHOTO_MODEL` | Hayır | `birefnet-general` (varsayılan, lead kararı, photo-worker'a **6 GB** gerekir) veya `isnet-general-use` (yedek, 4 GB'a sığar, kenarlar biraz daha kaba). Compose aynı değeri photo-worker'a da geçirir |
+| `FAL_KEY` | Fotoğraf için evet | https://fal.ai/dashboard/keys → **Add key**. Arka plan silme fal.ai'de çalışır. Boşsa mağaza çalışır ama fotoğraf işleme kapalıdır (admin nedenini gösterir, orijinal fotoğraf saklanır). Yalnızca sunucuda; tarayıcıya gitmez, loglanmaz. fal hesabına bakiye yükleyin; bakiye biterse fotoğraf işleme durur |
 | `ANTHROPIC_API_KEY` | Hayır | https://console.anthropic.com → API Keys. Boşsa Hızlı Ekle yapay zekâ önerisi olmadan çalışır. Yalnızca sunucuda; tarayıcıya gitmez, loglanmaz. Console'da aylık harcama sınırı koyun |
 | `QUICK_ADD_AI_LIMIT_PER_HOUR` | Hayır | admin kullanıcısı başına saatte fotoğraf analizi, varsayılan `60` |
 | `QUICK_ADD_AI_TIMEOUT_MS` | Hayır | deneme başına Claude zaman aşımı, varsayılan `60000` (compose geçirir) |
-
-> Staging (CX23) ve geri yükleme tatbikatında `PHOTO_MODEL=isnet-general-use` kullanılır; üretimde
-> şablondaki `birefnet-general` kalır.
 
 **Güvenlik ve izleme**
 
@@ -410,8 +400,8 @@ Ayrıntılı kurallar: `docs/contracts/payments.md`.
    scp infra/staging/docker-compose.staging.yml deploy@SUNUCU_IP:/opt/technest/
    ```
 3. GitHub → **Actions → Deploy → Run workflow** → environment: `staging`.
-   İş sırası: 4 imaj derlenir (`technest-backend`, `technest-storefront`,
-   `technest-photo-worker`, `technest-backup`; lisans kontrolü dahil) → GHCR'ye gönderilir → sunucuda
+   İş sırası: 3 imaj derlenir (`technest-backend`, `technest-storefront`,
+   `technest-backup`; lisans kontrolü dahil) → GHCR'ye gönderilir → sunucuda
    `docker compose pull` → `migrate` (veritabanı tabloları + ilk veriler) → `up -d` →
    sağlık kontrolü. İlk derleme 15–25 dakika sürebilir.
 4. Kontrol:
@@ -420,7 +410,7 @@ Ayrıntılı kurallar: `docs/contracts/payments.md`.
    curl -fsS https://api.SHOP_DOMAIN/health        # "OK"
    curl -fsS https://SHOP_DOMAIN/api/health        # "ok"
    ```
-   Tüm servisler `healthy` olmalı (`mailserver` yalnızca `--profile mail` ile açılır).
+   Tüm servisler `healthy` olmalı.
 5. Yönetici hesabını oluşturun (5.2), publishable key'i GitHub secret'ına girin ve
    **storefront imajı bu anahtarı içersin diye yayını bir kez daha çalıştırın**.
 6. Duman testi (smoke test): bölüm 12'deki listeyi staging'de yapın.
@@ -496,13 +486,12 @@ Amaç: sunucu tamamen kaybolursa mağazanın 1 saatten kısa sürede geri geldi�
    (depoda `infra/staging/` altında) ve parola yöneticisindeki `.env`'i koyun. GHCR girişi yapın.
    `.env`'de **başlatmadan önce** şunları değiştirin (bu sunucu canlı verinin kopyasıyla çalışacak):
    - `SHOP_DOMAIN=` test alan adı (canlı alan adı **değil**)
-   - `COMPOSE_FILE=docker-compose.yml:docker-compose.staging.yml` ve `PHOTO_MODEL=isnet-general-use`
-     (CX23'ün belleği için)
+   - `COMPOSE_FILE=docker-compose.yml:docker-compose.staging.yml` (CX23'ün belleği için)
    - `STRIPE_API_KEY=` ve `STRIPE_WEBHOOK_SECRET=` → staging'in **test** değerleri (`sk_test_…`, `whsec_…`).
      Canlı anahtarla bu kopya gerçek ödemeleri alabilir veya iptal edebilir. Boş bırakmayın:
      backend üretim modunda bu ikisi olmadan açılmaz.
-   - `SMTP_HOST=localhost`: bu sunucuda e-posta sunucusu yok, gönderim başarısız olur, müşterilere
-     e-posta gitmez. (Boş bırakmak işe yaramaz: compose boş değeri `mail.<SHOP_DOMAIN>` yapar.)
+   - `SMTP_HOST=localhost`: gönderim başarısız olur, müşterilere e-posta gitmez. (Boş bırakmak işe
+     yaramaz: compose boş değeri `smtp.resend.com` yapar ve gerçek e-posta gider.)
 3. Yalnızca veritabanını başlatıp yedeği geri yükleyin:
    ```bash
    docker compose pull
@@ -627,209 +616,98 @@ Test: kuralı kaydettikten sonra kendi bilgisayarınızdan
 
 ---
 
-## 11. Mail (E-posta) sunucusu (E2 bölümü)
+## 11. E-posta: Resend ve Cloudflare Email Routing
 
-Mağazanın tüm e-postaları (sipariş onayı, "siparişiniz hazır", iade, parola sıfırlama vb.)
-`orders@technest.co.uk` adresinden, kendi sunucumuzdaki `mailserver` servisiyle gönderilir
-(docker-mailserver 15: Postfix + Dovecot + OpenDKIM). Hangi olayda hangi e-postanın gittiği:
-`docs/contracts/emails.md`.
+Sunucuda e-posta sunucusu **yoktur**. İki ayrı iş var:
 
-| Parça | Nerede |
+| İş | Kim yapar |
 |---|---|
-| `mailserver` servisi | `docker-compose.yml`, `profiles: [mail]` (yalnızca `--profile mail` ile başlar) |
-| Backend → mailserver | İç ağ, port 587, STARTTLS zorunlu, `orders@` ile giriş. `SMTP_HOST=mail.technest.co.uk` (Docker içinde mailserver'ın takma adı) |
-| Dışarı açık portlar | **25** (gelen posta: yanıtlar, geri dönen e-postalar, DMARC raporları), **993** (IMAPS: `orders@` kutusunu bir e-posta uygulamasıyla okumak için). 587 dışarı **açık değil** |
-| Sertifika | Caddy alır ve yeniler; mailserver onu Caddy'nin `caddy_data` biriminden salt okunur okur |
-| Hesaplar, DKIM özel anahtarı | `mail_config` biriminde (git'te **asla** yok). Parolalar yalnızca `/opt/technest/.env` içinde |
+| **Gönderme**: mağazanın otomatik e-postaları (sipariş onayı, "siparişiniz hazır", iade, parola sıfırlama, dükkan bildirimleri) | **Resend**, SMTP ile. Gönderen: `orders@technest.co.uk` |
+| **Alma**: müşterilerin `hello@technest.co.uk` adresine yazdıkları ve yanıtlar | **Cloudflare Email Routing**: sahibin mevcut posta kutusuna (ör. Gmail) yönlendirir |
 
-> **Önce kontrol edin: `hello@technest.co.uk` şu an nerede?** MX kaydını bu sunucuya
-> çevirdiğiniz anda `@technest.co.uk` adresine gelen **tüm** e-postalar bu sunucuya gelir.
-> `hello@` şu an başka bir yerdeyse (Gmail, Outlook, hosting firması), aşağıdaki 11.4'te
-> `hello@` için ya bir kutu açın ya da mevcut adrese yönlendirme (alias) ekleyin. Emin
-> değilseniz MX'i değiştirmeden önce E2'ye sorun.
+Hangi olayda hangi e-postanın gittiği: `docs/contracts/emails.md`. Backend'in kodu değişmedi:
+aynı SMTP sağlayıcısı (`smtp`), yalnızca adres Resend'e bakıyor (`docker-compose.yml`).
 
 ### 11.1 Sıra (özet)
 
-1. IP itibarını kontrol edin ve PTR'yi ayarlayın (bölüm 3, aşağıda 11.5'te tekrar).
-2. Hetzner'de port 25'in açık olup olmadığını kontrol edin (11.2). Kapalıysa talep açın; beklerken relay kullanın (11.7).
-3. Caddy'ye `mail.` sertifikasını aldırın (11.3).
-4. Servisi başlatın, `orders@` kutusunu açın, `.env`'e parolayı yazın (11.4).
-5. DKIM anahtarını üretin, DNS kayıtlarını girin (11.5).
-6. Teslim testi (11.6): mail-tester.com puanı **9/10 veya üzeri**.
+1. Alan adı Cloudflare'de aktif olmalı (bölüm 4.1).
+2. Resend'de alan adını doğrulayın, API key alın (11.2).
+3. `.env`'e `SMTP_PASS` yazın, backend'i yeniden başlatın (11.3).
+4. Cloudflare Email Routing ile `hello@` adresini yönlendirin (11.4).
+5. Teslim testi (11.5).
 
-### 11.2 Port 25 (Hetzner)
+### 11.2 Resend: alan adı ve API key
 
-Hetzner yeni hesaplarda **giden** port 25 ve 465'i kapalı tutar (gelen 25 açıktır). Kontrol:
+1. https://resend.com → hesap açın → **Domains → Add Domain** → `technest.co.uk`, bölge: **eu-west-1 (Ireland)**.
+2. Resend birkaç DNS kaydı gösterir (DKIM için TXT, SPF için TXT ve MX; genellikle `send.` alt alan
+   adında ve `resend._domainkey` adında). Hepsini Cloudflare → **DNS → Records**'a **aynen** girin
+   (TXT/MX kayıtları proxy'lenmez). Kök alan adındaki (`@`) MX kayıtları Email Routing'e aittir (11.4);
+   Resend'inkiler alt alan adında olduğu için çakışmaz.
+3. Ayrıca bir DMARC kaydı ekleyin: TXT, ad `_dmarc`, değer `v=DMARC1; p=none;`
+   (2-4 hafta sorunsuz gönderimden sonra `p=quarantine` yapılabilir).
+4. Resend'de **Verify** → durum "Verified" olmalı (birkaç dakika sürebilir).
+5. **API Keys → Create API Key**: ad `technest-production`, izin **Sending access**, alan adı
+   `technest.co.uk`. Anahtar (`re_…`) yalnızca bir kez gösterilir. Staging için ayrı bir anahtar açın.
 
-```bash
-ssh deploy@SUNUCU_IP 'timeout 5 bash -c "</dev/tcp/gmail-smtp-in.l.google.com/25" && echo ACIK || echo KAPALI'
-```
+### 11.3 Sunucu ayarı
 
-`KAPALI` ise: ilk fatura ödendikten sonra Hetzner Console → **Support** → yeni talep
-("Unblock port 25", sunucu adını ve "transactional e-mail for our own online shop, low volume,
-SPF/DKIM/DMARC configured" açıklamasını yazın). Onay bir iki gün sürebilir; bu arada 11.7'deki
-relay ile gönderin.
-
-### 11.3 Sertifika (Caddy)
-
-`mail.technest.co.uk` DNS kaydı **DNS only (gri bulut)** olmalı (bölüm 4.2). Caddy sertifikayı
-alabilsin diye `Caddyfile`'da bu ad için boş bir site bloğu gerekir (Caddyfile'da zaten var):
-
-```caddyfile
-mail.{$SHOP_DOMAIN} {
-	respond "Tech Nest mail" 200
-}
-```
-
-Kontrol (sertifika dosyası oluştu mu):
+`/opt/technest/.env`:
 
 ```bash
-docker compose exec caddy ls /data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/mail.technest.co.uk/
-```
-
-`mail.technest.co.uk.crt` ve `.key` görünmeli. Caddy sertifikayı kendisi yeniler; mailserver
-dosyadaki değişikliği görüp yeniden yükler. Emin olmak için yenilemeden sonra
-`docker compose restart mailserver` zararsızdır.
-
-### 11.4 Servisi başlatma ve `orders@` kutusu
-
-```bash
-cd /opt/technest
-docker compose --profile mail up -d mailserver
-
-# orders@ kutusu (parola sorar; openssl rand -hex 24 ile üretin ve bir yere not edin)
-docker compose exec mailserver setup email add orders@technest.co.uk
-
-# Zorunlu adresler: postmaster@ ve DMARC raporları orders@'a gelsin
-docker compose exec mailserver setup alias add postmaster@technest.co.uk orders@technest.co.uk
-docker compose exec mailserver setup alias add dmarc@technest.co.uk orders@technest.co.uk
-
-# hello@ bu sunucuda yaşayacaksa: ya kutu açın...
-docker compose exec mailserver setup email add hello@technest.co.uk
-# ...ya da mevcut adrese yönlendirin (örnek):
-# docker compose exec mailserver setup alias add hello@technest.co.uk dukkan@gmail.com
-
-docker compose exec mailserver setup email list
-```
-
-Sonra `/opt/technest/.env` içinde:
-
-```bash
-SMTP_USER=orders@technest.co.uk
-SMTP_PASS=<orders@ parolası>
+SMTP_PASS=re_...                      # Resend API key
 MAIL_FROM=Tech Nest <orders@technest.co.uk>
 ```
 
-`MAIL_FROM` adresi `SMTP_USER` ile **aynı** olmalı: sunucu başka bir gönderen adını reddeder
-(sahte gönderene karşı koruma). Ardından backend'i yeniden başlatın:
-`docker compose up -d server worker`.
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` yazmanıza gerek yok: varsayılanlar `smtp.resend.com`, `587`,
+`resend`. Sonra: `docker compose up -d server worker`.
 
-`orders@` kutusunu okumak için (isteğe bağlı): telefon/bilgisayar e-posta uygulamasında IMAP,
-sunucu `mail.technest.co.uk`, port 993, SSL/TLS, kullanıcı adı tam e-posta adresi.
+`MAIL_FROM` adresinin alan adı Resend'de doğrulanmış olmalı; değilse Resend e-postayı reddeder.
+`orders@` için bir posta kutusu **gerekmez** (yalnızca gönderen adıdır). Müşteri "Yanıtla" derse
+e-posta `MAIL_REPLY_TO` adresine (`hello@`) gider.
 
-### 11.5 DKIM anahtarı ve DNS kayıtları
+### 11.4 Gelen posta: Cloudflare Email Routing
 
-DKIM anahtarını bir kez üretin (2048 bit, seçici adı `mail`):
+1. Cloudflare → `technest.co.uk` → **Email → Email Routing → Get started**.
+2. **Custom address**: `hello@technest.co.uk` → **Destination**: sahibin mevcut adresi (ör. Gmail).
+   Cloudflare o adrese bir doğrulama e-postası gönderir; sahibi onaylar.
+3. Cloudflare gerekli MX ve SPF kayıtlarını kök alan adına kendisi ekler ("Add records and enable").
+4. İsterseniz **Catch-all** kuralını da aynı adrese yönlendirin (`orders@`, `postmaster@` vb. için).
 
-```bash
-docker compose exec mailserver setup config dkim
-docker compose exec mailserver cat /tmp/docker-mailserver/opendkim/keys/technest.co.uk/mail.txt
-docker compose restart mailserver
-```
+> **Önce kontrol edin: `hello@technest.co.uk` şu an nerede?** Email Routing'i açtığınız anda
+> `@technest.co.uk` adresine gelen **tüm** e-postalar Cloudflare'e gelir. Alan adında zaten çalışan
+> bir posta kutusu (Google Workspace, Outlook, hosting) varsa Email Routing'i **açmayın**; o kutu
+> kullanılmaya devam eder ve yalnızca 11.2'deki Resend kayıtları eklenir.
 
-`mail.txt` içindeki tırnaklı parçaları birleştirin: `v=DKIM1; h=sha256; k=rsa; p=MIIBIjAN...`
-(tırnaksız, tek satır). Bu değer DKIM kaydına girer.
+**Sahibin `hello@` adresinden yanıt yazması** (isteğe bağlı): Email Routing yalnızca alır, göndermez.
+Gmail → Ayarlar → **Hesaplar → "Postaları şu adresten gönder" → Başka bir e-posta adresi ekle**:
+ad `Tech Nest`, adres `hello@technest.co.uk`, SMTP sunucusu `smtp.resend.com`, port `465` (SSL),
+kullanıcı adı `resend`, parola: bu iş için açılmış ayrı bir Resend API key. Bundan sonra Gmail'de
+gönderen olarak `hello@technest.co.uk` seçilebilir. Bunu yapmazsanız sahibi kendi adresinden yanıtlar.
 
-Cloudflare → **DNS → Records** (hepsi **DNS only**, gri bulut; TXT/MX zaten proxy'lenemez):
+### 11.5 Teslim testi
 
-| Tür | Ad | Değer | Not |
-|---|---|---|---|
-| A | `mail` | ÜRETİM_IPv4 | Bölüm 4.2'de var |
-| AAAA | `mail` | ÜRETİM_IPv6 | Sunucu IPv6 ile de gönderir |
-| MX | `@` | `mail.technest.co.uk`, öncelik `10` | Gelen posta |
-| TXT | `@` | `v=spf1 mx -all` | SPF. Relay kullanıyorsanız relay'in `include:` ekini ekleyin (11.7) |
-| TXT | `mail._domainkey` | `v=DKIM1; h=sha256; k=rsa; p=...` | DKIM (yukarıdaki `mail.txt`) |
-| TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:dmarc@technest.co.uk; adkim=s; aspf=s` | DMARC, ilk 2-4 hafta `p=none` |
-
-**PTR / Reverse DNS (Hetzner):** Hetzner Console → sunucu → **Networking** → IPv4 adresinin
-yanındaki "Edit Reverse DNS" → `mail.technest.co.uk`. IPv6 için de aynısı (adresin kendisi,
-örneğin `2a01:4f8:...::1` → `mail.technest.co.uk`). PTR, A/AAAA kaydı ve sunucunun adı
-(`hostname`) **aynı** olmalı; aksi halde Gmail ve Outlook e-postayı reddedebilir.
-
-Kontrol (kendi bilgisayarınızdan):
-
-```bash
-dig +short MX technest.co.uk
-dig +short TXT technest.co.uk
-dig +short TXT mail._domainkey.technest.co.uk
-dig +short TXT _dmarc.technest.co.uk
-dig +short -x ÜRETİM_IPv4          # mail.technest.co.uk. dönmeli
-```
-
-2-4 hafta sonra DMARC raporları (`orders@` kutusuna gelir) temizse `_dmarc` kaydını
-`p=quarantine` yapın.
-
-### 11.6 Teslim testi
-
-1. https://www.mail-tester.com adresini açın, verdiği adresi kopyalayın (`test-xxxx@srv1.mail-tester.com`).
-2. Sunucudan o adrese bir deneme gönderin:
-   ```bash
-   docker compose exec mailserver sh -c 'printf "Subject: Tech Nest test\nFrom: Tech Nest <orders@technest.co.uk>\n\nMerhaba, bu bir test.\n" | sendmail -f orders@technest.co.uk test-xxxx@srv1.mail-tester.com'
-   ```
-3. Sitede "Then check your score" → **9/10 veya üzeri** olmalı. SPF, DKIM, DMARC satırları yeşil olmalı.
-4. Gerçek akış: staging'de (veya canlıda küçük bir siparişle) sipariş verin → sipariş onayı
-   kendi Gmail adresinize gelmeli. Gmail'de e-postayı açın → ⋮ → **Show original**:
-   `SPF: PASS`, `DKIM: PASS`, `DMARC: PASS` görmelisiniz. Spam klasörüne düşmemeli.
-5. Gelen posta: kendi adresinizden `orders@technest.co.uk`'ya bir e-posta atın; IMAP ile
-   (11.4) veya `docker compose logs mailserver | tail -50` ile geldiğini görün.
+1. Staging'de (veya canlıda küçük bir siparişle) sipariş verin → sipariş onayı kendi Gmail adresinize
+   gelmeli. Gmail'de e-postayı açın → ⋮ → **Show original**: `SPF: PASS`, `DKIM: PASS`,
+   `DMARC: PASS` görmelisiniz. Spam klasörüne düşmemeli.
+2. https://www.mail-tester.com → verdiği adrese mağazadan bir e-posta gönderin (ör. o adresle bir
+   müşteri hesabı açıp parola sıfırlama isteyin) → puan **9/10 veya üzeri** olmalı.
+3. Gelen posta: kendi adresinizden `hello@technest.co.uk`'ya yazın → sahibin kutusuna düşmeli.
+4. Resend → **Emails**: gönderilen her e-posta ve durumu (delivered / bounced) burada görünür.
 
 Sorun giderme:
 
-```bash
-docker compose logs --tail=100 mailserver          # "status=sent" iyi, "status=deferred/bounced" kötü
-docker compose exec mailserver postqueue -p        # bekleyen e-postalar
-docker compose exec mailserver postqueue -f        # kuyruğu şimdi yeniden dene
-```
+- Backend logunda `Invalid login` / `535`: `SMTP_PASS` yanlış ya da anahtar silinmiş.
+- Resend "domain is not verified": 11.2'deki DNS kayıtları eksik ya da `MAIL_FROM` başka bir alan adında.
+- Backend loglarında yalnızca bildirim kimliği ve şablon adı görünür, alıcı adresi görünmez
+  (kişisel veri kuralı).
 
-Backend loglarında yalnızca bildirim kimliği ve şablon adı görünür, alıcı adresi görünmez
-(kişisel veri kuralı).
+### 11.6 Sınırlar ve yedek plan
 
-### 11.7 Port 25 kapalıysa: relay (aktarma) servisi
-
-Hetzner port 25'i açmazsa veya IP itibarı kötüyse, mailserver e-postaları bir relay
-üzerinden gönderir. DKIM imzamız korunur; müşteri yine `orders@technest.co.uk`'dan alır.
-Seçenekler (hepsinde AB/UK sunucusu seçin): **Brevo** (ücretsiz, günde 300 e-posta),
-**Mailgun EU**, **Amazon SES (eu-west-2, Londra)**.
-
-1. Relay'de hesap açın, `technest.co.uk` alan adını doğrulayın (size vereceği DNS kayıtlarını
-   Cloudflare'e girin) ve bir **SMTP anahtarı** oluşturun.
-2. `/opt/technest/.env`:
-   ```bash
-   MAIL_RELAY_HOST=[smtp-relay.brevo.com]:587    # köşeli parantez önemli (MX araması yapılmaz)
-   MAIL_RELAY_USER=<relay SMTP kullanıcı adı>
-   MAIL_RELAY_PASSWORD=<relay SMTP anahtarı>
-   ```
-3. SPF kaydına relay'in ekini ekleyin, örneğin Brevo: `v=spf1 mx include:spf.brevo.com -all`
-   (Mailgun: `include:mailgun.org`, SES: `include:amazonses.com`).
-4. `docker compose --profile mail up -d mailserver` → 11.6'daki testi tekrarlayın.
-
-Port 25 açıldığında relay'i bırakmak için üç `MAIL_RELAY_*` değerini boşaltın, SPF'den
-`include:` ekini çıkarın ve servisi yeniden başlatın.
-
-### 11.8 Yedek
-
-Hesaplar ve DKIM anahtarı `mail_config` biriminde; gece yedeği (bölüm 8) yalnızca
-veritabanını alır. Kurulumdan sonra ve her hesap değişikliğinden sonra bir kopya alın:
-
-```bash
-docker run --rm -v technest_mail_config:/src:ro -v /opt/technest:/out alpine \
-  tar czf /out/mail-config-$(date +%F).tar.gz -C /src .
-chmod 600 /opt/technest/mail-config-*.tar.gz
-```
-
-Bu dosyayı parola yöneticinize veya şifreli bir yere taşıyın (içinde DKIM özel anahtarı var).
-Kaybolursa: yeni DKIM anahtarı üretip DNS'teki `mail._domainkey` kaydını güncellemek ve
-kutuları yeniden açmak yeterlidir; siparişler etkilenmez.
+- Resend'in ücretsiz planında günlük ve aylık gönderim sınırı vardır (güncel değerler:
+  https://resend.com/pricing). Sipariş sayısı sınıra yaklaşırsa ücretli plana geçin; sınır aşılırsa
+  e-postalar reddedilir, siparişler etkilenmez.
+- Başka bir sağlayıcıya geçmek (Brevo, Postmark, Amazon SES): kod değişmez. `.env`'de `SMTP_HOST`,
+  `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` değiştirilir, yeni sağlayıcının DNS kayıtları girilir.
 
 ---
 
@@ -857,10 +735,10 @@ başarısızsa canlıya geçmeyin.
 - [ ] Admin → Quick add'de "AI suggestions are switched off" uyarısı **yok**; telefonla bir fotoğraf
       çekince öneri 30 saniye içinde geliyor
 
-**E-posta: SMTP ve DNS (bölüm 11)**
-- [ ] Port 25 açık ya da relay ayarlı (11.2, 11.7)
-- [ ] MX, SPF, DKIM, DMARC, PTR kayıtları `dig` ile doğru (11.5)
-- [ ] mail-tester.com **9/10 veya üzeri**; Gmail'de SPF/DKIM/DMARC PASS (11.6)
+**E-posta: Resend ve DNS (bölüm 11)**
+- [ ] Resend'de alan adı "Verified"; `SMTP_PASS` (API key) `.env`'de; DMARC kaydı var (11.2, 11.3)
+- [ ] mail-tester.com **9/10 veya üzeri**; Gmail'de SPF/DKIM/DMARC PASS (11.5)
+- [ ] Cloudflare Email Routing açık: `hello@`'ya yazılan e-posta sahibin kutusuna düşüyor (11.4)
 - [ ] `hello@technest.co.uk`'a dükkan bildirimleri geliyor (yeni sipariş, trade, tamir, 08:00 düşük stok)
 
 **R2 (4.4)**
@@ -875,16 +753,13 @@ başarısızsa canlıya geçmeyin.
 **Yedekler (bölüm 8)**
 - [ ] `docker compose run --rm backup backup.sh` → "backup: OK"; `restore.sh --list` dosyayı gösteriyor
 - [ ] Geri yükleme tatbikatı **gerçekten yapıldı** (8.4), süre < 1 saat, sonuç TEAM_CHAT'te
-- [ ] Hetzner Backups açık; `.env` ve `mail-config-*.tar.gz` parola yöneticisinde
+- [ ] Hetzner Backups açık; `.env` parola yöneticisinde
 
-**photo-worker belleği**
-- [ ] Üretim CX43 (16 GB): `PHOTO_MODEL=birefnet-general`, photo-worker sınırı **6 GB**. Tüm servis
-      sınırlarının toplamı yaklaşık 15 GB (server 2 + worker 2 + postgres 2 + storefront 1 + mailserver 1
-      + redis 0,5 + caddy 0,25 + backup 0,25 + photo-worker 6); 4 GB swap güvenlik payıdır
-- [ ] Admin'de 3-4 fotoğrafı arka arkaya işleyin; sonra
-      `docker compose ps photo-worker` (healthy, yeniden başlamamış) ve
-      `docker inspect --format '{{.State.OOMKilled}}' technest-photo-worker-1` → `false`
-- [ ] Bellek yetmezse: `.env`'de `PHOTO_MODEL=isnet-general-use`, compose'ta photo-worker sınırı `4g`, `docker compose up -d`
+**Fotoğraf: fal.ai**
+- [ ] `FAL_KEY` `.env`'de; fal hesabında bakiye var (https://fal.ai/dashboard/billing)
+- [ ] Admin'de bir ürün fotoğrafı işleyin: arka plan beyaz, ürün değişmemiş, orijinal dosya duruyor.
+      Admin → Product photo kutusunda "Photo processing is switched off" uyarısı **yok**
+- [ ] Sunucu belleği: `docker stats --no-stream` → toplam kullanım sunucu belleğinin rahat altında
 
 **Genel**
 - [ ] `SEED_DEMO_DATA` üretimde tanımsız; admin'de demo ürün yok

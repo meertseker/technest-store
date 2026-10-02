@@ -140,7 +140,7 @@ jobs:
           S3_BUCKET: x
           S3_ENDPOINT: x
           GHCR_OWNER: ci
-        run: docker compose --profile ops --profile mail --profile backup config --quiet
+        run: docker compose --profile ops --profile backup config --quiet
       - name: Caddyfile validates
         run: |
           docker run --rm -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" \

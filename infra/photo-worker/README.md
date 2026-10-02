@@ -57,15 +57,16 @@ curl -s localhost:7000/health
 curl -s -F file=@photo.jpg -F model=birefnet-general localhost:7000/remove -o cutout.png
 ```
 
-Backend: set `PHOTO_WORKER_URL=http://localhost:7000` (dev) or `http://photo-worker:7000` (compose).
-Unset = photo processing disabled, everything else works.
+Backend: set `PHOTO_WORKER_URL=http://localhost:7000`. With it unset the backend uses fal.ai when
+`FAL_KEY` is set; with neither, photo processing is disabled and everything else works.
 
 Env (all optional): `OMP_NUM_THREADS` (default 2, match the CPU limit), `PHOTO_WORKER_DEFAULT_MODEL`
 (the model preloaded at start), `PHOTO_WORKER_MAX_UPLOAD_BYTES` (30 MB), `PHOTO_WORKER_MAX_PIXELS` (60 MP),
 `PHOTO_WORKER_MAX_SIDE` (2048), `PHOTO_WORKER_MAX_QUEUE` (4).
 
-Production: the `photo-worker` service in the root `docker-compose.yml` (internal network, no `ports:`,
-2 CPUs / 6 GB).
+Production does not run this worker: since 2026-10-02 background removal is hosted on fal.ai
+(`FAL_KEY`, ADR 0004). The worker stays for local use without a fal key; when `PHOTO_WORKER_URL` is
+set, the backend uses it instead of fal.
 
 ## Tests
 
