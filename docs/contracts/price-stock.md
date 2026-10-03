@@ -36,5 +36,6 @@ Why not Medusa's `POST /admin/products/:id/variants/:vid`: in 2.21 its workflow'
 price of the variant when a later step fails. This route reuses the import's price step, which
 snapshots and restores prices by id instead (`src/workflows/steps/set-import-variant-prices.ts`).
 
-Reading prices for the tab: `sdk.admin.product.list({ fields: "*variants.prices,+variants.inventory_quantity" })`.
+Reading for the tab: `sdk.admin.product.list({ fields: "*variants,*variants.prices,*variants.inventory_items.inventory.location_levels" })`
+(`inventory_quantity` is not filled in on the product list in 2.21; the levels are summed instead).
 Note that Medusa stores amounts as-is in major units (5.49 = £5.49); only this route talks in pence.

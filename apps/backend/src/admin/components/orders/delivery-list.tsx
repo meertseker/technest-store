@@ -6,7 +6,6 @@ import { Link } from "react-router-dom"
 import { sdk } from "../../lib/client"
 import {
   deliveryPlace,
-  deliverySummary,
   type DeliveryListResponse,
   type DeliveryOrder,
   type DeliveryStatus,

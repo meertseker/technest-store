@@ -4,6 +4,7 @@ import { Container, Heading, Text } from "@medusajs/ui"
 import { PageTabs } from "../../components/page-tabs"
 import { AddProduct } from "../../components/products/add-product"
 import { ImportProducts } from "../../components/products/import-products"
+import { PriceStock } from "../../components/products/price-stock"
 import { useUrlTab } from "../../lib/tabs"
 
 // The Products page: add one (photo or typed), change a price or stock, or
@@ -30,11 +31,7 @@ const ShopProductsPage = () => {
       <PageTabs tabs={TABS} value={tab} onChange={setTab}>
         {{
           add: <AddProduct />,
-          stock: (
-            <Text size="large" className="text-ui-fg-subtle px-1">
-              Price & stock is coming here soon.
-            </Text>
-          ),
+          stock: <PriceStock />,
           import: <ImportProducts />,
         }}
       </PageTabs>
