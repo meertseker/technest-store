@@ -1,24 +1,48 @@
 import { defineRouteConfig } from "@medusajs/admin-sdk"
-import { ArrowPath, ArrowUpTray, Camera, CogSixTooth, ShoppingBag, Sun, Tag } from "@medusajs/icons"
+import { ArrowPath, CogSixTooth, ShoppingBag, Sun, Tag } from "@medusajs/icons"
 import { Button, Container, Heading, Text } from "@medusajs/ui"
-import type { ComponentType } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import type { ComponentType, ReactNode } from "react"
 import { Link } from "react-router-dom"
+import { COLLECT_QUERY_KEY, CollectBoard } from "../../components/orders/collect-board"
+import { DELIVERY_QUERY_KEY, DeliveryList } from "../../components/orders/delivery-list"
+import { REPAIR_QUERY_KEY, RepairList } from "../../components/orders/repair-list"
+import { TRADE_QUERY_KEY, TradeList } from "../../components/orders/trade-list"
 import { PageLoading, TAP } from "../../components/shop-ui"
 import { TodayCard, useToday } from "../../components/today"
+import type { TodayKey } from "../../lib/today"
 
-// The shop's start page: what needs doing now, then the things done most often.
-// Everything here links to a page that already exists; nothing is changed here.
+// The shop's start page: what needs doing now, with the buttons in the list
+// (the same rows as the Orders tabs), then the three pages.
 
-const SHORTCUTS: { to: string; label: string; hint: string; Icon: ComponentType<{ className?: string }> }[] = [
-  { to: "/quick-add", label: "Add a product", hint: "Take a photo and fill in the details.", Icon: Camera },
-  { to: "/orders", label: "Orders", hint: "Delivery orders: pack them, then mark as shipped.", Icon: ShoppingBag },
-  { to: "/products", label: "Products", hint: "Change a price, stock or photo.", Icon: Tag },
-  { to: "/import", label: "Import products", hint: "Add or update many from a spreadsheet.", Icon: ArrowUpTray },
-  { to: "/settings/technest", label: "Shop settings", hint: "Free delivery and Klarna amounts.", Icon: CogSixTooth },
+const LIMIT = 5
+
+/** The queues that can be worked on from here. Drafts stay a card (a link). */
+const QUEUES: Partial<Record<TodayKey, ReactNode>> = {
+  to_pick: <CollectBoard embedded status="to_pick" limit={LIMIT} />,
+  to_pack: <DeliveryList embedded status="to_pack" limit={LIMIT} />,
+  repairs_new: <RepairList embedded status="new" limit={LIMIT} />,
+  trade_pending: <TradeList embedded status="pending" limit={LIMIT} />,
+  ready: <CollectBoard embedded status="ready" limit={LIMIT} />,
+}
+
+const PAGES: { to: string; label: string; hint: string; Icon: ComponentType<{ className?: string }> }[] = [
+  { to: "/shop-orders", label: "Orders", hint: "Collect, delivery, repairs and trade.", Icon: ShoppingBag },
+  { to: "/shop-products", label: "Products", hint: "Add one, change a price or stock, import many.", Icon: Tag },
+  { to: "/shop-settings", label: "Shop settings", hint: "Delivery and Klarna amounts, phone models.", Icon: CogSixTooth },
 ]
 
 const TodayPage = () => {
+  const queryClient = useQueryClient()
   const { loading, tasks, summary, updatedAt, refetch, fetching } = useToday()
+  const open = tasks.filter((t) => t.tone !== "clear")
+
+  const refreshAll = () => {
+    refetch()
+    for (const key of [COLLECT_QUERY_KEY, DELIVERY_QUERY_KEY, REPAIR_QUERY_KEY, TRADE_QUERY_KEY]) {
+      queryClient.invalidateQueries({ queryKey: key })
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -40,35 +64,44 @@ const TodayPage = () => {
             </Text>
           )}
         </div>
-        <Button type="button" variant="secondary" className={TAP} onClick={refetch} isLoading={fetching}>
+        <Button type="button" variant="secondary" className={TAP} onClick={refreshAll} isLoading={fetching}>
           <ArrowPath />
           Refresh
         </Button>
       </Container>
 
-      <section aria-labelledby="today-jobs" className="flex flex-col gap-3">
-        <Heading level="h2" id="today-jobs" className="px-1">
-          To do
-        </Heading>
-        {loading ? (
-          <PageLoading />
-        ) : (
-          <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            {tasks.map((t) => (
-              <li key={t.key}>
-                <TodayCard task={t} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {loading ? (
+        <PageLoading />
+      ) : open.length === 0 ? (
+        <Container className="px-4 py-6 md:px-6">
+          <Text size="large">Nothing waiting. Enjoy the quiet.</Text>
+        </Container>
+      ) : (
+        open.map((task) => {
+          const queue = task.tone === "unknown" ? undefined : QUEUES[task.key]
+          const headingId = `today-${task.key}`
+          return (
+            <section key={task.key} aria-labelledby={headingId} className="flex flex-col gap-3">
+              <div className="flex flex-col gap-0.5 px-1">
+                <Heading level="h2" id={headingId}>
+                  {task.title}
+                </Heading>
+                <Text size="large" className="text-ui-fg-subtle">
+                  {task.detail}
+                </Text>
+              </div>
+              {queue ?? <TodayCard task={task} />}
+            </section>
+          )
+        })
+      )}
 
-      <section aria-labelledby="today-shortcuts" className="flex flex-col gap-3">
-        <Heading level="h2" id="today-shortcuts" className="px-1">
-          Shortcuts
+      <section aria-labelledby="today-pages" className="flex flex-col gap-3">
+        <Heading level="h2" id="today-pages" className="px-1">
+          Pages
         </Heading>
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {SHORTCUTS.map(({ to, label, hint, Icon }) => (
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {PAGES.map(({ to, label, hint, Icon }) => (
             <li key={to}>
               <Link
                 to={to}

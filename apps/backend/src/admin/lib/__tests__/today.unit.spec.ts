@@ -1,16 +1,17 @@
 import { isLandingPath, ownerMessage, todaySummary, todayTasks } from "../today"
 
-const counts = { to_pick: 2, ready: 1, repairs_new: 0, trade_pending: 3, drafts: 4 }
+const counts = { to_pick: 2, to_pack: 1, ready: 1, repairs_new: 0, trade_pending: 3, drafts: 4 }
 
 describe("todayTasks", () => {
   it("lists the jobs that need doing first, each with where to go", () => {
     const tasks = todayTasks(counts)
     expect(tasks.map((t) => [t.key, t.count, t.to])).toEqual([
-      ["to_pick", 2, "/click-collect"],
-      ["trade_pending", 3, "/trade-applications"],
-      ["drafts", 4, "/products?status=draft"],
-      ["ready", 1, "/click-collect"],
-      ["repairs_new", 0, "/repair-bookings"],
+      ["to_pick", 2, "/shop-orders?tab=collect"],
+      ["to_pack", 1, "/shop-orders?tab=delivery"],
+      ["trade_pending", 3, "/shop-orders?tab=trade"],
+      ["drafts", 4, "/shop-products?tab=stock&drafts=1"],
+      ["ready", 1, "/shop-orders?tab=collect"],
+      ["repairs_new", 0, "/shop-orders?tab=repairs"],
     ])
   })
 
@@ -22,6 +23,7 @@ describe("todayTasks", () => {
     expect(byKey.repairs_new.title).toBe("No repairs to call back")
     expect(byKey.repairs_new.tone).toBe("clear")
     expect(byKey.drafts.title).toBe("4 draft products to publish")
+    expect(byKey.to_pack.title).toBe("1 delivery order to pack")
   })
 
   it("orders on the shelf are waiting on the customer, not a job for the shop", () => {
@@ -40,17 +42,17 @@ describe("todayTasks", () => {
 
 describe("todaySummary", () => {
   it("counts only the jobs for the shop", () => {
-    expect(todaySummary(todayTasks(counts))).toBe("3 things need you today.")
-    expect(todaySummary(todayTasks({ ...counts, to_pick: 0, trade_pending: 0 }))).toBe("1 thing needs you today.")
+    expect(todaySummary(todayTasks(counts))).toBe("4 things need you today.")
+    expect(todaySummary(todayTasks({ ...counts, to_pick: 0, to_pack: 0, trade_pending: 0 }))).toBe("1 thing needs you today.")
   })
 
   it("says when everything is done", () => {
-    const none = { to_pick: 0, ready: 2, repairs_new: 0, trade_pending: 0, drafts: 0 }
+    const none = { to_pick: 0, to_pack: 0, ready: 2, repairs_new: 0, trade_pending: 0, drafts: 0 }
     expect(todaySummary(todayTasks(none))).toBe("You're all caught up.")
   })
 
   it("does not claim to be caught up when something failed to load", () => {
-    const partial = { to_pick: null, ready: 0, repairs_new: 0, trade_pending: 0, drafts: 0 }
+    const partial = { to_pick: null, to_pack: 0, ready: 0, repairs_new: 0, trade_pending: 0, drafts: 0 }
     expect(todaySummary(todayTasks(partial))).toBe("Some of today's numbers couldn't be loaded.")
   })
 })

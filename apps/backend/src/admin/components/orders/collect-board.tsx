@@ -14,8 +14,6 @@ import { ConfirmDialog, FilterChips, PageLoading, TAP } from "../shop-ui"
 
 const REFRESH_MS = 60_000
 const COLLECTED_SHOWN = 20
-/** A ready order counts as "waiting" on Today after this long, or once the reminder went. */
-const WAITING_AFTER_MS = 3 * 24 * 60 * 60 * 1000
 
 export const COLLECT_QUERY_KEY = ["click-collect"] as const
 
@@ -307,26 +305,11 @@ function Column({
   )
 }
 
-/** True for ready orders that have waited 3 days or had their reminder: the ones Today shows. */
-export function isWaitingForCollection(order: ClickCollectOrder, now = Date.now()): boolean {
-  if (order.status !== "ready") return false
-  if (order.reminder_sent_at) return true
-  return !!order.ready_at && now - new Date(order.ready_at).getTime() >= WAITING_AFTER_MS
-}
-
 /**
  * One column, embedded on Today: no heading or chips, at most `limit` cards,
  * then "See all" into the Collect tab. Renders nothing while empty.
  */
-function EmbeddedColumn({
-  status,
-  limit,
-  onlyWaiting,
-}: {
-  status: CollectStatus
-  limit: number
-  onlyWaiting?: boolean
-}) {
+function EmbeddedColumn({ status, limit }: { status: CollectStatus; limit: number }) {
   const query = useCollectColumn(status, 100)
   if (query.isLoading) return <PageLoading />
   if (query.isError) {
@@ -336,7 +319,7 @@ function EmbeddedColumn({
       </Alert>
     )
   }
-  const all = (query.data?.orders ?? []).filter((o) => !onlyWaiting || isWaitingForCollection(o))
+  const all = query.data?.orders ?? []
   const shown = all.slice(0, limit)
   if (!shown.length) return null
   return (
@@ -363,12 +346,10 @@ export type CollectBoardProps = {
   embedded?: boolean
   status?: CollectStatus
   limit?: number
-  /** With `embedded` and status "ready": only orders that have waited (see isWaitingForCollection). */
-  onlyWaiting?: boolean
 }
 
-export const CollectBoard = ({ embedded, status = "to_pick", limit = 5, onlyWaiting }: CollectBoardProps) => {
-  if (embedded) return <EmbeddedColumn status={status} limit={limit} onlyWaiting={onlyWaiting} />
+export const CollectBoard = ({ embedded, status = "to_pick", limit = 5 }: CollectBoardProps) => {
+  if (embedded) return <EmbeddedColumn status={status} limit={limit} />
   return <FullBoard />
 }
 

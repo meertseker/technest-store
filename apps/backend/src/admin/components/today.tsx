@@ -7,7 +7,7 @@ import { type TodayCounts, type TodayTask, todaySummary, todayTasks } from "../l
 import { TAP } from "./shop-ui"
 
 // The numbers behind the Today page and the summary above the Orders list.
-// Five small requests to pages the shop already has; refreshed every minute.
+// Six small requests to pages the shop already has; refreshed every minute.
 
 const REFRESH_MS = 60_000
 
@@ -18,6 +18,7 @@ const count = (path: string, query: Record<string, unknown>) => () =>
 
 const SOURCES: { key: keyof TodayCounts; queryFn: () => Promise<number> }[] = [
   { key: "to_pick", queryFn: count("/admin/click-collect/orders", { status: "to_pick" }) },
+  { key: "to_pack", queryFn: count("/admin/delivery-orders", { status: "to_pack" }) },
   { key: "ready", queryFn: count("/admin/click-collect/orders", { status: "ready" }) },
   { key: "repairs_new", queryFn: count("/admin/repair-bookings", { status: "new" }) },
   { key: "trade_pending", queryFn: count("/admin/trade-applications", { status: "pending" }) },

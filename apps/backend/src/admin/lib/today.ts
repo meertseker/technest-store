@@ -6,6 +6,7 @@ import { plural } from "./format"
 /** null = the count could not be loaded (never shown as 0) */
 export type TodayCounts = {
   to_pick: number | null
+  to_pack: number | null
   ready: number | null
   repairs_new: number | null
   trade_pending: number | null
@@ -26,7 +27,7 @@ export type TodayTask = {
   tone: TodayTone
   title: string
   detail: string
-  /** Admin path, e.g. "/click-collect" */
+  /** Admin path, e.g. "/shop-orders?tab=collect" */
   to: string
   cta: string
 }
@@ -54,8 +55,18 @@ const SPECS: Spec[] = [
     none: "No orders to pick",
     todo: "Click & Collect. Pick the items, then press Mark ready.",
     idle: "New Click & Collect orders appear here.",
-    to: "/click-collect",
+    to: "/shop-orders?tab=collect",
     cta: "Open the board",
+  },
+  {
+    key: "to_pack",
+    noun: ["delivery order to pack", "delivery orders to pack"],
+    name: "Delivery orders to pack",
+    none: "No delivery orders to pack",
+    todo: "Pack the parcel, hand it to the carrier, then press Packed & shipped.",
+    idle: "New delivery orders appear here.",
+    to: "/shop-orders?tab=delivery",
+    cta: "Open delivery orders",
   },
   {
     key: "repairs_new",
@@ -64,7 +75,7 @@ const SPECS: Spec[] = [
     none: "No repairs to call back",
     todo: "Call the customer, agree a price, then mark it booked in.",
     idle: "Repair requests from the website appear here.",
-    to: "/repair-bookings",
+    to: "/shop-orders?tab=repairs",
     cta: "Open repairs",
   },
   {
@@ -74,7 +85,7 @@ const SPECS: Spec[] = [
     none: "No trade applications to review",
     todo: "Check the business, then approve or reject it.",
     idle: "Applications from businesses appear here.",
-    to: "/trade-applications",
+    to: "/shop-orders?tab=trade",
     cta: "Open applications",
   },
   {
@@ -84,7 +95,7 @@ const SPECS: Spec[] = [
     none: "No draft products",
     todo: "Not on the website yet. Check them, then publish.",
     idle: "Products you add wait here until you publish them.",
-    to: "/products?status=draft",
+    to: "/shop-products?tab=stock&drafts=1",
     cta: "Open drafts",
   },
   {
@@ -94,7 +105,7 @@ const SPECS: Spec[] = [
     none: "Nothing waiting to be collected",
     todo: "On the shelf. Press Collected when the customer comes in.",
     idle: "Orders you mark ready wait here for the customer.",
-    to: "/click-collect",
+    to: "/shop-orders?tab=collect",
     cta: "Open the board",
     waiting: true,
   },
