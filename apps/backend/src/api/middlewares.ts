@@ -3,6 +3,7 @@ import { adminClickCollectMiddlewares } from './admin/click-collect/middlewares'
 import { adminDeliveryOrdersMiddlewares } from './admin/delivery-orders/middlewares'
 import { adminDeviceMiddlewares } from './admin/devices/middlewares'
 import { adminProductAttributesMiddlewares } from './admin/products/[id]/attributes/middlewares'
+import { adminVariantPriceStockMiddlewares } from './admin/products/[id]/variants/middlewares'
 import { adminPhotoMiddlewares } from './admin/photos/middlewares'
 import { adminProductImportMiddlewares } from './admin/product-import/middlewares'
 import { adminTechnestSettingsMiddlewares } from './admin/technest-settings/middlewares'
@@ -54,6 +55,7 @@ export default defineMiddlewares({
     ...storeDeviceMiddlewares,
     ...adminDeviceMiddlewares,
     ...adminProductAttributesMiddlewares,
+    ...adminVariantPriceStockMiddlewares,
     ...storeTradeMiddlewares,
     ...adminTradeMiddlewares,
     ...storeRepairMiddlewares,
