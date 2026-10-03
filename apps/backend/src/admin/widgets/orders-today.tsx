@@ -4,7 +4,12 @@ import { useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { TAP } from "../components/shop-ui"
 import { TodayStrip, useToday } from "../components/today"
+import { installHideCoreNav } from "../lib/hide-core-nav"
 import { isLandingPath } from "../lib/today"
+
+// Widget modules load with the dashboard on every page, so this runs once at
+// start-up: Medusa's own menu entries are hidden, ours stay (lib/hide-core-nav).
+if (typeof document !== "undefined") installHideCoreNav(document, "/app")
 
 // The admin always opens on the Orders list (after signing in, or from a
 // bookmark of the admin's address). The shop's start page is Today, so the
