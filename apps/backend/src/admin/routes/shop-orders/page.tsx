@@ -2,6 +2,7 @@ import { defineRouteConfig } from "@medusajs/admin-sdk"
 import { ShoppingBag } from "@medusajs/icons"
 import { Container, Heading, Text } from "@medusajs/ui"
 import { CollectBoard } from "../../components/orders/collect-board"
+import { DeliveryList } from "../../components/orders/delivery-list"
 import { RepairList } from "../../components/orders/repair-list"
 import { TradeList } from "../../components/orders/trade-list"
 import { PageTabs } from "../../components/page-tabs"
@@ -32,11 +33,7 @@ const ShopOrdersPage = () => {
       <PageTabs tabs={TABS} value={tab} onChange={setTab}>
         {{
           collect: <CollectBoard />,
-          delivery: (
-            <Text size="large" className="text-ui-fg-subtle px-1">
-              Delivery orders are coming here soon. For now, use the Orders list.
-            </Text>
-          ),
+          delivery: <DeliveryList />,
           repairs: <RepairList />,
           trade: <TradeList />,
         }}
