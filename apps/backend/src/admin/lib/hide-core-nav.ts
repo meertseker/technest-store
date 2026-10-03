@@ -31,6 +31,10 @@ export function hideCoreNavCss(basePath: string): string {
   const rules = coreNavSelectors(basePath).flatMap((s) =>
     scopes.flatMap((scope) => [`${scope} li:has(> ${s})`, `${scope} ${s}`])
   )
+  // The layout editor (header "Customize layout") rearranges Medusa's pages; the owner
+  // never needs it, and its API needs Medusa's own settings module, which this project's
+  // "settings" module currently shadows (TEAM_CHAT 2026-10-03, to E1).
+  rules.push('button[aria-label="Customize layout"]')
   return `${rules.join(",\n")} {\n  display: none !important;\n}\n`
 }
 

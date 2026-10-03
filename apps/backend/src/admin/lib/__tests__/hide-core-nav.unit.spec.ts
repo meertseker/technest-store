@@ -30,6 +30,7 @@ describe("hide-core-nav", () => {
     expect(css).toContain('[role="dialog"] a[href="/app/products"]')
     // Scoped only: a breadcrumb or in-page link to Orders must stay visible.
     expect(css).not.toMatch(/^a\[href/m)
+    expect(css).toContain('button[aria-label="Customize layout"]')
     expect(css).toContain("display: none !important")
     expect(css).not.toContain("/app/today")
   })
