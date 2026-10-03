@@ -7,7 +7,7 @@ import { DetailRow, PageLoading, TAP } from "../../../components/shop-ui"
 import { sdk } from "../../../lib/client"
 import { errorMessage, formatDateTime, timeAgo } from "../../../lib/format"
 import { REPAIR_STATUSES, RepairBooking, RepairBookingStatus } from "../../../lib/types"
-import { REPAIR_STATUS_COLORS, REPAIR_STATUS_HINTS, REPAIR_STATUS_LABELS } from "../shared"
+import { REPAIR_STATUS_COLORS, REPAIR_STATUS_HINTS, REPAIR_STATUS_LABELS } from "../../../components/orders/repair-shared"
 
 // One repair booking: contact details, status and staff notes (docs/contracts/repairs.md).
 
@@ -181,7 +181,7 @@ const RepairBookingPage = () => {
 function BackLink() {
   return (
     <Link
-      to="/repair-bookings"
+      to="/shop-orders?tab=repairs"
       className="txt-large text-ui-fg-interactive inline-flex min-h-11 items-center gap-1 self-start"
     >
       <ArrowLeft />

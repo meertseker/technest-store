@@ -18,7 +18,7 @@ import { ConfirmDialog, DetailRow, PageLoading, TAP } from "../../../components/
 import { sdk } from "../../../lib/client"
 import { errorMessage, formatDateTime } from "../../../lib/format"
 import type { TradeApplication } from "../../../lib/types"
-import { BUSINESS_TYPE_LABELS, TRADE_STATUS_COLORS, TRADE_STATUS_LABELS } from "../shared"
+import { BUSINESS_TYPE_LABELS, TRADE_STATUS_COLORS, TRADE_STATUS_LABELS } from "../../../components/orders/trade-shared"
 
 // One trade application, with Approve / Reject (docs/contracts/trade.md).
 // The shop's "new trade application" email links here: /app/trade-applications/:id
@@ -279,7 +279,7 @@ const TradeApplicationPage = () => {
 function BackLink() {
   return (
     <Link
-      to="/trade-applications"
+      to="/shop-orders?tab=trade"
       className="txt-large text-ui-fg-interactive inline-flex min-h-11 items-center gap-1 self-start"
     >
       <ArrowLeft />

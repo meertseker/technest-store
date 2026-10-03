@@ -1,19 +1,23 @@
-import { defineRouteConfig } from "@medusajs/admin-sdk"
-import { ArrowPath, BuildingStorefront } from "@medusajs/icons"
+import { ArrowPath } from "@medusajs/icons"
 import { Alert, Badge, Button, Container, Heading, Text, clx, toast } from "@medusajs/ui"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { ConfirmDialog, FilterChips, PageLoading, TAP } from "../../components/shop-ui"
 import { sdk } from "../../lib/client"
 import { errorMessage, formatDateTime, formatPence, timeAgo } from "../../lib/format"
 import type { ClickCollectListResponse, ClickCollectOrder, CollectStatus } from "../../lib/types"
+import { ConfirmDialog, FilterChips, PageLoading, TAP } from "../shop-ui"
 
-// Click & Collect board (docs/contracts/click-collect.md).
-// Three columns on a wide screen, three tabs on a phone. Refreshes every minute.
+// Click & Collect board (docs/contracts/click-collect.md): the Collect tab of
+// the Orders page, and (embedded) one column of it on Today.
+// Three columns on a wide screen, three chips on a phone. Refreshes every minute.
 
 const REFRESH_MS = 60_000
 const COLLECTED_SHOWN = 20
+/** A ready order counts as "waiting" on Today after this long, or once the reminder went. */
+const WAITING_AFTER_MS = 3 * 24 * 60 * 60 * 1000
+
+export const COLLECT_QUERY_KEY = ["click-collect"] as const
 
 const COLUMNS: { status: CollectStatus; title: string; empty: string; limit: number }[] = [
   { status: "to_pick", title: "To pick", empty: "Nothing to pick. New orders appear here.", limit: 100 },
@@ -26,9 +30,9 @@ const COLUMNS: { status: CollectStatus; title: string; empty: string; limit: num
   },
 ]
 
-const boardKey = (status: CollectStatus) => ["click-collect", status] as const
+const boardKey = (status: CollectStatus) => [...COLLECT_QUERY_KEY, status] as const
 
-function useColumn(status: CollectStatus, limit: number) {
+export function useCollectColumn(status: CollectStatus, limit: number) {
   return useQuery({
     queryKey: boardKey(status),
     queryFn: () =>
@@ -39,7 +43,7 @@ function useColumn(status: CollectStatus, limit: number) {
   })
 }
 
-function OrderCard({ order }: { order: ClickCollectOrder }) {
+export function CollectOrderCard({ order }: { order: ClickCollectOrder }) {
   const queryClient = useQueryClient()
   const [confirming, setConfirming] = useState(false)
   const [confirmingReady, setConfirmingReady] = useState(false)
@@ -49,7 +53,7 @@ function OrderCard({ order }: { order: ClickCollectOrder }) {
     const status = (e as { status?: number }).status
     setError({ message: errorMessage(e), status })
     // The order may have moved (e.g. "Payment captured but ..."), so refresh the board.
-    queryClient.invalidateQueries({ queryKey: ["click-collect"] })
+    queryClient.invalidateQueries({ queryKey: COLLECT_QUERY_KEY })
   }
 
   const markReady = useMutation({
@@ -61,7 +65,7 @@ function OrderCard({ order }: { order: ClickCollectOrder }) {
     onMutate: () => setError(null),
     onSuccess: ({ order: updated }) => {
       toast.success(`Order #${updated.display_id} is ready. Code ${updated.collection_code}.`)
-      queryClient.invalidateQueries({ queryKey: ["click-collect"] })
+      queryClient.invalidateQueries({ queryKey: COLLECT_QUERY_KEY })
     },
     onError,
   })
@@ -75,7 +79,7 @@ function OrderCard({ order }: { order: ClickCollectOrder }) {
     onMutate: () => setError(null),
     onSuccess: ({ order: updated }) => {
       toast.success(`Order #${updated.display_id} collected. Payment taken.`)
-      queryClient.invalidateQueries({ queryKey: ["click-collect"] })
+      queryClient.invalidateQueries({ queryKey: COLLECT_QUERY_KEY })
     },
     onError,
   })
@@ -258,7 +262,7 @@ function Column({
   status: CollectStatus
   title: string
   empty: string
-  query: ReturnType<typeof useColumn>
+  query: ReturnType<typeof useCollectColumn>
   active: boolean
 }) {
   const orders = query.data?.orders ?? []
@@ -290,7 +294,7 @@ function Column({
       ) : (
         <ul className="flex flex-col gap-3">
           {orders.map((o) => (
-            <OrderCard key={o.id} order={o} />
+            <CollectOrderCard key={o.id} order={o} />
           ))}
         </ul>
       )}
@@ -303,13 +307,78 @@ function Column({
   )
 }
 
-const ClickCollectPage = () => {
+/** True for ready orders that have waited 3 days or had their reminder: the ones Today shows. */
+export function isWaitingForCollection(order: ClickCollectOrder, now = Date.now()): boolean {
+  if (order.status !== "ready") return false
+  if (order.reminder_sent_at) return true
+  return !!order.ready_at && now - new Date(order.ready_at).getTime() >= WAITING_AFTER_MS
+}
+
+/**
+ * One column, embedded on Today: no heading or chips, at most `limit` cards,
+ * then "See all" into the Collect tab. Renders nothing while empty.
+ */
+function EmbeddedColumn({
+  status,
+  limit,
+  onlyWaiting,
+}: {
+  status: CollectStatus
+  limit: number
+  onlyWaiting?: boolean
+}) {
+  const query = useCollectColumn(status, 100)
+  if (query.isLoading) return <PageLoading />
+  if (query.isError) {
+    return (
+      <Alert variant="error" role="alert">
+        {errorMessage(query.error)}
+      </Alert>
+    )
+  }
+  const all = (query.data?.orders ?? []).filter((o) => !onlyWaiting || isWaitingForCollection(o))
+  const shown = all.slice(0, limit)
+  if (!shown.length) return null
+  return (
+    <div className="flex flex-col gap-3">
+      <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        {shown.map((o) => (
+          <CollectOrderCard key={o.id} order={o} />
+        ))}
+      </ul>
+      {all.length > shown.length && (
+        <Link
+          to={`/shop-orders?tab=collect`}
+          className={clx(TAP, "text-ui-fg-interactive txt-large-plus inline-flex items-center underline-offset-2 hover:underline")}
+        >
+          See all {all.length}
+        </Link>
+      )}
+    </div>
+  )
+}
+
+export type CollectBoardProps = {
+  /** Today: one column only, no heading, no chips. */
+  embedded?: boolean
+  status?: CollectStatus
+  limit?: number
+  /** With `embedded` and status "ready": only orders that have waited (see isWaitingForCollection). */
+  onlyWaiting?: boolean
+}
+
+export const CollectBoard = ({ embedded, status = "to_pick", limit = 5, onlyWaiting }: CollectBoardProps) => {
+  if (embedded) return <EmbeddedColumn status={status} limit={limit} onlyWaiting={onlyWaiting} />
+  return <FullBoard />
+}
+
+const FullBoard = () => {
   const queryClient = useQueryClient()
   const [tab, setTab] = useState<CollectStatus>("to_pick")
   const queries = {
-    to_pick: useColumn("to_pick", COLUMNS[0].limit),
-    ready: useColumn("ready", COLUMNS[1].limit),
-    collected: useColumn("collected", COLUMNS[2].limit),
+    to_pick: useCollectColumn("to_pick", COLUMNS[0].limit),
+    ready: useCollectColumn("ready", COLUMNS[1].limit),
+    collected: useCollectColumn("collected", COLUMNS[2].limit),
   }
   const updatedAt = Math.max(...Object.values(queries).map((q) => q.dataUpdatedAt))
   const fetching = Object.values(queries).some((q) => q.isFetching)
@@ -319,7 +388,7 @@ const ClickCollectPage = () => {
       <Container className="flex flex-col gap-3 px-4 py-4 md:px-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <Heading level="h1">Click & Collect</Heading>
+            <Heading level="h2">Click & Collect</Heading>
             <Text size="large" className="text-ui-fg-subtle">
               Updates every minute.
               {updatedAt > 0 &&
@@ -334,7 +403,7 @@ const ClickCollectPage = () => {
             type="button"
             variant="secondary"
             className={TAP}
-            onClick={() => queryClient.invalidateQueries({ queryKey: ["click-collect"] })}
+            onClick={() => queryClient.invalidateQueries({ queryKey: COLLECT_QUERY_KEY })}
             isLoading={fetching}
           >
             <ArrowPath />
@@ -370,11 +439,3 @@ const ClickCollectPage = () => {
     </div>
   )
 }
-
-export const config = defineRouteConfig({
-  label: "Click & Collect",
-  icon: BuildingStorefront,
-  rank: 1,
-})
-
-export default ClickCollectPage
