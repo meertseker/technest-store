@@ -34,6 +34,24 @@ describe("collectionDeadline", () => {
     expect(iso(deadline)).toBe("2026-01-10T23:59:59.999Z")
   })
 
+  // The day the clocks change is 23 or 25 hours long: "a day earlier" must still be the previous London day.
+  it("steps back to the previous London day across the spring clock change", () => {
+    // Ordered Mon 23 Mar 2026 05:30 GMT: the limit is just after midnight (BST) on Mon 30 Mar,
+    // so the last whole day is Sunday 29 Mar (which ends at 22:59:59.999 UTC).
+    expect(iso(collectionDeadline({ ordered_at: at("2026-03-23T05:30:00Z"), ready_at: null }))).toBe(
+      "2026-03-29T22:59:59.999Z"
+    )
+  })
+
+  it("never passes the authorisation limit on the 25-hour autumn day", () => {
+    for (const ordered of ["2026-10-18T05:30:00Z", "2026-10-18T23:30:00Z", "2026-10-19T00:30:00Z"]) {
+      const orderedAt = at(ordered)
+      const deadline = collectionDeadline({ ordered_at: orderedAt, ready_at: null })
+      expect(deadline).toBeLessThanOrEqual(orderedAt + 6.75 * 24 * 60 * 60 * 1000)
+      expect(deadline).toBeGreaterThan(orderedAt + 5.7 * 24 * 60 * 60 * 1000)
+    }
+  })
+
   it("is the same whether or not the order was ever marked ready", () => {
     const ordered = at("2026-01-05T10:00:00Z")
     expect(collectionDeadline({ ordered_at: ordered, ready_at: null })).toBe(

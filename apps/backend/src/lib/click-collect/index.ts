@@ -67,12 +67,13 @@ export function collectionDeadlineOf(order: {
 export const collectLockKey = (orderId: string) => `technest-click-collect:${orderId}`
 
 /**
- * True for the error the locking providers throw when the order's lock is
- * still held by another run after the wait (in-memory: plain Error, Redis:
- * MedusaError CONFLICT; both "Failed to acquire lock for key ...").
+ * True for the error the locking providers throw when a lock is still held
+ * by another run after the wait. Both providers (in-memory: plain Error,
+ * Redis: MedusaError CONFLICT) say "Failed to acquire lock for key ..." from
+ * acquire() and "Timed-out acquiring lock." from execute().
  */
 export const isLockBusyError = (e: unknown) =>
-  /Failed to acquire lock/.test((e as Error | undefined)?.message ?? "")
+  /Failed to acquire lock|Timed-out acquiring lock/.test((e as Error | undefined)?.message ?? "")
 
 // Uppercase letters and digits without the look-alikes 0 O 1 I L.
 export const COLLECTION_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"

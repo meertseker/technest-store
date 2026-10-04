@@ -1,7 +1,10 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { isLockBusyError } from "../lib/click-collect"
-import { reconcilePayments } from "../lib/payment-reconcile"
+import { RECONCILE_CATCH_UP_MS, reconcilePayments } from "../lib/payment-reconcile"
+
+/** When the last run that finished started. Unknown after a restart: that run catches up on a day. */
+let lastRunAt: Date | null = null
 
 /**
  * Every 10 minutes: finish or release payments whose follow-up was lost
@@ -10,11 +13,15 @@ import { reconcilePayments } from "../lib/payment-reconcile"
  */
 export default async function paymentReconcileJob(container: MedusaContainer) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
+  const now = new Date()
+  const since = lastRunAt ?? new Date(now.getTime() - RECONCILE_CATCH_UP_MS)
   try {
     // One run at a time: a slow run must not overlap the next.
     const result = await container
       .resolve(Modules.LOCKING)
-      .execute("technest-payment-reconcile", () => reconcilePayments(container, new Date()), { timeout: 1 })
+      .execute("technest-payment-reconcile", () => reconcilePayments(container, now, since), { timeout: 1 })
+    // Only a run that finished moves the mark: a failed or skipped run is covered by the next one.
+    lastRunAt = now
     if (result.orders_placed || result.holds_released || result.payments_authorised) {
       logger.info(
         `payment-reconcile: ${result.orders_placed} orders placed, ${result.holds_released} holds released, ` +

@@ -53,7 +53,9 @@ export function collectionDeadline({
 }): number {
   const limit = ordered_at + AUTHORISATION_SAFE_MS
   let authorisationEnd = endOfLondonDay(limit)
-  if (authorisationEnd > limit) authorisationEnd = endOfLondonDay(limit - DAY_MS)
+  // Past the limit: take the London day before. 26 hours back from the end of a day is
+  // inside the previous day whether that day and this one are 23, 24 or 25 hours long.
+  if (authorisationEnd > limit) authorisationEnd = endOfLondonDay(authorisationEnd - 26 * 60 * 60 * 1000)
   if (ready_at === null) return authorisationEnd
   return Math.min(endOfLondonDay(ready_at + HOLD_DAYS * DAY_MS), authorisationEnd)
 }

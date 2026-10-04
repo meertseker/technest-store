@@ -1,4 +1,4 @@
-import { collectStateKeysIn, withoutCollectState } from "../click-collect"
+import { collectStateKeysIn, isLockBusyError, withoutCollectState } from "../click-collect"
 
 describe("withoutCollectState", () => {
   it("drops every Click & Collect state key and keeps the rest", () => {
@@ -33,5 +33,20 @@ describe("collectStateKeysIn", () => {
   it("finds none in metadata without state", () => {
     expect(collectStateKeysIn({ gift_note: "x" })).toEqual([])
     expect(collectStateKeysIn(null)).toEqual([])
+  })
+})
+
+describe("isLockBusyError", () => {
+  // acquire() and execute() word a held lock differently, in both the in-memory and the Redis provider.
+  it.each([['Failed to acquire lock for key "technest-click-collect:order_1"'], ["Timed-out acquiring lock."]])(
+    "recognises %j",
+    (message) => {
+      expect(isLockBusyError(new Error(message))).toBe(true)
+    }
+  )
+
+  it("is false for any other error", () => {
+    expect(isLockBusyError(new Error("connection refused"))).toBe(false)
+    expect(isLockBusyError(undefined)).toBe(false)
   })
 })

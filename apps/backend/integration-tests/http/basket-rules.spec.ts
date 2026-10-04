@@ -124,7 +124,7 @@ medusaIntegrationTestRunner({
         expect(res.status).toBe(200)
       })
 
-      it("refuses to complete when the normal item was removed after choosing delivery", async () => {
+      it("refuses to pay or complete when the normal item was removed after choosing delivery", async () => {
         const cart = await createCart([
           { variant_id: variantByHandle["phone-ring-holder"], quantity: 1 },
           { variant_id: variantByHandle["clear-shockproof-case"], quantity: 1 },
@@ -136,10 +136,13 @@ medusaIntegrationTestRunner({
         await api.delete(`/store/carts/${cart.id}/line-items/${caseLine.id}`, store)
         expect((await rules(cart.id)).addon_only).toBe(true)
 
-        await pay(cart.id)
+        // Refused when the shopper goes to pay, before any hold is put on their card ...
+        const refused = await pay(cart.id).catch(fail)
+        expect(refused.status).toBe(400)
+        expect(refused.data).toMatchObject({ type: "not_allowed", message: ADDON_ONLY_MESSAGE })
+        // ... and completion is refused too.
         const res = await api.post(`/store/carts/${cart.id}/complete`, {}, store).catch(fail)
         expect(res.status).toBe(400)
-        expect(res.data).toMatchObject({ type: "not_allowed", message: ADDON_ONLY_MESSAGE })
 
         // Switching to Click & Collect fixes it (the total changed, so pay again).
         await addShipping(cart.id, "click-collect")
