@@ -1,11 +1,28 @@
+import Link from "next/link"
 import { retrieveCart } from "@lib/data/cart"
 import { getBasketView } from "@lib/data/basket"
 import BasketDrawer from "@modules/basket/components/basket-drawer"
 
-/** Header basket: server-fetched cart + delivery facts, rendered into the client drawer */
+/**
+ * Header basket: server-fetched cart + delivery facts, rendered into the client drawer.
+ * Rendered without a Suspense boundary (see the note in templates/nav), so it must
+ * never throw: if the basket data can't be built, the header shows a plain link.
+ */
 export default async function CartButton() {
-  const cart = await retrieveCart().catch(() => null)
-  const view = await getBasketView(cart)
+  let data: { cart: Awaited<ReturnType<typeof retrieveCart>>; view: Awaited<ReturnType<typeof getBasketView>> } | null
+  try {
+    const cart = await retrieveCart().catch(() => null)
+    data = { cart, view: await getBasketView(cart) }
+  } catch {
+    data = null
+  }
 
-  return <BasketDrawer cart={cart} view={view} />
+  if (!data) {
+    return (
+      <Link href="/basket" className="inline-flex min-h-11 items-center px-2">
+        Basket
+      </Link>
+    )
+  }
+  return <BasketDrawer cart={data.cart} view={data.view} />
 }

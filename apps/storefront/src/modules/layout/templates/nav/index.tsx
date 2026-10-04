@@ -1,4 +1,3 @@
-import { Suspense } from "react"
 import Link from "next/link"
 import { User } from "lucide-react"
 import { listCategories } from "@lib/data/categories"
@@ -45,15 +44,14 @@ export default async function Nav() {
               <User aria-hidden className="size-5" />
               Account
             </Link>
-            <Suspense
-              fallback={
-                <Link href="/basket" className="inline-flex min-h-11 items-center px-2">
-                  Basket
-                </Link>
-              }
-            >
-              <CartButton />
-            </Suspense>
+            {/*
+              No <Suspense> around CartButton, on purpose. A server action re-render
+              under a Suspense boundary in the (main) layout hits a lost-wakeup race
+              in the React build that Next 15.5.24 vendors (facebook/react#35399):
+              forms stayed on "Saving…" in production builds. CartButton reuses the
+              layout's cart fetch and falls back to a plain link by itself.
+            */}
+            <CartButton />
           </div>
         </div>
         <div className="relative hidden border-t border-border lg:block">

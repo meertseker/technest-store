@@ -13,6 +13,9 @@ if (existsSync(".env.local")) {
 const PORT = Number(process.env.E2E_PORT) || 8003
 // A preinstalled Chromium when the bundled one isn't downloaded (cloud containers)
 const executablePath = process.env.PW_CHROMIUM_PATH || undefined
+// E2E_PROD=1 runs the specs against a production build (`next build` + `next start`)
+// instead of `next dev`: some bugs only exist there (e.g. forms stuck on "Saving…")
+const PROD = process.env.E2E_PROD === "1"
 
 export default defineConfig({
   testDir: "./e2e",
@@ -35,9 +38,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `pnpm exec next dev --turbopack -p ${PORT}`,
+    command: PROD
+      ? `pnpm exec next build && pnpm exec next start -p ${PORT}`
+      : `pnpm exec next dev --turbopack -p ${PORT}`,
     url: `http://localhost:${PORT}/api/health`,
     reuseExistingServer: true,
-    timeout: 180_000,
+    // the production build takes a few minutes on this machine
+    timeout: PROD ? 600_000 : 180_000,
   },
 })
