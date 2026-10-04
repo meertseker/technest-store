@@ -2,7 +2,7 @@ import { medusaIntegrationTestRunner } from "@medusajs/test-utils"
 import { ContainerRegistrationKeys, Modules, ProductStatus } from "@medusajs/framework/utils"
 import { createProductsWorkflow } from "@medusajs/medusa/core-flows"
 import { seedTechNest } from "../../src/scripts/seed"
-import { IMPORT_TEMPLATE_CSV } from "../../src/admin/routes/import/template"
+import { IMPORT_TEMPLATE_CSV } from "../../src/admin/components/products/import-template"
 import { PRODUCT_ATTRIBUTES_MODULE } from "../../src/modules/product-attributes"
 import { adminHeaders } from "../helpers/auth"
 
