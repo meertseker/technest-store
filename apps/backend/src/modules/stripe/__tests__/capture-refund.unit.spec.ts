@@ -37,7 +37,8 @@ describe("TechNestStripeService capture / cancel / refund", () => {
 
     await service.cancelPayment({ data, context: { idempotency_key: "pay_1" } } as any)
 
-    expect(cancel).toHaveBeenCalledWith("pi_123", { idempotencyKey: "pay_1" })
+    // No idempotency key on cancel: see cancelPayment in service.ts.
+    expect(cancel).toHaveBeenCalledWith("pi_123", { idempotencyKey: undefined })
   })
 
   it("refunds partial and full amounts in pence (Medusa amounts are in pounds)", async () => {

@@ -326,4 +326,22 @@ describe("TechNestStripeService", () => {
       expect(client.getMaxNetworkRetries()).toBe(1)
     })
   })
+
+  // Medusa sends the payment id as the idempotency key of every cancel. Stripe replays the saved
+  // answer for a key, errors included, so a retry with the same key could never succeed.
+  describe("cancelPayment", () => {
+    it("sends no idempotency key, so a retry after a failed release is a fresh request", async () => {
+      const { service } = makeService()
+      const cancel = jest.fn(async (id: string) => ({ id, object: "payment_intent", status: "canceled" }))
+      ;(service as any).stripe_.paymentIntents.cancel = cancel
+
+      const result = await service.cancelPayment({
+        data: { id: "pi_123" },
+        context: { idempotency_key: "pay_1" },
+      } as any)
+
+      expect(cancel).toHaveBeenCalledWith("pi_123", { idempotencyKey: undefined })
+      expect((result.data as any).status).toBe("canceled")
+    })
+  })
 })

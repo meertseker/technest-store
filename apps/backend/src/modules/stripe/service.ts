@@ -8,6 +8,8 @@ import { isPresent, MedusaError } from "@medusajs/framework/utils"
 import type {
   AuthorizePaymentInput,
   AuthorizePaymentOutput,
+  CancelPaymentInput,
+  CancelPaymentOutput,
   InitiatePaymentInput,
   InitiatePaymentOutput,
   UpdatePaymentInput,
@@ -180,6 +182,16 @@ class TechNestStripeService extends StripeProviderService {
       )
     }
     return result
+  }
+
+  /**
+   * Cancelling is safe to repeat (an already cancelled intent is accepted),
+   * so the idempotency key Medusa adds (the payment id, the same on every
+   * try) is dropped: Stripe replays the stored answer for a key, errors
+   * included, and a later retry of a failed release would get the old error.
+   */
+  async cancelPayment(input: CancelPaymentInput): Promise<CancelPaymentOutput> {
+    return super.cancelPayment({ ...input, context: { ...input.context, idempotency_key: undefined } })
   }
 
   async updatePayment(input: UpdatePaymentInput): Promise<UpdatePaymentOutput> {
