@@ -1,6 +1,6 @@
 # E4 plan: production topology (Hetzner CX43, Docker Compose)
 
-Status: DRAFT. Owner: E4.
+Status: SUPERSEDED (2026-10-04). The server size, the photo-worker and mail server, the `:main` image tag and the worker health note here are out of date: DEPLOY.md, docker-compose.yml and .github/workflows/deploy.yml are the truth. Owner: E4.
 Facts are verified against docs.medusajs.com (deployment/general, build, installation), the dtc-starter repo and rembg v2.0.85.
 
 ## Versions (from dtc-starter)

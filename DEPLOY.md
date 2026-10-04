@@ -89,7 +89,7 @@ silinebilir. Geri yükleme tatbikatı (bölüm 8.4) için de bu boyutta yeni bir
    Yoksa: `ssh-keygen -t ed25519 -C "lead@technest"`.
 3. **Add Server**:
    - Location: **Falkenstein** veya **Nuremberg** (Almanya; UK'ye yakın ve ucuz). Londra yok.
-   - Image: **Ubuntu 24.04**
+   - Image: **Ubuntu 24.04** (staging 26.04 ile kuruldu; ikisi de olur)
    - Type: **Cost-Optimized → x86 → CX23** (2 vCPU, 4 GB) staging için. Üretim için: staging'de
      `docker stats` ile gerçek bellek kullanımına bakın; 3 GB'ın rahat altındaysa CX23 yeter
      (`docker-compose.staging.yml` sınırlarıyla), değilse **CX33** (4 vCPU, 8 GB). Sunucu sonradan
@@ -101,6 +101,11 @@ silinebilir. Geri yükleme tatbikatı (bölüm 8.4) için de bu boyutta yeni bir
    - Name: `technest-staging` / `technest-prod`
 4. **Firewall** oluşturun (`technest-fw`) ve sunucuya bağlayın. Gelen (inbound) kurallar:
    - TCP 22: yalnızca kendi IP adresiniz
+     ⚠ **[LEAD KARARI, canlıdan önce]** GitHub Actions bu kuralla sunucuya **ulaşamaz**: Deploy iş akışı
+     GitHub'ın kendi sunucularından SSH ile bağlanır. İki yoldan biri seçilmeli: (a) Tailscale
+     (sunucu ve iş akışı aynı özel ağa girer, 22 dışarıya kapalı kalır), veya (b) 22'yi herkese
+     açıp yalnızca anahtarla girişe ve `deploy` kullanıcısının anahtarını tek komuta
+     (`command="…"` ile yayın betiği) kısıtlamak. Karar verilene kadar yayın çalışmaz.
    - TCP 80, TCP 443, UDP 443: herkes (Cloudflare proxy'si buradan gelir)
    - Diğer her şey kapalı.
 
@@ -146,8 +151,9 @@ ssh-copy-id -i technest_deploy.pub deploy@SUNUCU_IP
 ssh-keyscan SUNUCU_IP   # çıktısı SSH_KNOWN_HOSTS secret'ı olacak
 ```
 
-`technest_deploy` (özel anahtar) GitHub'a secret olarak girilir (bölüm 5.3), sonra
-bilgisayarınızdan silinebilir.
+`technest_deploy` (özel anahtar) GitHub'a secret olarak girilir (bölüm 5.3). Bir kopyasını parola
+yöneticisinde saklayın, bilgisayarınızdan silin. Staging ve production için **ayrı** birer anahtar
+üretin: biri sızarsa diğer sunucu etkilenmez.
 
 ---
 
@@ -217,8 +223,10 @@ E-posta kayıtları (Resend'in DKIM/SPF kayıtları, DMARC, Cloudflare Email Rou
      Bu adres `S3_FILE_URL` olur (`https://media.technest.co.uk`) ve storefront'un
      `NEXT_PUBLIC_IMAGE_HOSTNAME` değeri `media.technest.co.uk` olur.
 2. **R2 → Create bucket** → `technest-backups` (veritabanı yedekleri). **Public access kapalı.**
-   - **Settings → Object lifecycle rules → Add rule**: "Delete objects 30 days after upload".
-     (Yedekleme betiği de 30 günden eski dosyaları siler; kural ikinci güvenlik katmanıdır.)
+   - **Settings → Object lifecycle rules → Add rule**: "Delete objects **90** days after upload".
+     Dikkat: bu kural bir güvenlik katmanı **değildir**, bağımsız bir silicidir: yedekleme sessizce
+     durursa eldeki son yedekleri de siler. Bu yüzden süre, betiğin kendi 30 günlük temizliğinden
+     uzun tutulur ve yedeğin durduğunu haber veren `BACKUP_HEARTBEAT_URL` (bölüm 8.2) zorunludur.
 3. **R2 → Manage R2 API Tokens** → iki ayrı token:
    - `technest-media-rw`: "Object Read & Write", yalnızca `technest-media` bucket'ı.
      → `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`
@@ -261,7 +269,7 @@ karşılaştırıldı (2026-09-30). "Zorunlu" = boşsa compose başlamaz ya da �
 | `SHOP_DOMAIN` | Evet | `technest.co.uk` (staging'de staging alan adı). `api.` ve `admin.` bundan türetilir |
 | `GHCR_OWNER` | Evet | GitHub kullanıcı/organizasyon adı, **küçük harf** (`meertseker`) |
 | `IMAGE_TAG` | — | deploy.yml yazar; elle değiştirmeyin (yalnızca elle geri alma, bölüm 7) |
-| `ACME_EMAIL` | Hayır | Let's Encrypt bildirimleri; varsayılan `hello@technest.co.uk` |
+| `ACME_EMAIL` | Hayır | Let's Encrypt hesap adresi; varsayılan `hello@technest.co.uk`. Let's Encrypt süre dolumu e-postalarını Haziran 2025'te bıraktı: sertifika sorunu buradan **duyulmaz**, bölüm 9'daki izleme duyurur |
 | `COMPOSE_FILE` | — | yalnızca staging / tatbikat: `docker-compose.yml:docker-compose.staging.yml` |
 | `POSTGRES_PASSWORD` | Evet | `openssl rand -hex 32` (**yalnızca hex**) |
 | `JWT_SECRET`, `COOKIE_SECRET` | Evet | `openssl rand -hex 32`, ikisi farklı |
@@ -309,7 +317,7 @@ karşılaştırıldı (2026-09-30). "Zorunlu" = boşsa compose başlamaz ya da �
 
 | Değişken | Zorunlu mu | Nereden / not |
 |---|---|---|
-| `TURNSTILE_SECRET_KEY` | Evet | bölüm 4.3. ⚠ Compose şu an bunu backend'e geçirmiyor (4.3'teki not) [LEAD?] |
+| `TURNSTILE_SECRET_KEY` | Evet | bölüm 4.3. Compose bunu backend'e geçirir; boşsa üretimde her tamir randevusu reddedilir |
 | `SENTRY_DSN_BACKEND` | Hayır | bölüm 9.1; compose `server`/`worker`'a `SENTRY_DSN` olarak verir. Boşsa Sentry kapalı |
 | `SENTRY_DSN_STOREFRONT` | Hayır | bölüm 9.1 (sunucu tarafı). Tarayıcı DSN'i ayrı: GitHub secret `NEXT_PUBLIC_SENTRY_DSN` |
 
@@ -429,8 +437,21 @@ Ayrıntılı kurallar: `docs/contracts/payments.md`.
 
 ## 7. Sonraki yayınlar ve geri alma
 
-- Yayın: GitHub → Actions → Deploy → Run workflow. Her yayın, `main` dalının o anki
-  commit'inden imaj üretir; etiket `production-<commit>` biçimindedir.
+- Yayın: GitHub → Actions → Deploy → Run workflow. Yalnızca `main` dalı yayınlanır ve yalnızca
+  o commit'in CI çalışması yeşilse; başka dal veya kırmızı CI reddedilir. Etiket
+  `production-<commit>-<çalışma no>` biçimindedir: aynı commit ikinci kez yayınlanınca önceki
+  imajın üzerine yazılmaz, geri alma gerçekten önceki imaja döner.
+- Sunucudaki adımlar `infra/deploy/deploy.sh` içindedir: imajları çek → `migrate` → **ancak
+  migration başarılıysa** yeni etiketi `.env`'e yaz → `up -d` → Caddy'yi yeniden yükle
+  (`caddy reload`; Caddyfile değişikliği böyle devreye girer). Çekme veya migration
+  başarısız olursa `.env` çalışan etikette kalır; elle `docker compose up -d` yarım
+  migration üzerinde yeni kodu başlatamaz.
+- `migrate` bir soruda beklemez (`--execute-safe-links`) ve başarısız olursa o çalıştırmada
+  uyguladıklarını geri alır (`--all-or-nothing`).
+- `server` ve `worker` kapanırken eldeki işi bitirmek için 60 saniye alır
+  (`stop_grace_period`): yayın sırasında yarıda kalan ödeme veya tahsilat olmaz.
+- Sağlıklı bir yayından sonra iki haftadan eski imajlar silinir (`docker image prune`); disk
+  dolmaz, önceki etiketin imajı durur.
 - **Otomatik geri alma:** yayından sonra 5 dakika içinde sağlık kontrolü geçmezse
   deploy.yml önceki etiketi geri yükler (`.previous_tag`).
 - **Elle geri alma:**
@@ -440,10 +461,12 @@ Ayrıntılı kurallar: `docs/contracts/payments.md`.
   sed -i '/^IMAGE_TAG=/d' .env && echo "IMAGE_TAG=ÖNCEKİ_ETİKET" >> .env
   docker compose up -d --remove-orphans
   ```
-- **Dikkat:** veritabanı migration'ları geri alınmaz. Migration içeren bir yayın bozuksa,
-  eski imaja dönmek yetmeyebilir; o zaman yedekten geri yükleyin (bölüm 8.3). Bu yüzden
-  migration içeren yayınlardan önce elle bir yedek alın:
-  `docker compose run --rm backup backup.sh`.
+- **Dikkat:** eski imaja dönmek veritabanını geri almaz. Migration içeren bir yayın bozuksa
+  sırayla: (1) kendi modüllerimizin migration'ı ise `docker compose --profile ops run --rm -T
+  migrate medusa db:rollback <modül>` ile geri alın; (2) olmuyorsa yedekten geri yükleyin
+  (bölüm 8.3: veritabanı sıfırdan kurulur, yeni migration'ın tabloları kalmaz). Geri yükleme
+  son yedekten sonraki siparişleri siler; bu yüzden migration içeren yayınlardan **hemen önce**
+  elle bir yedek alın: `docker compose run --rm backup backup.sh`.
 
 ---
 
@@ -453,12 +476,20 @@ Ayrıntılı kurallar: `docs/contracts/payments.md`.
 
 | Ne | Nasıl | Nerede | Ne kadar |
 |---|---|---|---|
-| Veritabanı (siparişler, ürünler, müşteriler) | `backup` servisi, her gece 03:15 (Londra), `pg_dump -Fc` | R2 `technest-backups/db/` | 30 gün |
+| Veritabanı (siparişler, ürünler, müşteriler) | `backup` servisi, **saatte bir** (`BACKUP_EVERY_MINUTES=60`), `pg_dump -Fc` | R2 `technest-backups/db/` | 30 gün |
 | Ürün fotoğrafları | Zaten R2'de (`technest-media`) | R2 | süresiz |
 | Tüm sunucu diski | Hetzner Backups (günlük snapshot) | Hetzner | 7 gün |
 | `.env` (gizli bilgiler) | **Elle**: bir parola yöneticisinde (1Password/Bitwarden) saklayın | — | — |
 
-Redis yedeklenmez: içeriği (kuyruklar, kilitler) geçicidir.
+**Kabul edilen veri kaybı: en çok 1 saat.** Disk veya sunucu kaybolursa son yedekten sonraki
+siparişler veritabanından gider (para Stripe'ta durur; siparişler Stripe panelinden elle
+yeniden girilir). ⚠ **[LEAD ONAYI]** Bu süre müşteriyle konuşulup onaylanmalı; daha kısası
+(ör. 15 dakika) `BACKUP_EVERY_MINUTES` ile ayarlanır, sıfıra yakını WAL arşivi gerektirir.
+
+Redis yedeklenmez, ama içeriği önemsiz **değildir**: Stripe'a "aldım" denmiş webhook'lar ve
+bekleyen olaylar (ör. `order.placed` → tahsilat) oradadır. Redis kaybolursa bunları
+zamanlanmış işler onarır: `payment-reconcile` (ödenmiş ama siparişe dönmemiş sepetler),
+`capture-retry` (tahsil edilmemiş teslimat siparişleri), `authorisation-release`.
 
 ### 8.2 Yedeklerin çalıştığını kontrol
 
@@ -470,8 +501,19 @@ docker compose run --rm backup restore.sh --list   # R2'deki yedekler
 docker compose run --rm backup backup.sh           # hemen bir yedek al
 ```
 
-`backup` servisi, son başarılı yedek 26 saatten eskiyse **unhealthy** olur. UptimeRobot
-bunu doğrudan göremez; haftalık rutinde `docker compose ps` bakılır (bölüm 9.3).
+Başarısız bir yedek 10 dakika sonra yeniden denenir. Son başarılı yedeğin zamanı bir volume'da
+durur (`backup_state`), yani yayın bu saati sıfırlamaz; servis, son başarılı yedek yaklaşık
+2 saatten eskiyse **unhealthy** olur.
+
+**Haber veren şey `BACKUP_HEARTBEAT_URL`'dir ve zorunludur.** https://healthchecks.io (ücretsiz)
+→ yeni bir "check": Period 1 hour, Grace 30 minutes → verilen adresi `.env`'e
+`BACKUP_HEARTBEAT_URL=` olarak yazın. Her başarılı yedek bu adrese, başarısız olan `/fail`
+ekiyle haber verir; haber kesilirse healthchecks.io e-posta gönderir. Boş bırakılırsa yedeğin
+durduğunu kimse duymaz.
+
+İsteğe bağlı şifreleme: `BACKUP_AGE_RECIPIENT=age1…` (bir `age` açık anahtarı) verilirse
+yedekler yüklenmeden önce şifrelenir (`.dump.age`). Özel anahtarı sunucuda **tutmayın**
+(parola yöneticisi); geri yüklerken geçici olarak getirilir (8.3).
 
 ### 8.3 Geri yükleme (aynı sunucuda)
 
@@ -484,6 +526,16 @@ docker compose run --rm backup restore.sh latest --yes
 docker compose up -d
 curl -fsS https://api.technest.co.uk/health
 ```
+
+`restore.sh` sırasıyla şunları yapar: (1) veritabanının **şu anki** halini
+`pre-restore-technest-….dump` adıyla yedekler ve yükler (bu başarısız olursa hiçbir şeye
+dokunmaz); (2) veritabanını siler ve boş olarak yeniden kurar; (3) yedeği **tek işlemde**
+(transaction) geri yükler: hata olursa yarım veritabanı kalmaz, boş kalır ve komut hata verir.
+Geri yüklemeden vazgeçmek için: `restore.sh pre-restore-technest-….dump --yes`.
+
+Şifreli yedek (`.dump.age`) için özel anahtar dosyasını sunucuya getirin ve yolunu verin:
+`docker compose run --rm -v /root/age.key:/age.key:ro -e BACKUP_AGE_IDENTITY=/age.key backup restore.sh latest --yes`,
+sonra dosyayı silin.
 
 ### 8.4 Geri yükleme tatbikatı (yeni sunucuda, hafta 6, hedef < 1 saat)
 
@@ -524,6 +576,9 @@ Bu tatbikat şu an **insan onayı bekliyor** (sunucu açmak para gerektirir).
 
 ## 9. İzleme: Sentry ve UptimeRobot
 
+**Bu bölüm isteğe bağlı değildir; canlıya geçişin şartıdır.** İzleme olmadan worker ölse siparişler
+alınmaya devam eder ama tahsilat, e-postalar ve webhook'lar durur ve bunu kimse fark etmez.
+
 Ayrıntılı liste: `docs/ops/uptime-and-sentry.md`.
 
 ### 9.1 Sentry (ücretsiz plan)
@@ -558,10 +613,10 @@ https://uptimerobot.com → **Add New Monitor** (3 adet):
 Ödeme sayfası izleyicisinde "Up" sayılacak durum kodlarını ayarlayın
 (Advanced → "Up HTTP status codes"): `200-299, 404`.
 
-Stripe webhook adresi için izleyici **eklemeyin**: Medusa her POST'a 200 döner ve imzayı sonra
-worker'da kontrol eder; deneme istekleri yalnızca başarısız webhook olayları üretir. Webhook
-teslimleri art arda başarısız olursa Stripe hesap sahibine kendisi e-posta gönderir
-(Stripe Dashboard → Developers → Webhooks).
+Stripe webhook adresi için izleyici isteğe bağlıdır: imzasız bir POST **400** döner (imza sunucuda,
+kuyruğa almadan önce kontrol edilir), yani "400 bekleyen" bir izleyici uç noktanın ayakta olduğunu
+gösterir ve kuyruğa bir şey bırakmaz. Webhook teslimleri art arda başarısız olursa Stripe hesap
+sahibine kendisi e-posta gönderir (Stripe Dashboard → Developers → Webhooks).
 
 Uyarılar: e-posta + (isteğe bağlı) SMS yerine UptimeRobot mobil uygulama bildirimi.
 
@@ -574,6 +629,19 @@ ssh deploy@SUNUCU_IP 'cd /opt/technest && docker compose ps && df -h / && free -
 - Tüm servisler `healthy` mi? (`backup` dahil)
 - Disk %80'in altında mı?
 - Sentry'de yeni hata var mı?
+
+### 9.4 Günlükler (logs)
+
+Konteyner günlükleri `journald`'a yazılır, yani yayın konteyneri yeniden kursa da **silinmez**
+(eski `json-file` ayarında her yayın önceki günlükleri siliyordu).
+
+```bash
+docker compose logs --since 2h server              # her zamanki gibi çalışır
+journalctl CONTAINER_TAG=technest-technest-worker-1 --since "2026-11-15 10:00"   # yayın öncesi dahil
+```
+
+Saklama süresi journald'ındır. Sunucuda bir kez: `/etc/systemd/journald.conf` içinde
+`SystemMaxUse=2G` ve `MaxRetentionSec=30day`, sonra `systemctl restart systemd-journald`.
 
 ---
 

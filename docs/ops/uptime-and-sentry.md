@@ -11,9 +11,9 @@ Step-by-step setup in Turkish: `DEPLOY.md` section 9.
 | 2 | Checkout | HTTP(s) GET | `https://technest.co.uk/checkout` | status `404` (set "Up HTTP status codes" to `200-299,404`) | Without a cart the page answers 404 from inside the checkout layout, so middleware + CSP + render all ran; 5xx = broken |
 | 3 | API health | Keyword GET | `https://api.technest.co.uk/health` | body contains `OK` | Medusa server process |
 
-No monitor on the Stripe webhook URL: Medusa answers any POST to `/hooks/payment/stripe_stripe`
-with 200 and checks the signature later in the worker, so a probe proves nothing and every probe
-would queue a failing webhook event. Stripe itself emails the account owner when webhook
+A monitor on the Stripe webhook URL is optional: an unsigned POST to
+`/hooks/payment/stripe_stripe` is answered 400 (the signature is checked on the server before
+anything is queued), so a monitor that expects 400 shows the endpoint is up and queues nothing. Stripe itself emails the account owner when webhook
 deliveries keep failing (Stripe Dashboard -> Developers -> Webhooks shows each attempt).
 
 Alert contacts: the lead's email + the UptimeRobot mobile app. Alert after 2 failed checks
@@ -21,7 +21,7 @@ Alert contacts: the lead's email + the UptimeRobot mobile app. Alert after 2 fai
 
 Not covered by UptimeRobot (weekly manual check, `docker compose ps`):
 - `worker` (no public URL): healthy = `/health` inside the container.
-- `backup`: turns unhealthy when the last successful dump is older than 26 h.
+- `backup`: turns unhealthy when the last successful dump is older than about 2 h. The signal that reaches a person is `BACKUP_HEARTBEAT_URL` (a healthchecks.io check, required): DEPLOY.md section 8.2.
 - Background removal (fal.ai, hosted): nothing runs on the server. If fal is down, the key is wrong or the balance is empty, the product "Product photo" box shows the reason (for example "The photo service refused our account (check the key and the balance)") and the original photo is kept.
 
 ## Sentry (free plan, errors only)
