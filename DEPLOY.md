@@ -399,14 +399,16 @@ Ayrıntılı kurallar: `docs/contracts/payments.md`.
    # yalnızca staging:
    scp infra/staging/docker-compose.staging.yml deploy@SUNUCU_IP:/opt/technest/
    ```
-3. GitHub → **Actions → Deploy → Run workflow** → environment: `staging`.
+3. GitHub → **Actions → Deploy → Run workflow** → environment: `staging`, **"first_deploy" kutusu işaretli**.
    İş sırası: 3 imaj derlenir (`technest-backend`, `technest-storefront`,
    `technest-backup`; lisans kontrolü dahil) → GHCR'ye gönderilir → sunucuda
    `docker compose pull` → `migrate` (veritabanı tabloları + ilk veriler) → `up -d` →
    sağlık kontrolü. İlk derleme 15–25 dakika sürebilir.
-   İlk çalıştırmada `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` secret'ı henüz yoktur: storefront
-   imajı geçici bir anahtarla (placeholder) derlenir. Site açılır ama ürünleri gösteremez;
-   gerçek anahtar 5. adımda girilir.
+   İlk çalıştırmada `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` secret'ı henüz yoktur: "first_deploy"
+   işaretliyken storefront imajı geçici bir anahtarla (placeholder) derlenir. Site açılır ama
+   ürünleri gösteremez; gerçek anahtar 5. adımda girilir. Kutu yalnızca bu ilk çalıştırma
+   içindir: işaretli değilken secret eksikse derleme hata verir (yanlışlıkla geçici anahtarla
+   yayına çıkılmaz).
 4. Kontrol:
    ```bash
    ssh deploy@SUNUCU_IP 'cd /opt/technest && docker compose ps'
@@ -415,7 +417,8 @@ Ayrıntılı kurallar: `docs/contracts/payments.md`.
    ```
    Tüm servisler `healthy` olmalı.
 5. Yönetici hesabını oluşturun (5.2), publishable key'i GitHub secret'ına girin ve
-   **storefront imajı bu anahtarı içersin diye yayını bir kez daha çalıştırın**.
+   **storefront imajı bu anahtarı içersin diye yayını bir kez daha çalıştırın**
+   (bu kez "first_deploy" işaretsiz).
    Aynı anda ödeme sağlayıcısını kontrol edin: admin → Settings → Regions → United Kingdom →
    "Payment Providers" altında **yalnızca "Stripe (STRIPE)"** olmalı. "System (DEFAULT)" varsa
    kaldırın ve Stripe'ı ekleyin: o sağlayıcı siparişi para almadan tamamlar.
