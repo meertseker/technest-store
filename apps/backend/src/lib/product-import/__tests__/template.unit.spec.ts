@@ -1,4 +1,4 @@
-import { IMPORT_TEMPLATE_CSV } from "../../../admin/routes/import/template"
+import { IMPORT_TEMPLATE_CSV } from "../../../admin/components/products/import-template"
 import { parseCsv } from "../csv"
 import { IMPORT_COLUMNS, readImportRows } from "../rows"
 
