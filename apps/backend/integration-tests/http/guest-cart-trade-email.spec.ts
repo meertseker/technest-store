@@ -28,12 +28,14 @@ medusaIntegrationTestRunner({
     let regionId: string
     let variantId: string
     let retail: number
+    let tradeGroupId: string
 
     beforeAll(async () => {
       const container = getContainer()
       const seeded = await seedTechNest(container)
       regionId = seeded.region.id
       const pricing = await ensureTradePricing(container)
+      tradeGroupId = pricing.customer_group_id
       admin = await adminHeaders(api, container)
       guest = await storeHeaders(container)
       trader = await customerHeaders(api, guest, TRADER_EMAIL)
@@ -166,6 +168,37 @@ medusaIntegrationTestRunner({
       )
 
       expect(await storedCart(data.cart.id)).toEqual({ is_the_traders_cart: true, unit_price: TRADE_PRICE })
+    })
+
+    it("another signed-in customer can't put the trader's email on a cart either", async () => {
+      const other = await customerHeaders(api, guest, "someone@technest.test")
+      // A cart with no customer yet: Medusa would attach it to whoever owns the email it is given.
+      const { data } = await api.post("/store/carts", { region_id: regionId }, guest)
+      const cartId = data.cart.id as string
+      await api.post(`/store/carts/${cartId}/line-items`, { variant_id: variantId, quantity: QUANTITY }, guest)
+
+      const res = await api
+        .post(`/store/carts/${cartId}`, { email: TRADER_EMAIL }, { headers: other.headers })
+        .catch((e: any) => e.response)
+      await api.post(`/store/carts/${cartId}/line-items`, { variant_id: variantId, quantity: 1 }, guest)
+
+      expect(refusal(res)).toEqual(SIGN_IN)
+      expect(await storedCart(cartId)).toEqual({ is_the_traders_cart: false, unit_price: retail })
+    })
+
+    it("a guest can't use the email of a trade customer staff created without a login", async () => {
+      const { data: created } = await api.post("/admin/customers", { email: "counter-trade@technest.test" }, admin)
+      await api.post(`/admin/customer-groups/${tradeGroupId}/customers`, { add: [created.customer.id] }, admin)
+
+      const res = await api
+        .post(
+          "/store/carts",
+          { region_id: regionId, email: "counter-trade@technest.test", items: [{ variant_id: variantId, quantity: QUANTITY }] },
+          guest
+        )
+        .catch((e: any) => e.response)
+
+      expect(refusal(res)).toEqual(SIGN_IN)
     })
 
     it("a registered customer without special prices can still check out as a guest with their email", async () => {

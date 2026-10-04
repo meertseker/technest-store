@@ -31,11 +31,11 @@ export function dropCollectStateFromCartMetadata(
 }
 
 /**
- * Medusa attaches a cart to the registered customer whose email it carries,
- * whoever is calling, and prices it with that customer's groups. So a guest
- * can't use the email of a customer in a customer group (trade): they'd get
- * the Trade prices. Registered customers without a group can still check out
- * as a guest with their email.
+ * Medusa attaches a cart to the customer whose email it carries, whoever is
+ * calling, and prices it with that customer's groups. So the email of a
+ * customer in a customer group (trade) can only be used by that customer,
+ * signed in: anyone else would get the Trade prices. Customers without a
+ * group can still check out as a guest with their email.
  */
 export async function refuseGuestUseOfTradeEmail(
   req: AuthenticatedMedusaRequest,
@@ -43,17 +43,17 @@ export async function refuseGuestUseOfTradeEmail(
   next: MedusaNextFunction
 ) {
   const email = (req.body as { email?: unknown } | undefined)?.email
-  if (typeof email !== "string" || !email.trim() || req.auth_context?.actor_id) {
+  if (typeof email !== "string" || !email.trim()) {
     return next()
   }
   const typed = email.trim()
+  // No has_account filter: Medusa reuses a customer record without a login too.
   const customers = await req.scope
     .resolve(Modules.CUSTOMER)
-    .listCustomers(
-      { email: [typed, typed.toLowerCase()], has_account: true },
-      { relations: ["groups"], select: ["id"] }
-    )
-  if (customers.some((customer) => customer.groups?.length)) {
+    .listCustomers({ email: [typed, typed.toLowerCase()] }, { relations: ["groups"], select: ["id"] })
+  const inAGroup = customers.filter((customer) => customer.groups?.length)
+  const callerId = req.auth_context?.actor_id
+  if (inAGroup.length && !inAGroup.some((customer) => customer.id === callerId)) {
     throw new MedusaError(
       MedusaError.Types.UNAUTHORIZED,
       "This email belongs to a trade account. Sign in to use it."
