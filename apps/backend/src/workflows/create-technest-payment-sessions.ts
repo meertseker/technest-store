@@ -1,6 +1,7 @@
 import { createWorkflow, transform, WorkflowResponse } from "@medusajs/framework/workflows-sdk"
 import { createPaymentSessionsWorkflow } from "@medusajs/medusa/core-flows"
 import { KLARNA_MIN_CONTEXT_KEY } from "../modules/stripe/service"
+import { assertPaymentCollectionBasketRulesStep } from "./steps/basket-rules"
 import { getKlarnaMinBasketStep } from "./steps/get-klarna-min-basket"
 
 export type CreateTechnestPaymentSessionsInput = {
@@ -10,7 +11,8 @@ export type CreateTechnestPaymentSessionsInput = {
 }
 
 /**
- * Medusa's createPaymentSessionsWorkflow plus the Klarna minimum from the
+ * Medusa's createPaymentSessionsWorkflow, after the basket rules have passed,
+ * plus the Klarna minimum from the
  * settings module, passed in the payment session `context` (server-side
  * only). The Stripe provider reads it to include or exclude Klarna and to set
  * `klarna_available` on the session data (docs/contracts/payments.md).
@@ -20,6 +22,8 @@ export type CreateTechnestPaymentSessionsInput = {
 export const createTechnestPaymentSessionsWorkflow = createWorkflow(
   "create-technest-payment-sessions",
   function (input: CreateTechnestPaymentSessionsInput) {
+    // Before any hold is placed: completion checks the rules again, but by then the card is authorised.
+    assertPaymentCollectionBasketRulesStep({ payment_collection_id: input.payment_collection_id })
     const klarnaMin = getKlarnaMinBasketStep()
 
     const coreInput = transform({ input, klarnaMin }, ({ input, klarnaMin }) => ({

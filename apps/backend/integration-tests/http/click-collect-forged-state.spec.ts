@@ -183,7 +183,12 @@ medusaIntegrationTestRunner({
 
       const res = await api.post(`/store/carts/${cartId}/complete`, {}, store).catch((e: any) => e.response)
 
-      expect({ status: res.status, type: res.data?.type ?? null }).toEqual({ status: 400, type: "invalid_data" })
+      // Refused, and the hold the shopper's card already carries is released (completion-releases-hold.spec.ts).
+      expect({ status: res.status, type: res.data?.type, error: res.data?.error }).toEqual({
+        status: 200,
+        type: "cart",
+        error: expect.objectContaining({ type: "invalid_data", payment_released: true }),
+      })
       const { data: links } = await container
         .resolve(ContainerRegistrationKeys.QUERY)
         .graph({ entity: "order_cart", fields: ["order_id"], filters: { cart_id: cartId } })

@@ -246,6 +246,8 @@ export function returnErrorMessage(code: string | null | undefined): string | nu
       return "Your payment wasn't completed. You haven't been charged. Try again, or use another card or payment method."
     case "order_failed":
       return "Your payment was authorised but we couldn't place your order. Please press Place order again, or call the shop."
+    case "hold_released":
+      return HOLD_RELEASED
     case "payment_failed":
       return "We couldn't confirm your payment. You haven't been charged. Please try again."
     default:
@@ -253,6 +255,9 @@ export function returnErrorMessage(code: string | null | undefined): string | nu
   }
 }
 
+/** The backend refused the basket after the card was authorised and released the hold itself. */
+export const HOLD_RELEASED =
+  "We couldn't place your order: something in your basket is no longer available or can't be ordered this way. You haven't been charged and the hold on your card has been released. Check your basket and try again."
 export const ORDER_FAILED =
   "Your payment was authorised but we couldn't place your order. Please try again. If it keeps happening, call the shop. We only take money for orders we place."
 export const SESSION_FAILED =

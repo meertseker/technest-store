@@ -56,4 +56,10 @@ describe("GET /api/payment-return (Stripe redirect back)", () => {
     const res = await GET(url({ ...good, redirect_status: "succeeded" }))
     expect(res.headers.get("location")).toBe("/checkout?step=payment&payment_error=order_failed")
   })
+
+  it("says the hold was released when the backend released it", async () => {
+    placeOrder.mockRejectedValue(Object.assign(new Error("Out of stock."), { payment_released: true }))
+    const res = await GET(url({ ...good, redirect_status: "succeeded" }))
+    expect(res.headers.get("location")).toBe("/checkout?step=payment&payment_error=hold_released")
+  })
 })

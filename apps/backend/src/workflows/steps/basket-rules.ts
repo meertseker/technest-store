@@ -120,3 +120,23 @@ export const getBasketRulesStep = createStep(
     return new StepResponse(await getBasketRules(container, input.cart_id))
   }
 )
+
+/**
+ * The basket rules for the cart behind a payment collection, checked before a
+ * payment session (and with it a card hold) is created. A collection without
+ * a cart passes: there is no basket to judge.
+ */
+export const assertPaymentCollectionBasketRulesStep = createStep(
+  "assert-payment-collection-basket-rules",
+  async ({ payment_collection_id }: { payment_collection_id: string }, { container }) => {
+    const query = container.resolve(ContainerRegistrationKeys.QUERY)
+    const { data } = await query.graph({
+      entity: "cart_payment_collection",
+      fields: ["cart_id"],
+      filters: { payment_collection_id },
+    })
+    const cartId = (data[0] as { cart_id?: string } | undefined)?.cart_id
+    if (cartId) await assertBasketRules(container, cartId)
+    return new StepResponse(undefined)
+  }
+)

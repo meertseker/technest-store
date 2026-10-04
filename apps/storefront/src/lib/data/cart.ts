@@ -376,6 +376,15 @@ export async function placeOrder(cartId?: string) {
     redirect(`/order/${cartRes?.order.id}/confirmed`)
   }
 
+  // The backend refused the basket (sold out, a basket rule) and released the
+  // card hold: callers tell the shopper so instead of "try again".
+  const refusal = (cartRes as { error?: { message?: string; payment_released?: boolean } }).error
+  if (refusal?.payment_released) {
+    throw Object.assign(new Error(refusal.message ?? "The order could not be placed."), {
+      payment_released: true,
+    })
+  }
+
   return cartRes.cart
 }
 

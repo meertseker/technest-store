@@ -10,6 +10,7 @@ import {
   klarnaPaymentNote,
   providerForMode,
   resolvePaymentMode,
+  HOLD_RELEASED,
   returnErrorMessage,
   sessionDecision,
   toPence,
@@ -261,6 +262,8 @@ describe("returnErrorMessage", () => {
     expect(returnErrorMessage("declined")).toContain("You haven't been charged")
     expect(returnErrorMessage("order_failed")).toContain("couldn't place your order")
     expect(returnErrorMessage("payment_failed")).toContain("couldn't confirm your payment")
+    expect(returnErrorMessage("hold_released")).toBe(HOLD_RELEASED)
+    expect(HOLD_RELEASED).toContain("hold on your card has been released")
     expect(returnErrorMessage("<script>")).toBeNull()
     expect(returnErrorMessage(null)).toBeNull()
   })

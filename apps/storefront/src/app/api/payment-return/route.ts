@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   // image the request's own origin is the container's address, not the public host.
   // Errors go back to the payment step, which shows them in its error summary
   // (codes: modules/checkout/payment/helpers.ts returnErrorMessage).
-  const backToPayment = (code: "payment_failed" | "declined" | "order_failed") =>
+  const backToPayment = (code: "payment_failed" | "declined" | "order_failed" | "hold_released") =>
     seeOther(`/checkout?step=payment&payment_error=${code}`)
   const rejected = () => backToPayment("payment_failed")
 
@@ -64,7 +64,9 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     unstable_rethrow(error)
 
-    return backToPayment("order_failed")
+    return backToPayment(
+      (error as { payment_released?: boolean } | null)?.payment_released ? "hold_released" : "order_failed"
+    )
   }
 
   // Only reached when the cart did not convert into an order.
