@@ -108,10 +108,12 @@ export function inSafetyMarkedCategory(categories: CategoryRow[] | null | undefi
 }
 
 /**
- * Chargers and power banks by their own words. "Charging" alone doesn't
- * count: a case that supports wireless charging isn't a power product.
+ * Chargers and power products by their own words, or a watt rating ("65W").
+ * "Charging" alone doesn't count: a case that supports wireless charging
+ * isn't a power product, and neither is an audio adapter.
  */
-const POWER_PRODUCT_PATTERN = /\b(chargers?|power ?banks?)\b/i
+const POWER_PRODUCT_PATTERN =
+  /\b(chargers?|power ?banks?|charging (pad|dock|stand|station|brick)s?|(wall|mains|power|travel) ?(plug|adapter|adaptor)s?|\d{1,3} ?w)\b/i
 
 /**
  * True for a charger or power product, which needs a UKCA or CE marking before

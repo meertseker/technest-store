@@ -94,6 +94,7 @@ async function loadExistingVariants(
       "product.categories.id",
       "product.tags.value",
       "product.product_attributes.safety_marking",
+      "product.product_attributes.wattage",
       "prices.id",
       "prices.amount",
       "prices.currency_code",
@@ -138,6 +139,7 @@ async function loadExistingVariants(
         .filter((l) => l.product_id === v.product.id)
         .map((l) => ({ device_id: l.device_id, note: l.note ?? null })),
       safety_marking: (v.product.product_attributes?.safety_marking ?? "none") as SafetyMarking,
+      wattage: v.product.product_attributes?.wattage ?? null,
       tags: (v.product.tags ?? []).map((t: any) => t?.value).filter(Boolean),
       prices: (v.prices ?? [])
         .filter((p: any) => p && !p.price_list_id)

@@ -27,6 +27,7 @@ const existingCable: ExistingVariant = {
   category_ids: ["pcat_chargers"],
   devices: [{ device_id: "dev_16", note: "Slim case only" }],
   safety_marking: "UKCA",
+  wattage: null,
   tags: [],
   prices: [{ id: "price_1", currency_code: "gbp", amount: 3.99, rules_count: 0 }],
 }
@@ -58,6 +59,22 @@ describe("slugify", () => {
 })
 
 describe("buildImportPlan", () => {
+  // The publish guard reads the wattage saved on the product; a row that leaves the cell blank keeps it.
+  it("counts the wattage a product already has when the row leaves it blank", () => {
+    const mount: ExistingVariant = {
+      ...existingCable,
+      product_title: "Wireless Car Mount",
+      product_handle: "wireless-car-mount",
+      category_ids: ["pcat_cases"],
+      safety_marking: "none",
+      wattage: 15,
+    }
+    const { rows } = plan(["TN-MOUNT,Wireless Car Mount,,,,,12,,"], ctx({ variantsBySku: new Map([["TN-MOUNT", mount]]) }))
+
+    expect(rows[0].status).toBe("draft")
+    expect(rows[0].warnings).toEqual([`${DRAFT_SAFETY_WARNING} It was live before and is now hidden.`])
+  })
+
   it("plans a new product with a handle from its title, published by default", () => {
     const { rows, summary } = plan(["TN-NEW,Clear Case,,cases,5.99,,10,iphone-16,"])
     expect(rows[0]).toMatchObject({

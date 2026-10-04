@@ -27,6 +27,11 @@ describe("publishBlocker", () => {
     ["one word: Powerbank", { title: "Slim Powerbank 5000" }],
     ["the handle says charger", { title: "GaN 65", handle: "gan-65-laptop-charger" }],
     ["a tag says power bank", { title: "Slim 5000", tags: [{ value: "power bank" }] }],
+    ["a charging pad", { title: "Wireless Charging Pad" }],
+    ["a charging dock", { title: "3-in-1 Charging Dock" }],
+    ["a wall plug", { title: "USB-C Wall Plug" }],
+    ["a mains adaptor", { title: "UK Mains Adaptor" }],
+    ["watts in the title", { title: "GaN 65W Dual Port" }],
     ["a wattage is set", { title: "Travel Plug", product_attributes: { safety_marking: "none", wattage: 20 } }],
   ])("blocks an unmarked power product outside the charger categories: %s", (_label, product) => {
     expect(publishBlocker({ id: "p", status: "published", ...product })).toContain(
@@ -45,11 +50,12 @@ describe("publishBlocker", () => {
     ).toBeNull()
   })
 
-  it("doesn't read a charger into words that only mention charging", () => {
-    expect(
-      publishBlocker({ id: "p", title: "Clear Case with Wireless Charging Support", status: "published" })
-    ).toBeNull()
-  })
+  it.each([["Clear Case with Wireless Charging Support"], ["USB-C to 3.5mm Audio Adapter"], ["Screen Protector 2 Pack W/ Frame"]])(
+    "doesn't read a power product into %j",
+    (title) => {
+      expect(publishBlocker({ id: "p", title, status: "published" })).toBeNull()
+    }
+  )
 
   it("blocks when the attributes row is missing", () => {
     expect(

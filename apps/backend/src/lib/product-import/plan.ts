@@ -48,6 +48,8 @@ export type ExistingVariant = {
   category_ids: string[]
   devices: { device_id: string; note: string | null }[]
   safety_marking: SafetyMarking
+  /** The wattage saved on the product (the publish guard reads it for power products). */
+  wattage: number | null
   /** Product tag values (the publish guard reads them for vapes). */
   tags: string[]
   prices: ExistingPrice[]
@@ -291,7 +293,7 @@ export function buildImportPlan(read: ReadRowsResult, ctx: PlanContext): ImportP
         tags,
         product_attributes: {
           safety_marking: input.attributes.safety_marking ?? existing?.safety_marking ?? "none",
-          wattage: input.attributes.wattage ?? null,
+          wattage: input.attributes.wattage ?? existing?.wattage ?? null,
         },
       }
       if (publishBlocker(check)) {
