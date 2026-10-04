@@ -16,5 +16,5 @@ export function publicFileUrl(
 ): string {
   if (!env.S3_BUCKET) return file.url
   const encodedKey = file.id.split("/").map(encodeURIComponent).join("/")
-  return `${env.S3_FILE_URL}/${encodedKey}`
+  return `${(env.S3_FILE_URL ?? "").replace(/\/+$/, "")}/${encodedKey}`
 }

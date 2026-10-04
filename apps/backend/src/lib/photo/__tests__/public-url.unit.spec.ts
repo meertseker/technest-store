@@ -20,6 +20,12 @@ describe("publicFileUrl", () => {
     )
   })
 
+  it("doesn't double the slash when S3_FILE_URL ends with one", () => {
+    expect(
+      publicFileUrl({ id: "case-01JABC.webp", url: PRESIGNED }, { ...r2, S3_FILE_URL: "https://media.technest.co.uk/" })
+    ).toBe("https://media.technest.co.uk/case-01JABC.webp")
+  })
+
   it("with the local provider keeps the URL as it is (already public)", () => {
     const local = "http://localhost:9000/static/case-01JABC.webp"
 
