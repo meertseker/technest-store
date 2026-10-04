@@ -1,5 +1,6 @@
 import path from "path"
 import { loadEnv, defineConfig, MedusaError } from "@medusajs/framework/utils"
+import { missingProductionEnv } from "./src/lib/production-env"
 
 loadEnv(process.env.NODE_ENV || "development", process.cwd())
 
@@ -76,13 +77,11 @@ const fileModule = {
 // /hooks/payment/stripe_stripe. Authorise only (capture: false): delivery
 // orders are captured after order.placed, Click & Collect on "Collected".
 // Without STRIPE_API_KEY (dev/test) the module is left out so the app boots;
-// production refuses to start without the key and the webhook secret.
-// Without the webhook secret every Stripe webhook fails verification and
-// 3DS/Klarna orders stay pending after the shopper has paid.
-for (const name of ["STRIPE_API_KEY", "STRIPE_WEBHOOK_SECRET"]) {
-  if (isProduction && !process.env[name]) {
-    throw new MedusaError(MedusaError.Types.INVALID_DATA, `${name} is required in production`)
-  }
+// production refuses to start without the settings in lib/production-env.ts
+// (Stripe key, webhook secret, Redis).
+const missing = missingProductionEnv(process.env)
+if (missing.length) {
+  throw new MedusaError(MedusaError.Types.INVALID_DATA, `${missing.join(", ")} required in production`)
 }
 const paymentProviders = [
   ...(process.env.STRIPE_API_KEY

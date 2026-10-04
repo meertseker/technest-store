@@ -40,6 +40,9 @@ export type KlarnaSessionData = {
   klarna_min_basket_pence: number
 }
 
+/** Per-try timeout of a Stripe API call; well inside the 120 s cart lock even with the retry. */
+const STRIPE_TIMEOUT_MS = 20_000
+
 const isPence = (value: unknown): value is number =>
   typeof value === "number" && Number.isInteger(value) && value >= 0
 
@@ -60,6 +63,22 @@ const EXCLUDED = Symbol("technest.excluded_payment_method_types")
  */
 class TechNestStripeService extends StripeProviderService {
   static identifier = "stripe"
+
+  /**
+   * The stock provider builds its Stripe client with the SDK defaults: 80 s
+   * per try. Cart completion holds the cart's lock for 120 s, so one slow
+   * call plus its retry could outlive the lock and let a second completion
+   * start. 20 s per try, one retry. `stripe` is not our dependency, so the
+   * provider's own client is adjusted through the SDK's field setter (not in
+   * its typings); the unit test reads the values back, so an SDK change
+   * fails loudly.
+   */
+  constructor(...args: ConstructorParameters<typeof StripeProviderService>) {
+    super(...args)
+    const client = this.stripe_ as unknown as { _setApiField(key: string, value: number): void }
+    client._setApiField("timeout", STRIPE_TIMEOUT_MS)
+    client._setApiField("maxNetworkRetries", 1)
+  }
 
   // StripeBase.getStatus is TS-private but a normal method at runtime; the unit
   // tests exercise it, so an upstream rename fails loudly.
@@ -128,16 +147,36 @@ class TechNestStripeService extends StripeProviderService {
    * `data.id` can survive if intent creation failed. Only authorise an intent
    * that this provider created for this very session (metadata.session_id is
    * set server-side; the payment module passes the session id as
-   * idempotency_key). The intent's amount is then this session's amount.
+   * idempotency_key).
+   *
+   * Medusa books the session's amount while Stripe captures the intent's, so
+   * the two are compared as well: `input.data` is the intent as this provider
+   * last created or updated it for the session's amount. An intent with
+   * another amount or currency, or one that can't be captured in full, is
+   * refused rather than booked at a figure Stripe won't pay.
    */
   async authorizePayment(input: AuthorizePaymentInput): Promise<AuthorizePaymentOutput> {
     const result = await super.authorizePayment(input)
-    const intent = result.data as { metadata?: Record<string, unknown> } | undefined
+    const intent = result.data as
+      | { metadata?: Record<string, unknown>; amount?: unknown; amount_capturable?: unknown; currency?: unknown }
+      | undefined
     const sessionId = input.context?.idempotency_key
     if (!sessionId || intent?.metadata?.session_id !== sessionId) {
       throw new MedusaError(
         MedusaError.Types.NOT_ALLOWED,
         "Stripe payment does not belong to this payment session"
+      )
+    }
+    const expected = input.data as { amount?: unknown; currency?: unknown } | undefined
+    const sameCurrency =
+      String(intent.currency ?? "").toLowerCase() === String(expected?.currency ?? "").toLowerCase()
+    const capturable = intent.amount_capturable
+    const fullyCapturable =
+      result.status !== "authorized" || capturable === undefined || capturable === null || capturable === intent.amount
+    if (intent.amount !== expected?.amount || !sameCurrency || !fullyCapturable) {
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        "Stripe payment amount does not match this payment session"
       )
     }
     return result

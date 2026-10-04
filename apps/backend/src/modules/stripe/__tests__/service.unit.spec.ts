@@ -234,7 +234,7 @@ describe("TechNestStripeService", () => {
       const { service } = makeService()
 
       const result = await service.authorizePayment({
-        data: { id: "pi_123" },
+        data: { id: "pi_123", amount: 5000, currency: "gbp" },
         context: { idempotency_key: "payses_1" },
       } as any)
 
@@ -258,6 +258,72 @@ describe("TechNestStripeService", () => {
       await expect(
         service.authorizePayment({ data: { id: "pi_123" }, context: {} } as any)
       ).rejects.toThrow("does not belong to this payment session")
+    })
+  })
+
+  // Medusa books the session's amount; Stripe captures the intent's. They must be the same figure.
+  describe("authorizePayment (amount check)", () => {
+    const authorise = (service: any, data: Record<string, unknown>) =>
+      service.authorizePayment({ data: { id: "pi_123", ...data }, context: { idempotency_key: "payses_1" } })
+
+    it("refuses an intent whose amount differs from the session's", async () => {
+      const { service } = makeService()
+
+      await expect(authorise(service, { amount: 4999, currency: "gbp" })).rejects.toThrow(
+        "amount does not match"
+      )
+    })
+
+    it("refuses an intent in another currency", async () => {
+      const { service } = makeService()
+
+      await expect(authorise(service, { amount: 5000, currency: "eur" })).rejects.toThrow("amount does not match")
+    })
+
+    it("refuses an authorised intent that can't be captured in full", async () => {
+      const { service, retrieve } = makeService()
+      retrieve.mockResolvedValueOnce({
+        id: "pi_123",
+        object: "payment_intent",
+        status: "requires_capture",
+        amount: 5000,
+        amount_capturable: 3000,
+        currency: "gbp",
+        metadata: { session_id: "payses_1" },
+      } as any)
+
+      await expect(authorise(service, { amount: 5000, currency: "gbp" })).rejects.toThrow("amount does not match")
+    })
+
+    it("accepts a matching intent, with or without amount_capturable in the answer", async () => {
+      const { service, retrieve } = makeService()
+      expect((await authorise(service, { amount: 5000, currency: "GBP" })).status).toBe("authorized")
+
+      retrieve.mockResolvedValueOnce({
+        id: "pi_123",
+        object: "payment_intent",
+        status: "requires_capture",
+        amount: 5000,
+        amount_capturable: 5000,
+        currency: "gbp",
+        metadata: { session_id: "payses_1" },
+      } as any)
+      expect((await authorise(service, { amount: 5000, currency: "gbp" })).status).toBe("authorized")
+    })
+  })
+
+  describe("Stripe client", () => {
+    // Cart completion holds the cart's lock for 120 s; Stripe's default is 80 s per try plus a retry.
+    it("gives up on a slow Stripe call well inside the cart lock", () => {
+      const service = new TechNestStripeService({ logger: console } as any, {
+        apiKey: "sk_test_unit",
+        webhookSecret: "whsec_unit",
+        capture: false,
+      } as any)
+      const client = (service as any).stripe_
+
+      expect(client.getApiField("timeout")).toBe(20_000)
+      expect(client.getMaxNetworkRetries()).toBe(1)
     })
   })
 })
