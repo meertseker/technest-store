@@ -2,6 +2,7 @@
 
 import { sdk } from "@lib/config"
 import medusaError from "@lib/util/medusa-error"
+import { addressErrorMessage } from "@lib/util/address-error"
 import { HttpTypes } from "@medusajs/types"
 import { revalidateTag } from "next/cache"
 import { redirect } from "next/navigation"
@@ -336,7 +337,7 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
       }
     await updateCart(data)
   } catch (e) {
-    return errorMessage(e)
+    return addressErrorMessage(e)
   }
 
   redirect("/checkout?step=delivery")

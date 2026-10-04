@@ -5,6 +5,8 @@ type MedusaError = {
     headers: unknown
   }
   request?: unknown
+  /** Set by the Medusa JS SDK's FetchError, which has no `response`. */
+  status?: number
   message?: string
   config?: { url: string; baseURL: string }
 }
@@ -28,6 +30,9 @@ export default function medusaError(error: unknown): never {
   } else if (err.request) {
     throw new Error("No response received: " + String(err.request))
   } else {
-    throw new Error("Error setting up the request: " + err.message)
+    // Keep the HTTP status so callers can tell refusals apart.
+    throw Object.assign(new Error("Error setting up the request: " + err.message), {
+      status: err.status,
+    })
   }
 }
