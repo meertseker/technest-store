@@ -1,5 +1,12 @@
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
-import { createStep, createWorkflow, StepResponse, WorkflowResponse } from "@medusajs/framework/workflows-sdk"
+import {
+  createStep,
+  createWorkflow,
+  StepResponse,
+  transform,
+  WorkflowResponse,
+} from "@medusajs/framework/workflows-sdk"
+import { acquireLockStep, releaseLockStep } from "@medusajs/medusa/core-flows"
 
 export type ReleaseCartPaymentHoldInput = { cart_id: string }
 
@@ -56,9 +63,19 @@ export const releaseCartPaymentHoldStep = createStep(
   }
 )
 
+/**
+ * Runs under the cart's own lock (the key completeCartWorkflow and the webhook
+ * use), so a completion can't create an order between the "no order" check
+ * and the release.
+ */
 export const releaseCartPaymentHoldWorkflow = createWorkflow(
   "release-cart-payment-hold",
   function (input: ReleaseCartPaymentHoldInput) {
-    return new WorkflowResponse(releaseCartPaymentHoldStep(input))
+    const lock = transform({ input }, ({ input }) => ({ key: input.cart_id, timeout: 5, ttl: 30 }))
+    acquireLockStep(lock)
+    const released = releaseCartPaymentHoldStep(input)
+    const unlock = transform({ input }, ({ input }) => ({ key: input.cart_id }))
+    releaseLockStep(unlock)
+    return new WorkflowResponse(released)
   }
 )

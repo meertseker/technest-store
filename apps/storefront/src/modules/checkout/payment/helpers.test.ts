@@ -11,6 +11,8 @@ import {
   providerForMode,
   resolvePaymentMode,
   HOLD_RELEASED,
+  SESSION_FAILED,
+  sessionErrorMessage,
   returnErrorMessage,
   sessionDecision,
   toPence,
@@ -266,5 +268,22 @@ describe("returnErrorMessage", () => {
     expect(HOLD_RELEASED).toContain("hold on your card has been released")
     expect(returnErrorMessage("<script>")).toBeNull()
     expect(returnErrorMessage(null)).toBeNull()
+  })
+})
+
+describe("sessionErrorMessage", () => {
+  // What lib/util/medusa-error throws for a refused request: the backend's message with a prefix, and the status.
+  const refused = (status: number, message: string) =>
+    Object.assign(new Error("Error setting up the request: " + message), { status })
+
+  it("shows the backend's reason when the basket itself is refused (400)", () => {
+    const reason = "£1 add-ons can't be delivered on their own. Add another item to your basket, or choose Click & Collect (free)."
+    expect(sessionErrorMessage(refused(400, reason))).toBe(reason)
+  })
+
+  it("keeps the connection message for anything else", () => {
+    expect(sessionErrorMessage(refused(500, "An unknown error occurred."))).toBe(SESSION_FAILED)
+    expect(sessionErrorMessage(new Error("fetch failed"))).toBe(SESSION_FAILED)
+    expect(sessionErrorMessage(refused(400, ""))).toBe(SESSION_FAILED)
   })
 })

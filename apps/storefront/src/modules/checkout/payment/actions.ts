@@ -3,7 +3,7 @@
 import { CHECKOUT_CART_FIELDS } from "@lib/data/basket"
 import { initiatePaymentSession, placeOrder, retrieveCart } from "@lib/data/cart"
 import { unstable_rethrow } from "next/navigation"
-import { HOLD_RELEASED, ORDER_FAILED, SESSION_FAILED, providerForMode, sessionDecision } from "./helpers"
+import { HOLD_RELEASED, ORDER_FAILED, SESSION_FAILED, sessionErrorMessage, providerForMode, sessionDecision } from "./helpers"
 import { getPaymentMode } from "./mode"
 
 /**
@@ -41,8 +41,8 @@ export async function preparePaymentSession(): Promise<PaymentActionResult> {
   try {
     await ensureSession(cart, provider)
     return { ok: true }
-  } catch {
-    return { ok: false, message: SESSION_FAILED }
+  } catch (e) {
+    return { ok: false, message: sessionErrorMessage(e) }
   }
 }
 

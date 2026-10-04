@@ -262,3 +262,14 @@ export const ORDER_FAILED =
   "Your payment was authorised but we couldn't place your order. Please try again. If it keeps happening, call the shop. We only take money for orders we place."
 export const SESSION_FAILED =
   "We couldn't load the secure payment form. Check your connection and try again."
+
+/**
+ * Why the payment form couldn't be prepared. A 400 is the backend refusing the
+ * basket itself (e.g. add-ons only with delivery): its reason is written for
+ * shoppers, and "check your connection" would send them round in circles.
+ */
+export function sessionErrorMessage(e: unknown): string {
+  const { status, message } = (e ?? {}) as { status?: unknown; message?: unknown }
+  if (status !== 400 || typeof message !== "string") return SESSION_FAILED
+  return message.replace(/^Error setting up the request: /, "").trim() || SESSION_FAILED
+}

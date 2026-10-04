@@ -3,6 +3,7 @@ import { ContainerRegistrationKeys, MedusaError, Modules } from "@medusajs/frame
 import { completeCartWorkflowId } from "@medusajs/medusa/core-flows"
 import { refetchCart } from "@medusajs/medusa/api/store/carts/helpers"
 import { defaultStoreCartFields } from "@medusajs/medusa/api/store/carts/query-config"
+import { completionRefusedBeforePayment } from "../../../../../lib/payment-hold"
 import { releaseCartPaymentHoldWorkflow } from "../../../../../workflows/release-cart-payment-hold"
 
 /** Completion errors the shopper can act on; Medusa answers these with 200 and the cart. */
@@ -10,12 +11,6 @@ const PAYMENT_ERRORS: string[] = [
   MedusaError.Types.PAYMENT_AUTHORIZATION_ERROR,
   MedusaError.Types.PAYMENT_REQUIRES_MORE_ERROR,
 ]
-/**
- * Refusals that no retry of the same basket will pass (out of stock, a basket
- * rule). Anything else (a conflict, a database error) may still complete on a
- * retry or through the webhook, so the hold stays.
- */
-const REFUSALS: string[] = [MedusaError.Types.NOT_ALLOWED, MedusaError.Types.INVALID_DATA]
 
 /**
  * POST /store/carts/:id/complete
@@ -42,7 +37,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   if (error) {
     const type = error.type ?? ""
     let released = false
-    if (REFUSALS.includes(type)) {
+    // Out of stock or a basket rule, refused before the payment step. Anything else (the payment
+    // step itself, a conflict, a database error) may still complete later, so the hold stays.
+    if (completionRefusedBeforePayment(errors?.[0])) {
       try {
         const { result: hold } = await releaseCartPaymentHoldWorkflow(req.scope).run({
           input: { cart_id: cartId },
