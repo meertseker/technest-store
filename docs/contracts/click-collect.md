@@ -18,7 +18,8 @@ Errors use Medusa's standard shape: `{ "type": "not_found" | "not_allowed" | "in
   Duplicate `order.placed` deliveries never capture twice (per-order lock + "already captured" check).
 - **Click & Collect orders** (shipping option in the `pickup` fulfillment set) are captured when
   staff press **Collected**. They are never captured at `order.placed`.
-- Uncollected Click & Collect orders: a reminder 3 days after "ready", and after 7 days the order
+- Uncollected Click & Collect orders: a reminder 3 days after "ready", and at the **collection
+  deadline** the order
   is cancelled and the card authorisation is released (Medusa's `cancelOrderWorkflow`, which
   cancels uncaptured payments; `order.canceled` is emitted by core). Core only logs a failed
   payment cancel, so the backend retries it once and logs the order/payment ids if it still fails.
@@ -135,7 +136,7 @@ Response `200`: `{ "order": ClickCollectOrder }`.
 | `technest.order.ready_for_collection` | `{ order_id }` | `mark-ready-for-collection` workflow | first time an order is marked ready |
 | `technest.order.collected` | `{ order_id }` | `mark-collected` workflow | order collected |
 | `technest.order.collection_reminder` | `{ order_id }` | hourly job `click-collect-lifecycle` | once, 3 days after ready |
-| `order.canceled` (core) | `{ id }` | `cancelOrderWorkflow`, run by the hourly job | 7 days after ready, uncollected |
+| `order.canceled` (core) | `{ id }` | `cancelOrderWorkflow`, run by the hourly job | at the collection deadline, uncollected (ready or never marked ready) |
 
 ## Order metadata (written by the backend only; read-only for everyone else)
 
@@ -145,10 +146,24 @@ Response `200`: `{ "order": ClickCollectOrder }`.
 | `ready_for_collection_at` | ISO 8601 |
 | `collected_at` | ISO 8601 |
 | `collection_reminder_sent_at` | ISO 8601 |
-| `collection_expired_at` | ISO 8601, set when the day-7 job cancels the order |
+| `collection_expired_at` | ISO 8601, set when the job cancels a ready order at its deadline (not set for an order never marked ready) |
 
 ## Refunds
 
 Refunds use Medusa's stock admin order page (`POST /admin/payments/:id/refund`), which calls the
 Stripe provider's `refundPayment` for captured payments, partial or full. Core emits
 `payment.refunded` `{ id }` (payment id). Nothing custom is needed on the board.
+
+## Collection deadline
+
+One value, `collectionDeadline` in `apps/backend/src/lib/click-collect/deadline.ts`, decides when an
+uncollected order is cancelled and which date the emails promise (`hold_until`). It is the earlier of:
+
+- 7 days after the order was marked ready, end of that London day;
+- the end of the last whole London day on which the card authorisation can still be captured
+  (the authorisation lasts 7 days from the order; a few hours are kept spare).
+
+It is always the end of a London day. Because the card is authorised when the order is placed, the
+second limit is the one that applies in practice: an order placed on a Monday is kept until the end
+of Sunday, whenever it was marked ready. An order never marked ready is cancelled at the same
+deadline, so its stock is released and no authorisation is left to lapse.

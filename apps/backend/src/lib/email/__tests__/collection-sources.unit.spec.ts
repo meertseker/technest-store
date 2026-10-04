@@ -1,14 +1,22 @@
+import { collectionDeadline } from "../../click-collect/deadline"
 import { holdUntil } from "../collection-sources"
 
 describe("holdUntil", () => {
-  it("is 7 days after the order was marked ready, in shop time", () => {
-    expect(holdUntil("2026-10-02T10:00:00.000Z")).toBe("Friday 9 October")
-    // 23:30 UTC is already the next day in London (BST).
-    expect(holdUntil("2026-10-02T23:30:00.000Z")).toBe("Saturday 10 October")
+  // The date in the email is the day the lifecycle job cancels at the end of.
+  it("is the collection deadline as a London date", () => {
+    const order = { created_at: "2026-10-02T09:00:00.000Z", ready_at: "2026-10-02T10:00:00.000Z" }
+
+    // Ordered Friday 2 October 10:00 London: the card authorisation lapses Friday 9th in the morning.
+    expect(holdUntil(order)).toBe("Thursday 8 October")
+    const deadline = collectionDeadline({
+      ordered_at: Date.parse(order.created_at),
+      ready_at: Date.parse(order.ready_at),
+    })
+    expect(new Date(deadline).toISOString()).toBe("2026-10-08T22:59:59.999Z")
   })
 
-  it("is null when the ready time is missing or invalid", () => {
-    expect(holdUntil(undefined)).toBeNull()
-    expect(holdUntil("not a date")).toBeNull()
+  it("is null without usable dates", () => {
+    expect(holdUntil({ created_at: undefined, ready_at: "2026-10-02T10:00:00.000Z" })).toBeNull()
+    expect(holdUntil({ created_at: "2026-10-02T09:00:00.000Z", ready_at: "not a date" })).toBeNull()
   })
 })

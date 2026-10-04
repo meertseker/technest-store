@@ -3,6 +3,7 @@ import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
 import { CaptureRetryMeta } from "../capture-retry/constants"
 import { isPickupOrder, toPence } from "../email/order-email-data"
+import { collectionDeadline } from "./deadline"
 
 /** Custom events (payloads are `{ order_id }`). See docs/contracts/click-collect.md. */
 export const ClickCollectEvents = {
@@ -48,7 +49,19 @@ export function withoutCollectState<T>(metadata: T): T {
 }
 
 export const REMINDER_AFTER_MS = 3 * 24 * 60 * 60 * 1000
-export const EXPIRE_AFTER_MS = 7 * 24 * 60 * 60 * 1000
+
+export * from "./deadline"
+
+/** The deadline of an order row (see collectionDeadline), or null when its dates can't be read. */
+export function collectionDeadlineOf(order: {
+  created_at: string | Date
+  metadata?: Record<string, unknown> | null
+}): number | null {
+  const orderedAt = new Date(order.created_at).getTime()
+  if (Number.isNaN(orderedAt)) return null
+  const readyAt = Date.parse(String(order.metadata?.[CollectMeta.READY_AT] ?? ""))
+  return collectionDeadline({ ordered_at: orderedAt, ready_at: Number.isNaN(readyAt) ? null : readyAt })
+}
 
 /** Lock key shared by every Click & Collect mutation of one order. */
 export const collectLockKey = (orderId: string) => `technest-click-collect:${orderId}`

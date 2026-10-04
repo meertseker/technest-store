@@ -3,7 +3,7 @@ import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
 import {
   collectStatusOf,
   CollectMeta,
-  EXPIRE_AFTER_MS,
+  collectionDeadlineOf,
   loadPickupOrder,
   paymentsOf,
   REMINDER_AFTER_MS,
@@ -38,7 +38,7 @@ export const prepareCollectionReminderStep = createStep(
       meta[CollectMeta.REMINDER_SENT_AT] ||
       age === null ||
       age < REMINDER_AFTER_MS ||
-      age >= EXPIRE_AFTER_MS
+      now > (collectionDeadlineOf(order) ?? Infinity)
     ) {
       return new StepResponse(NOT_DUE)
     }
@@ -50,8 +50,10 @@ export const prepareCollectionReminderStep = createStep(
 )
 
 /**
- * Day-7 expiry: due for a ready, uncollected, uncancelled order whose payment
- * is still only authorised. A captured payment is never auto-cancelled (that
+ * Expiry: due for an uncollected, uncancelled order (ready or never marked
+ * ready) once its collection deadline has passed and its payment is still
+ * only authorised. The deadline is tied to the card authorisation
+ * (lib/click-collect/deadline.ts): after it the payment can't be taken. A captured payment is never auto-cancelled (that
  * would refund the customer without a human deciding): it is logged instead.
  */
 export const prepareCollectionExpiryStep = createStep(
@@ -60,23 +62,26 @@ export const prepareCollectionExpiryStep = createStep(
     const now = Date.now()
     const order = await loadPickupOrder(container, order_id)
     const meta = order.metadata ?? {}
-    const age = readyAgeMs(meta, now)
-    if (
-      order.status === "canceled" ||
-      collectStatusOf(meta) !== "ready" ||
-      age === null ||
-      age < EXPIRE_AFTER_MS
-    ) {
+    const deadline = collectionDeadlineOf(order)
+    const status = collectStatusOf(meta)
+    if (order.status === "canceled" || status === "collected" || deadline === null || now <= deadline) {
       return new StepResponse(NOT_DUE)
     }
     if (paymentsOf(order).some((p) => p.captured_at)) {
       container
         .resolve(ContainerRegistrationKeys.LOGGER)
         .warn(
-          `Click & Collect: order ${order_id} is uncollected after 7 days but its payment ` +
+          `Click & Collect: order ${order_id} is past its collection deadline but its payment ` +
             `is already captured, so it was not cancelled automatically. Review it manually.`
         )
       return new StepResponse(NOT_DUE)
+    }
+    if (status !== "ready") {
+      // Never marked ready: the shopper wasn't late, so the cancellation email must not say so.
+      container
+        .resolve(ContainerRegistrationKeys.LOGGER)
+        .warn(`Click & Collect: order ${order_id} was never marked ready and is cancelled at its deadline.`)
+      return new StepResponse<PrepareUncollectedOutput>({ due: true, patch: {} })
     }
     return new StepResponse<PrepareUncollectedOutput>({
       due: true,

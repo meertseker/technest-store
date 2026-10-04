@@ -89,21 +89,26 @@ export async function listClickCollectOrders(
 }
 
 /**
- * Every order in the `ready` column (id + metadata only), for the lifecycle
- * job. The column stays small: orders leave it when collected or, at the
- * latest, when the day-7 job cancels them.
+ * Every Click & Collect order not collected yet, ready or not (id, metadata
+ * and order time only), for the lifecycle job. The list stays small: orders
+ * leave it when collected or, at the latest, when the job cancels them at
+ * their collection deadline.
  */
-export async function listReadyOrders(
+export async function listUncollectedOrders(
   container: MedusaContainer
-): Promise<{ id: string; metadata: Record<string, unknown> | null }[]> {
-  const filters = await pickupOrderFilters(container, "ready")
-  if (!filters) return []
+): Promise<{ id: string; created_at: string | Date; metadata: Record<string, unknown> | null }[]> {
+  const methodIds = await pickupShippingMethodIds(container)
+  if (!methodIds.length) return []
   const query = container.resolve(ContainerRegistrationKeys.QUERY)
   const { data } = await query.graph({
     entity: "order",
     fields: ["id", "metadata", "created_at"],
-    filters: filters as never,
+    filters: {
+      status: { $nin: ["canceled", "draft"] },
+      shipping_methods: { shipping_method_id: methodIds },
+      metadata: { [CollectMeta.COLLECTED_AT]: null },
+    } as never,
     pagination: { order: { created_at: "ASC" } },
   })
-  return data as unknown as { id: string; metadata: Record<string, unknown> | null }[]
+  return data as unknown as { id: string; created_at: string | Date; metadata: Record<string, unknown> | null }[]
 }

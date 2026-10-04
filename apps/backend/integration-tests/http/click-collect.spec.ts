@@ -85,6 +85,13 @@ medusaIntegrationTestRunner({
       })
     }
 
+    /** Moves the order (and with it the card authorisation) into the past. */
+    async function backdateOrder(orderId: string, daysAgo: number) {
+      await getContainer()
+        .resolve(ContainerRegistrationKeys.PG_CONNECTION)
+        .raw(`update "order" set created_at = ? where id = ?`, [new Date(Date.now() - daysAgo * DAY), orderId])
+    }
+
     describe("order.placed capture for Click & Collect", () => {
       it("leaves a pickup order authorised", async () => {
         const { order, payment_id } = await pickupOrder()
@@ -440,14 +447,14 @@ medusaIntegrationTestRunner({
         expect(recordedPaymentCalls().filter((c) => c.method === "cancelPayment")).toHaveLength(0)
       })
 
-      it("cancels after 7 days, releasing the authorisation once, without refunding", async () => {
+      it("cancels once the hold has run out, releasing the authorisation once, without refunding", async () => {
         const { order, payment_id } = await pickupOrder()
         const collected = await pickupOrder()
         await post(`/admin/click-collect/orders/${order.id}/ready`)
         await post(`/admin/click-collect/orders/${collected.order.id}/ready`)
         await post(`/admin/click-collect/orders/${collected.order.id}/collected`)
-        await backdateReady(order.id, 7.1)
-        await backdateReady(collected.order.id, 8)
+        await backdateReady(order.id, 8.1)
+        await backdateReady(collected.order.id, 9)
         resetPaymentRecorder()
 
         await clickCollectLifecycleJob(getContainer())
@@ -467,7 +474,7 @@ medusaIntegrationTestRunner({
         expect(col.orders).toHaveLength(0)
       })
 
-      it("respects the day-3 and day-7 boundaries across hourly runs", async () => {
+      it("respects the day-3 reminder and the end-of-day-7 hold across hourly runs", async () => {
         const container = getContainer()
         const { order, payment_id } = await pickupOrder()
         await post(`/admin/click-collect/orders/${order.id}/ready`)
@@ -491,7 +498,12 @@ medusaIntegrationTestRunner({
         await clickCollectLifecycleJob(container)
         expect((await orderOf(container, order.id)).status).not.toBe("canceled")
 
-        await backdateReady(order.id, 7.05)
+        // The seventh day is promised in the email: the order is kept until that London day ends.
+        await backdateReady(order.id, 6.99)
+        await clickCollectLifecycleJob(container)
+        expect((await orderOf(container, order.id)).status).not.toBe("canceled")
+
+        await backdateReady(order.id, 8.05)
         await clickCollectLifecycleJob(container)
         await clickCollectLifecycleJob(container)
         await settle()
@@ -511,7 +523,7 @@ medusaIntegrationTestRunner({
         await post(`/admin/click-collect/orders/${order.id}/ready`)
         // As left by a Collected press whose fulfilment step failed after the capture.
         await capturePaymentWorkflow(container).run({ input: { payment_id } })
-        await backdateReady(order.id, 8)
+        await backdateReady(order.id, 9)
         resetPaymentRecorder()
 
         await clickCollectLifecycleJob(container)
@@ -520,6 +532,48 @@ medusaIntegrationTestRunner({
         expect((await orderOf(container, order.id)).status).not.toBe("canceled")
         expect(recordedPaymentCalls().map((c) => c.method)).toEqual([])
         expect(events.for("order.canceled")).toHaveLength(0)
+      })
+    })
+
+    describe("click-collect-lifecycle job and the card authorisation", () => {
+      // The authorisation lasts 7 days from the order, however late the order was marked ready.
+      it("cancels a ready order before its card authorisation lapses, even inside 7 days of ready", async () => {
+        const container = getContainer()
+        const old = await pickupOrder()
+        const recent = await pickupOrder()
+        await post(`/admin/click-collect/orders/${old.order.id}/ready`)
+        await post(`/admin/click-collect/orders/${recent.order.id}/ready`)
+        await backdateReady(old.order.id, 2)
+        await backdateReady(recent.order.id, 2)
+        await backdateOrder(old.order.id, 6.9)
+        await backdateOrder(recent.order.id, 3)
+        resetPaymentRecorder()
+
+        await clickCollectLifecycleJob(container)
+        await settle()
+
+        expect((await orderOf(container, old.order.id)).status).toBe("canceled")
+        expect((await paymentOf(container, old.payment_id)).canceled_at).toBeTruthy()
+        expect((await orderOf(container, recent.order.id)).status).not.toBe("canceled")
+      })
+
+      it("cancels an order that was never marked ready at the same deadline, without calling it uncollected", async () => {
+        const container = getContainer()
+        const { order, payment_id } = await pickupOrder()
+        const fresh = await pickupOrder()
+        await backdateOrder(order.id, 6.9)
+        resetPaymentRecorder()
+
+        await clickCollectLifecycleJob(container)
+        await clickCollectLifecycleJob(container)
+        await settle()
+
+        const stored = await orderOf(container, order.id)
+        expect(stored.status).toBe("canceled")
+        expect(stored.metadata?.collection_expired_at).toBeUndefined()
+        expect((await paymentOf(container, payment_id)).canceled_at).toBeTruthy()
+        expect(recordedPaymentCalls().map((c) => c.method)).toEqual(["cancelPayment"])
+        expect((await orderOf(container, fresh.order.id)).status).not.toBe("canceled")
       })
     })
 
@@ -565,7 +619,7 @@ medusaIntegrationTestRunner({
         const container = getContainer()
         const { order, payment_id } = await pickupOrder()
         await post(`/admin/click-collect/orders/${order.id}/ready`)
-        await backdateReady(order.id, 7.5)
+        await backdateReady(order.id, 8.5)
         failNextPaymentCall("cancelPayment")
 
         const { result } = await expireUncollectedOrderWorkflow(container).run({
@@ -583,7 +637,7 @@ medusaIntegrationTestRunner({
         const container = getContainer()
         const { order, payment_id } = await pickupOrder()
         await post(`/admin/click-collect/orders/${order.id}/ready`)
-        await backdateReady(order.id, 7.5)
+        await backdateReady(order.id, 8.5)
         // Core refuses to cancel an order with an active fulfilment.
         const { data } = await container
           .resolve(ContainerRegistrationKeys.QUERY)

@@ -3,12 +3,11 @@ import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import { todaysHours, type CollectionData, type PaymentFailedData } from "@technest/emails"
 import { safeFirstName, shopNotifyEmail, storefrontUrl, toPence } from "./order-email-data"
 import type { EmailRecipient, ResolvedEmail } from "./sources"
+import { collectionDeadline } from "../click-collect/deadline"
 
 /** Order metadata written by the Click & Collect workflows (docs/contracts/click-collect.md). */
 export const COLLECTION_CODE_KEY = "collection_code"
 export const READY_AT_KEY = "ready_for_collection_at"
-/** Uncollected orders are held this long after "ready" before the auto-cancel. */
-export const HOLD_DAYS = 7
 
 type Row = Record<string, any>
 
@@ -18,6 +17,7 @@ const ORDER_FIELDS = [
   "email",
   "total",
   "metadata",
+  "created_at",
   "customer.first_name",
   "shipping_address.first_name",
   "items.title",
@@ -41,16 +41,22 @@ const ref = (o: Row) => ({
   order_url: `${storefrontUrl()}/order/${o.id}/confirmed`,
 })
 
-/** "Friday 9 October" in shop time, HOLD_DAYS after the order was marked ready. */
-export function holdUntil(readyAt: unknown): string | null {
-  const t = typeof readyAt === "string" ? Date.parse(readyAt) : NaN
-  if (!Number.isFinite(t)) return null
+/**
+ * "Friday 9 October" in shop time: the day an uncollected order is kept until.
+ * Built from the same deadline the lifecycle job cancels at, so the email
+ * never promises a day the card authorisation can't cover.
+ */
+export function holdUntil(order: { created_at: unknown; ready_at: unknown }): string | null {
+  const time = (v: unknown) => (v instanceof Date ? v.getTime() : typeof v === "string" ? Date.parse(v) : NaN)
+  const orderedAt = time(order.created_at)
+  const readyAt = time(order.ready_at)
+  if (!Number.isFinite(orderedAt) || !Number.isFinite(readyAt)) return null
   return new Intl.DateTimeFormat("en-GB", {
     weekday: "long",
     day: "numeric",
     month: "long",
     timeZone: "Europe/London",
-  }).format(new Date(t + HOLD_DAYS * 24 * 60 * 60 * 1000))
+  }).format(new Date(collectionDeadline({ ordered_at: orderedAt, ready_at: readyAt })))
 }
 
 /** Codes are shown big at the counter: keep them short and plain. */
@@ -77,7 +83,7 @@ export async function collection(
         quantity: Number(i.quantity),
       })),
     today_hours: todaysHours(),
-    hold_until: holdUntil(o.metadata?.[READY_AT_KEY]),
+    hold_until: holdUntil({ created_at: o.created_at, ready_at: o.metadata?.[READY_AT_KEY] }),
   }
   return { to: o.email, data: data as unknown as Record<string, unknown> }
 }
