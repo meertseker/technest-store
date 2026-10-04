@@ -1,15 +1,20 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
-import { ContainerRegistrationKeys, MedusaError, Modules } from "@medusajs/framework/utils"
-import { ClickCollectEvents, isLockBusyError } from "../lib/click-collect"
+import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { isLockBusyError } from "../lib/click-collect"
 import { captureDeliveryOrderWorkflow } from "../workflows/capture-delivery-order"
 
 /**
  * order.placed -> capture the payment of delivery orders (Stripe runs with
  * capture: false). Click & Collect orders are captured on collection.
- * A refused capture emits technest.payment.capture_failed { order_id } from the
- * capture step. Any other failure (except a duplicate event holding the
- * order's lock, or an unknown order) emits it here, so the shop is always told
- * when a delivery order was left uncaptured.
+ *
+ * A capture that fails here is not final: the capture-retry job
+ * (lib/capture-retry) tries again and emits technest.payment.capture_failed
+ * when it gives up, so the shopper isn't told about a blip that the next
+ * attempt fixes. Meanwhile the order can't be marked shipped.
+ *
+ * A held lock is thrown, not swallowed: it may belong to a worker that died
+ * mid-capture, so the event bus retries this subscriber and the job is the
+ * backstop.
  */
 export default async function orderPlacedCapture({
   event: { data },
@@ -17,25 +22,15 @@ export default async function orderPlacedCapture({
 }: SubscriberArgs<{ id: string }>) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   try {
-    await captureDeliveryOrderWorkflow(container).run({ input: { order_id: data.id } })
+    await captureDeliveryOrderWorkflow(container).run({
+      input: { order_id: data.id, notify_on_failure: false },
+    })
   } catch (e) {
+    if (isLockBusyError(e)) throw e
     // IDs only in logs: never card data or customer details.
-    if (isLockBusyError(e)) {
-      // A duplicate delivery of the event is capturing this order right now.
-      logger.info(`order.placed capture for order ${data.id} skipped: already in progress`)
-      return
-    }
-    logger.error(`order.placed capture failed for order ${data.id}: ${(e as Error).message}`)
-    const type = (e as { type?: string }).type
-    if (
-      type === MedusaError.Types.PAYMENT_AUTHORIZATION_ERROR || // already emitted by the step
-      type === MedusaError.Types.NOT_FOUND
-    ) {
-      return
-    }
-    await container
-      .resolve(Modules.EVENT_BUS)
-      .emit({ name: ClickCollectEvents.CAPTURE_FAILED, data: { order_id: data.id } })
+    logger.error(
+      `order.placed capture failed for order ${data.id}, the capture-retry job will try again: ${(e as Error).message}`
+    )
   }
 }
 

@@ -79,7 +79,8 @@ medusaIntegrationTestRunner({
         expect(events.for("technest.payment.capture_failed")).toHaveLength(0)
       })
 
-      it("emits technest.payment.capture_failed when the provider refuses the capture", async () => {
+      // The capture-retry job tries again and tells people when it gives up (capture-retry.spec.ts).
+      it("leaves a refused capture for the capture-retry job without telling the shopper yet", async () => {
         const { order, payment_id } = await deliveryOrder()
         failNextPaymentCall("capturePayment")
 
@@ -87,9 +88,7 @@ medusaIntegrationTestRunner({
 
         expect((await paymentOf(getContainer(), payment_id)).captured_at).toBeFalsy()
         await settle()
-        expect(events.for("technest.payment.capture_failed")).toEqual([
-          { name: "technest.payment.capture_failed", data: { order_id: order.id } },
-        ])
+        expect(events.for("technest.payment.capture_failed")).toEqual([])
       })
     })
 

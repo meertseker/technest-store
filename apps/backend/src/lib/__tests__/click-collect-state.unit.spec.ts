@@ -9,6 +9,9 @@ describe("withoutCollectState", () => {
         collected_at: "2026-01-01T00:00:00Z",
         collection_reminder_sent_at: "2026-01-01T00:00:00Z",
         collection_expired_at: "2026-01-01T00:00:00Z",
+        capture_retry_attempts: 6,
+        capture_retry_last_at: "2026-01-01T00:00:00Z",
+        capture_retry_gave_up_at: "2026-01-01T00:00:00Z",
         gift_note: "For Sam",
       })
     ).toEqual({ gift_note: "For Sam" })

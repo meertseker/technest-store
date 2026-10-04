@@ -1,6 +1,7 @@
 import { randomInt } from "crypto"
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
+import { CaptureRetryMeta } from "../capture-retry/constants"
 import { isPickupOrder, toPence } from "../email/order-email-data"
 
 /** Custom events (payloads are `{ order_id }`). See docs/contracts/click-collect.md. */
@@ -20,7 +21,11 @@ export const CollectMeta = {
   EXPIRED_AT: "collection_expired_at",
 } as const
 
-const COLLECT_STATE_KEYS: readonly string[] = Object.values(CollectMeta)
+// The capture-retry job keeps its state in order metadata too.
+const COLLECT_STATE_KEYS: readonly string[] = [
+  ...Object.values(CollectMeta),
+  ...Object.values(CaptureRetryMeta),
+]
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object" && !Array.isArray(v)

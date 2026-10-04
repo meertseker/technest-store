@@ -10,7 +10,11 @@ Errors use Medusa's standard shape: `{ "type": "not_found" | "not_allowed" | "in
 
 - Stripe (`pp_stripe_stripe`) runs with `capture: false`: checkout only authorises.
 - **Delivery orders** are captured by the backend right after `order.placed`. Staff do nothing.
-  If capture fails, the backend emits `technest.payment.capture_failed` `{ order_id }`.
+  If that capture fails or the event never arrives, the `capture-retry` job (every 10 minutes) tries again:
+  first when the order is 15 minutes old, then after 15 min, 30 min, 1 h, 2 h and 4 h. After the 6th failed
+  attempt it gives up and emits `technest.payment.capture_failed` `{ order_id }` once. Until the payment is
+  taken the order can't be marked shipped. The job's state is in order metadata
+  (`capture_retry_attempts`, `capture_retry_last_at`, `capture_retry_gave_up_at`).
   Duplicate `order.placed` deliveries never capture twice (per-order lock + "already captured" check).
 - **Click & Collect orders** (shipping option in the `pickup` fulfillment set) are captured when
   staff press **Collected**. They are never captured at `order.placed`.
@@ -127,7 +131,7 @@ Response `200`: `{ "order": ClickCollectOrder }`.
 
 | Event | Payload | Emitted by | When |
 |---|---|---|---|
-| `technest.payment.capture_failed` | `{ order_id }` | capture step (`capture-delivery-order` via the `order.placed` subscriber, and `mark-collected`) | a capture was refused or the delivery capture failed; once per failed attempt |
+| `technest.payment.capture_failed` | `{ order_id }` | the `capture-retry` job (delivery orders) and the capture step in `mark-collected` | delivery: once, when the job gives up after its last attempt; Click & Collect: each time a capture is refused at the counter |
 | `technest.order.ready_for_collection` | `{ order_id }` | `mark-ready-for-collection` workflow | first time an order is marked ready |
 | `technest.order.collected` | `{ order_id }` | `mark-collected` workflow | order collected |
 | `technest.order.collection_reminder` | `{ order_id }` | hourly job `click-collect-lifecycle` | once, 3 days after ready |

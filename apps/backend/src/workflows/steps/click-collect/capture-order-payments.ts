@@ -7,6 +7,8 @@ export type CaptureOrderPaymentsInput = {
   order_id: string
   payment_ids: string[]
   captured_by?: string
+  /** False when the caller retries later and tells people itself (delivery capture). Default true. */
+  notify_on_failure?: boolean
 }
 
 /**
@@ -14,7 +16,7 @@ export type CaptureOrderPaymentsInput = {
  * twice) with Medusa's capturePaymentWorkflow, which calls the provider,
  * records the order transaction and emits `payment.captured`.
  *
- * When the provider refuses a capture, emits
+ * When the provider refuses a capture, emits (unless `notify_on_failure` is false)
  * `technest.payment.capture_failed` `{ order_id }` straight away (not grouped
  * with the workflow's events, which are dropped on failure) and fails with a
  * PAYMENT_AUTHORIZATION_ERROR (HTTP 422).
@@ -40,10 +42,12 @@ export const captureOrderPaymentsStep = createStep(
         container
           .resolve(ContainerRegistrationKeys.LOGGER)
           .error(`Capture failed for order ${input.order_id} (payment ${id}): ${(e as Error).message}`)
-        await container.resolve(Modules.EVENT_BUS).emit({
-          name: ClickCollectEvents.CAPTURE_FAILED,
-          data: { order_id: input.order_id },
-        })
+        if (input.notify_on_failure !== false) {
+          await container.resolve(Modules.EVENT_BUS).emit({
+            name: ClickCollectEvents.CAPTURE_FAILED,
+            data: { order_id: input.order_id },
+          })
+        }
         throw new MedusaError(
           MedusaError.Types.PAYMENT_AUTHORIZATION_ERROR,
           `Payment could not be captured (${(e as Error).message}).` +

@@ -14,7 +14,12 @@ const redisModules =
     ? [
         {
           resolve: "@medusajs/medusa/event-bus-redis",
-          options: { redisUrl },
+          // The default is one attempt: a subscriber that throws (a held order
+          // lock, a mail server blip) would never run again for that event.
+          options: {
+            redisUrl,
+            jobOptions: { attempts: 4, backoff: { type: "exponential", delay: 5000 } },
+          },
         },
         {
           resolve: "@medusajs/medusa/workflow-engine-redis",
