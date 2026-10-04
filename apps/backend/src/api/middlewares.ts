@@ -8,6 +8,7 @@ import { adminTechnestSettingsMiddlewares } from './admin/technest-settings/midd
 import { verifyStripeWebhookSignature } from './hooks/payment/verify-stripe-signature'
 import { adminQuickAddMiddlewares } from './admin/quick-add/middlewares'
 import { rejectClientPaymentData } from './store/payment-collections/reject-client-payment-data'
+import { storeCartMiddlewares } from './store/carts/middlewares'
 import { storeDeviceMiddlewares } from './store/devices/middlewares'
 import { sentryErrorHandler } from '../lib/monitoring/sentry-error-handler'
 import { storeProductMiddlewares } from './store/products/middlewares'
@@ -47,6 +48,7 @@ export default defineMiddlewares({
         }),
       ],
     },
+    ...storeCartMiddlewares,
     ...storeProductMiddlewares,
     ...storeDeviceMiddlewares,
     ...adminDeviceMiddlewares,

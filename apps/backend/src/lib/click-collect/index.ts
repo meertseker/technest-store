@@ -20,6 +20,28 @@ export const CollectMeta = {
   EXPIRED_AT: "collection_expired_at",
 } as const
 
+const COLLECT_STATE_KEYS: readonly string[] = Object.values(CollectMeta)
+
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  !!v && typeof v === "object" && !Array.isArray(v)
+
+/**
+ * The state keys present in a metadata object, whatever their value. Only
+ * staff actions and the lifecycle job may set them, and only on an order:
+ * cart metadata is the shopper's to write and is copied onto the order.
+ */
+export function collectStateKeysIn(metadata: unknown): string[] {
+  return isRecord(metadata) ? COLLECT_STATE_KEYS.filter((key) => key in metadata) : []
+}
+
+/** The metadata without the state keys. Anything but a plain object is returned as it is. */
+export function withoutCollectState<T>(metadata: T): T {
+  if (!isRecord(metadata)) return metadata
+  return Object.fromEntries(
+    Object.entries(metadata).filter(([key]) => !COLLECT_STATE_KEYS.includes(key))
+  ) as T
+}
+
 export const REMINDER_AFTER_MS = 3 * 24 * 60 * 60 * 1000
 export const EXPIRE_AFTER_MS = 7 * 24 * 60 * 60 * 1000
 
