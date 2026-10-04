@@ -2,6 +2,7 @@ import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/frame
 import type { HttpTypes } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
 import { createTechnestPaymentSessionsWorkflow } from "../../../../../workflows/create-technest-payment-sessions"
+import { assertPaymentProviderAllowed } from "../../allowed-provider"
 
 /**
  * POST /store/payment-collections/:id/payment-sessions
@@ -18,6 +19,7 @@ export async function POST(
   res: MedusaResponse<HttpTypes.StorePaymentCollectionResponse>
 ) {
   const collectionId = req.params.id
+  assertPaymentProviderAllowed(req.validatedBody.provider_id)
 
   await createTechnestPaymentSessionsWorkflow(req.scope).run({
     input: {
