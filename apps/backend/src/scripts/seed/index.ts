@@ -72,6 +72,12 @@ function skuFor(handle: string, combination: Record<string, string>) {
 export type SeedOptions = {
   /** Also create the sample products and their stock. Never in production. */
   demo?: boolean
+  /**
+   * Payment providers of the GBP region. Defaults to Medusa's "no payment"
+   * provider for tests and local work; the migration script passes Stripe
+   * once it is registered, so real customers never see the default.
+   */
+  paymentProviders?: string[]
 }
 
 /**
@@ -89,7 +95,7 @@ export function demoDataEnabled(env: NodeJS.ProcessEnv = process.env) {
  */
 export async function seedTechNest(
   container: MedusaContainer,
-  { demo = true }: SeedOptions = {}
+  { demo = true, paymentProviders = ["pp_system_default"] }: SeedOptions = {}
 ) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   const link = container.resolve(ContainerRegistrationKeys.LINK)
@@ -164,7 +170,7 @@ export async function seedTechNest(
           countries: REGION.countries,
           is_tax_inclusive: true,
           automatic_taxes: true,
-          payment_providers: ["pp_system_default"],
+          payment_providers: paymentProviders,
         },
       ],
     },
