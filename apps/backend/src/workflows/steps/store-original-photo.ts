@@ -1,5 +1,6 @@
 import { MedusaError, Modules } from "@medusajs/framework/utils"
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
+import { publicFileUrl } from "../../lib/photo/public-url"
 
 export type StoreOriginalPhotoInput = {
   /** An existing File Module file (e.g. from POST /admin/uploads). Never deleted by this workflow. */
@@ -42,7 +43,10 @@ export const storeOriginalPhotoStep = createStep(
       if (!file) {
         throw new MedusaError(MedusaError.Types.INVALID_DATA, `Unknown file_id: ${input.file_id}`)
       }
-      return new StepResponse<StoredPhoto, string | null>({ id: file.id, url: file.url }, null)
+      return new StepResponse<StoredPhoto, string | null>(
+        { id: file.id, url: publicFileUrl(file) },
+        null
+      )
     }
 
     throw new MedusaError(MedusaError.Types.INVALID_DATA, "Send either a file or a file_id")

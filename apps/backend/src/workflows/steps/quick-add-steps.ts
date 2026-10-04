@@ -1,5 +1,6 @@
 import { ContainerRegistrationKeys, MedusaError, Modules } from "@medusajs/framework/utils"
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
+import { publicFileUrl } from "../../lib/photo/public-url"
 import { analyzeProductPhoto, AnalyzeFailureCode } from "../../lib/quick-add/claude"
 import {
   ImageTooLargeError,
@@ -28,7 +29,7 @@ async function readFile(container: Resolver, fileId: string) {
   try {
     const file = await fileModule.retrieveFile(fileId)
     const buffer: Buffer = await fileModule.getAsBuffer(fileId)
-    return { id: file.id as string, url: file.url as string, buffer }
+    return { id: file.id as string, url: publicFileUrl(file), buffer }
   } catch {
     throw new MedusaError(MedusaError.Types.INVALID_DATA, `Unknown file_id: ${fileId}`)
   }

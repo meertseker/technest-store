@@ -1,5 +1,6 @@
 import { MedusaError, Modules } from "@medusajs/framework/utils"
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
+import { publicFileUrl } from "../../lib/photo/public-url"
 
 export type ResolvePhotoFilesInput = {
   processed_file_id: string
@@ -23,7 +24,7 @@ export const resolvePhotoFilesStep = createStep(
       try {
         const file = await fileModule.retrieveFile(id)
         await fileModule.getAsBuffer(id)
-        return { id: file.id, url: file.url }
+        return { id: file.id, url: publicFileUrl(file) }
       } catch {
         throw new MedusaError(MedusaError.Types.INVALID_DATA, `Unknown file id: ${id}`)
       }
