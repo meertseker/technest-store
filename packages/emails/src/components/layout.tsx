@@ -52,7 +52,7 @@ export function Layout({ preview, children }: { preview: string; children: React
             <Text style={styles.muted}>{`${BRAND.legalName} · ${BRAND.address}`}</Text>
             <Text style={styles.muted}>
               Call {BRAND.phone} · <Link href={`mailto:${BRAND.email}`} style={styles.link}>{BRAND.email}</Link> ·{" "}
-              <Link href={`${site}/returns`} style={styles.link}>Returns</Link>
+              <Link href={`${site}/legal/returns`} style={styles.link}>Returns</Link>
             </Text>
           </Section>
         </Container>

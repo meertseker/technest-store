@@ -10,7 +10,8 @@ test("welcome renders subject, branded HTML and a plain-text version", async () 
   assert.match(email.html, /Hi Sam/)
   assert.match(email.html, /Unit 2A, Southwark Park Rd\., London SE16 3TU/)
   assert.match(email.html, /07775 669000/)
-  assert.match(email.html, /href="https:\/\/technest\.co\.uk\/returns"/)
+  // The storefront's returns page (apps/storefront/src/app/(main)/legal/[slug], slug "returns").
+  assert.match(email.html, /href="https:\/\/technest\.co\.uk\/legal\/returns"/)
 
   assert.match(email.text, /Hi Sam/)
   assert.match(email.text, /Unit 2A, Southwark Park Rd\., London SE16 3TU/)
