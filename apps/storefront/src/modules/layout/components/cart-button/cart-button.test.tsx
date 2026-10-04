@@ -11,6 +11,7 @@ vi.mock("@modules/basket/components/basket-drawer", () => ({
   default: ({ cart }: { cart: { id: string } | null }) => <div>drawer for {cart?.id ?? "no cart"}</div>,
 }))
 
+import { redirect } from "next/navigation"
 import CartButton from "./index"
 
 afterEach(() => {
@@ -45,5 +46,13 @@ describe("CartButton", () => {
     render(await CartButton())
 
     expect(screen.getByText("drawer for no cart")).toBeTruthy()
+  })
+
+  // redirect(), notFound() and the dynamic-rendering bailout are thrown errors Next must see.
+  it("lets Next's own control-flow errors through", async () => {
+    retrieveCart.mockResolvedValue({ id: "cart_1" })
+    getBasketView.mockImplementation(async () => redirect("/elsewhere"))
+
+    await expect(CartButton()).rejects.toMatchObject({ digest: expect.stringContaining("NEXT_REDIRECT") })
   })
 })
