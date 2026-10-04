@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
-# Runs backup.sh every day at BACKUP_AT (HH:MM, Europe/London), or runs one command if given
+# Runs backup.sh every BACKUP_EVERY_MINUTES (default 60), or runs one command if given
 # (e.g. `docker compose run --rm backup backup.sh` or `... restore.sh --list`).
-# A sleep loop rather than crond: busybox crond needs root to switch users.
+# The interval is the most data a lost disk can cost: with the default, up to one hour of
+# orders (DEPLOY.md, "Yedekleme"). A failed run is retried after BACKUP_RETRY_MINUTES (10),
+# not at the next interval. A sleep loop rather than crond: busybox crond needs root to
+# switch users.
 set -euo pipefail
 if [ "$#" -gt 0 ]; then exec "$@"; fi
-date -u +%s > /tmp/started
-at="${BACKUP_AT:-03:15}"
-echo "backup: daily at ${at} (${TZ}), keep ${BACKUP_RETENTION_DAYS:-30} days"
+every="${BACKUP_EVERY_MINUTES:-60}"
+retry="${BACKUP_RETRY_MINUTES:-10}"
+echo "backup: every ${every} min, retry after ${retry} min on failure, keep ${BACKUP_RETENTION_DAYS:-30} days"
+# The first backup runs a minute after start, so a new server has one before its first hour.
+sleep 60
 while true; do
-  now=$(date +%s)
-  next=$(date -d "$(date +%Y-%m-%d) ${at}" +%s)
-  [ "$next" -le "$now" ] && next=$(date -d "$(date -d tomorrow +%Y-%m-%d) ${at}" +%s)
-  sleep $(( next - now ))
-  /usr/local/bin/backup.sh || echo "backup: FAILED (will retry tomorrow; healthcheck turns unhealthy after 26h)" >&2
+  if /usr/local/bin/backup.sh; then
+    sleep $(( every * 60 ))
+  else
+    echo "backup: FAILED (retrying in ${retry} min)" >&2
+    sleep $(( retry * 60 ))
+  fi
 done

@@ -1,10 +1,12 @@
 # CI: install, licence guard, lint, typecheck, tests (Postgres + Redis + Mailpit services), build.
 # Runs on every push and pull request. Nothing here deploys or pushes images (see deploy.yml).
+# The Deploy workflow refuses a commit whose run of this workflow is not green.
+# Third-party actions are pinned to a commit, not a tag.
 name: CI
 
 on:
   push:
-    branches: [main, "e*/**"]
+    branches: [main, "e*/**", "fix/**"]
   pull_request:
 
 concurrency:
@@ -24,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: No non-commercial background-removal models
         run: bash scripts/check-no-bria.sh
       - name: Guard script tests
@@ -65,9 +67,9 @@ jobs:
       SMTP_PORT: "1025"
       MAILPIT_API_URL: http://localhost:8025/api/v1
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -95,9 +97,9 @@ jobs:
       NEXT_PUBLIC_BASE_URL: http://localhost:8000
       NEXT_PUBLIC_DEFAULT_REGION: gb
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -115,9 +117,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -128,7 +130,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: docker compose config (dummy values)
         env:
           POSTGRES_PASSWORD: x
@@ -141,8 +143,46 @@ jobs:
           S3_ENDPOINT: x
           GHCR_OWNER: ci
         run: docker compose --profile ops --profile backup config --quiet
+      - name: Deploy script (pull, migrate, tag, start) against a stand-in docker
+        run: bash infra/deploy/test-deploy.sh
+      - name: Backup and restore scripts
+        run: bash infra/backup/test-backup.sh
       - name: Caddyfile validates
         run: |
           docker run --rm -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" \
             -e SHOP_DOMAIN=technest.co.uk -e ACME_EMAIL=ci@example.com \
             caddy:2.10-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+
+  # The three production images build (nothing is pushed). Without this the first real
+  # build would be the first deploy.
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: technest-backend
+            file: apps/backend/Dockerfile
+            context: .
+          - name: technest-storefront
+            file: apps/storefront/Dockerfile
+            context: .
+          - name: technest-backup
+            file: infra/backup/Dockerfile
+            context: infra/backup
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          push: false
+          cache-from: type=gha,scope=ci-${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=ci-${{ matrix.name }}
+          build-args: |
+            NEXT_PUBLIC_MEDUSA_BACKEND_URL=http://localhost:9000
+            NEXT_PUBLIC_BASE_URL=http://localhost:8000
+            NEXT_PUBLIC_DEFAULT_REGION=gb
+            NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=pk_ci_placeholder

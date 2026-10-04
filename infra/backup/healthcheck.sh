@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
-# Unhealthy when the last successful backup is older than 26 hours, or when none has
-# succeeded in the first 26 hours after the container started.
+# Unhealthy when the last successful backup is older than BACKUP_MAX_AGE_SECONDS (default: two
+# backup intervals plus ten minutes). The state file is on a volume, so a deploy that recreates
+# the container doesn't reset the clock. Docker only reports "unhealthy"; the alarm that
+# reaches a person is the heartbeat in backup.sh.
 set -eu
-limit=93600
+state_dir="${BACKUP_STATE_DIR:-/var/lib/backup}"
+limit="${BACKUP_MAX_AGE_SECONDS:-$(( ${BACKUP_EVERY_MINUTES:-60} * 120 + 600 ))}"
 now=$(date -u +%s)
-if [ -f /var/lib/backup/last_success ]; then
-  [ $(( now - $(cat /var/lib/backup/last_success) )) -lt $limit ]
+if [ -f "$state_dir/last_success" ]; then
+  [ $(( now - $(cat "$state_dir/last_success") )) -lt "$limit" ]
 else
-  [ $(( now - $(cat /tmp/started 2>/dev/null || echo "$now") )) -lt $limit ]
+  # First start with an empty volume: give the first backup one limit to succeed.
+  [ -f "$state_dir/first_start" ] || date -u +%s > "$state_dir/first_start"
+  [ $(( now - $(cat "$state_dir/first_start") )) -lt "$limit" ]
 fi

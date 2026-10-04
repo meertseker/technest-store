@@ -11,9 +11,13 @@ name: technest
 x-defaults: &defaults
   restart: unless-stopped
   networks: [internal]
+  # journald, not json-file: a container's json-file log is deleted when a deploy recreates
+  # the container, and with it every trace of the payments and webhooks before the deploy.
+  # Read with `docker compose logs` or `journalctl CONTAINER_TAG=technest-server`; retention
+  # is journald's (DEPLOY.md, "Günlükler").
   logging:
-    driver: json-file
-    options: { max-size: "10m", max-file: "3" }
+    driver: journald
+    options: { tag: "technest-{{.Name}}" }
 
 x-backend-env: &backend-env
   NODE_ENV: production
@@ -83,6 +87,9 @@ services:
       <<: *backend-env
       MEDUSA_WORKER_MODE: server
       DISABLE_MEDUSA_ADMIN: "false"
+    # Medusa finishes the requests in flight on SIGTERM; Docker's default 10 s would cut a
+    # checkout or a capture in the middle of a deploy.
+    stop_grace_period: 60s
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -97,6 +104,8 @@ services:
       DISABLE_MEDUSA_ADMIN: "true"
     # Medusa 2.21 `medusa start` serves GET /health in every worker mode, so the image's
     # HEALTHCHECK applies here too (checked in @medusajs/medusa dist/commands/start.js).
+    # Lets the job in hand (a capture, an email) finish before the container is replaced.
+    stop_grace_period: 60s
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -109,7 +118,15 @@ services:
     networks: [internal]
     environment:
       <<: *backend-env
-    command: ["/app/apps/backend/node_modules/.bin/medusa", "db:migrate"]
+    # --all-or-nothing: a failed migration reverts the ones this run applied.
+    # --execute-safe-*: never stop at a prompt (there is no terminal); unsafe link or
+    # index changes are left for a person to run by hand.
+    command:
+      - /app/apps/backend/node_modules/.bin/medusa
+      - db:migrate
+      - --all-or-nothing
+      - --execute-safe-links
+      - --execute-safe-search
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -154,7 +171,8 @@ services:
       retries: 5
     deploy: { resources: { limits: { memory: 512m } } }
 
-  # Nightly pg_dump -> R2 (technest-backups), 30-day retention. See infra/backup and DEPLOY.md.
+  # Hourly pg_dump -> R2 (technest-backups), 30-day retention. See infra/backup and DEPLOY.md.
+  # The interval is the most a lost disk can cost: up to one hour of orders.
   #   docker compose run --rm backup backup.sh          take a backup now
   #   docker compose run --rm backup restore.sh --list  list backups
   backup:
@@ -166,8 +184,13 @@ services:
       PGUSER: technest
       PGPASSWORD: ${POSTGRES_PASSWORD:?}
       PGDATABASE: technest
-      BACKUP_AT: ${BACKUP_AT:-03:15}
+      BACKUP_EVERY_MINUTES: ${BACKUP_EVERY_MINUTES:-60}
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+      # Dead-man's switch (e.g. healthchecks.io): pinged after every good backup, so silence
+      # or a /fail ping raises the alarm. Empty = nobody is told when backups stop.
+      BACKUP_HEARTBEAT_URL: ${BACKUP_HEARTBEAT_URL:-}
+      # age public key: dumps are encrypted before upload; the private key stays off this server.
+      BACKUP_AGE_RECIPIENT: ${BACKUP_AGE_RECIPIENT:-}
       BACKUP_REMOTE: r2:${BACKUP_BUCKET:-technest-backups}/db
       RCLONE_CONFIG_R2_TYPE: s3
       RCLONE_CONFIG_R2_PROVIDER: Cloudflare
@@ -176,6 +199,7 @@ services:
       RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${BACKUP_S3_SECRET_ACCESS_KEY:-}
       RCLONE_CONFIG_R2_REGION: auto
       RCLONE_CONFIG_R2_NO_CHECK_BUCKET: "true"
+    volumes: [backup_state:/var/lib/backup]
     depends_on:
       postgres: { condition: service_healthy }
     deploy: { resources: { limits: { cpus: "0.5", memory: 256m } } }
@@ -188,3 +212,4 @@ volumes:
   redis_data: {}
   caddy_data: {}
   caddy_config: {}
+  backup_state: {}

@@ -32,12 +32,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Local env files
+# Env files: every .env* is ignored except the templates and the test defaults.
+# The repo is public; a filled-in .env.production must never be one `git add -A` away.
 **/.env
-**/.env.local
-**/.env.development.local
-**/.env.test.local
-**/.env.production.local
+**/.env.*
+!**/.env.template
+!**/.env.*.template
+!**/.env.test
 
 # Turbo
 .turbo
