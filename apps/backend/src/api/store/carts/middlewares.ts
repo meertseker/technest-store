@@ -1,9 +1,12 @@
-import type {
-  MedusaNextFunction,
-  MedusaRequest,
-  MedusaResponse,
-  MiddlewareRoute,
+import {
+  authenticate,
+  type AuthenticatedMedusaRequest,
+  type MedusaNextFunction,
+  type MedusaRequest,
+  type MedusaResponse,
+  type MiddlewareRoute,
 } from "@medusajs/framework/http"
+import { MedusaError, Modules } from "@medusajs/framework/utils"
 import { withoutCollectState } from "../../../lib/click-collect"
 
 /**
@@ -27,7 +30,45 @@ export function dropCollectStateFromCartMetadata(
   next()
 }
 
+/**
+ * Medusa attaches a cart to the registered customer whose email it carries,
+ * whoever is calling, and prices it with that customer's groups. So a guest
+ * can't use the email of a customer in a customer group (trade): they'd get
+ * the Trade prices. Registered customers without a group can still check out
+ * as a guest with their email.
+ */
+export async function refuseGuestUseOfTradeEmail(
+  req: AuthenticatedMedusaRequest,
+  _res: MedusaResponse,
+  next: MedusaNextFunction
+) {
+  const email = (req.body as { email?: unknown } | undefined)?.email
+  if (typeof email !== "string" || !email.trim() || req.auth_context?.actor_id) {
+    return next()
+  }
+  const typed = email.trim()
+  const customers = await req.scope
+    .resolve(Modules.CUSTOMER)
+    .listCustomers(
+      { email: [typed, typed.toLowerCase()], has_account: true },
+      { relations: ["groups"], select: ["id"] }
+    )
+  if (customers.some((customer) => customer.groups?.length)) {
+    throw new MedusaError(
+      MedusaError.Types.UNAUTHORIZED,
+      "This email belongs to a trade account. Sign in to use it."
+    )
+  }
+  next()
+}
+
+const cartBodyGuards = [
+  dropCollectStateFromCartMetadata,
+  authenticate("customer", ["session", "bearer"], { allowUnauthenticated: true }),
+  refuseGuestUseOfTradeEmail,
+]
+
 export const storeCartMiddlewares: MiddlewareRoute[] = [
-  { method: ["POST"], matcher: "/store/carts", middlewares: [dropCollectStateFromCartMetadata] },
-  { method: ["POST"], matcher: "/store/carts/:id", middlewares: [dropCollectStateFromCartMetadata] },
+  { method: ["POST"], matcher: "/store/carts", middlewares: cartBodyGuards },
+  { method: ["POST"], matcher: "/store/carts/:id", middlewares: cartBodyGuards },
 ]
