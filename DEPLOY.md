@@ -416,6 +416,9 @@ Ayrıntılı kurallar: `docs/contracts/payments.md`.
    Tüm servisler `healthy` olmalı.
 5. Yönetici hesabını oluşturun (5.2), publishable key'i GitHub secret'ına girin ve
    **storefront imajı bu anahtarı içersin diye yayını bir kez daha çalıştırın**.
+   Aynı anda ödeme sağlayıcısını kontrol edin: admin → Settings → Regions → United Kingdom →
+   "Payment Providers" altında **yalnızca Stripe** olmalı. "Manual Payment" (System) varsa
+   kaldırın ve Stripe'ı ekleyin: o sağlayıcı siparişi para almadan tamamlar.
 6. Duman testi (smoke test): bölüm 12'deki listeyi staging'de yapın.
 7. Staging temizse aynı adımları `production` ortamıyla tekrarlayın.
 
