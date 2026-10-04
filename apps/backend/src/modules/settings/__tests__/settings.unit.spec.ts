@@ -30,7 +30,7 @@ describe("getTechnestSettings", () => {
       free_delivery_threshold_pence: 2000,
       klarna_min_basket_pence: 3000,
     })
-    expect(container.resolve).toHaveBeenCalledWith("settings")
+    expect(container.resolve).toHaveBeenCalledWith("technestSettings")
     expect(listTechnestSettings).toHaveBeenCalledWith(
       { key: ["free_delivery_threshold_pence", "klarna_min_basket_pence"] },
       expect.anything()
