@@ -115,26 +115,31 @@ export function shippedAtOf(order: Pick<DeliveryOrderRow, "fulfillments">): stri
   return times.length ? new Date(Math.max(...times)).toISOString() : null
 }
 
-const sum = (rows?: ({ amount?: unknown } | null)[] | null) =>
-  (rows ?? []).reduce((total, row) => total + Number(row?.amount ?? 0), 0)
+// Whole pence: adding the major-unit amounts as floats can fall a hair short of the total.
+const sumPence = (rows?: ({ amount?: unknown } | null)[] | null) =>
+  (rows ?? []).reduce((total, row) => total + toPence(row?.amount), 0)
 
 /**
  * Why a delivery order must not be shipped yet, or null when it is paid for.
  * Delivery orders are captured right after order.placed, but that capture can
  * fail and leave the order authorised only: shipping it would send goods that
- * were never paid for. A full refund means the same.
+ * were never paid for. A full refund means the same. An order with nothing to
+ * pay (a zero total has no payment in Medusa) is paid for.
  */
 export function paymentBlocker(
-  order: Pick<DeliveryOrderRow, "id" | "payment_collections">
+  order: Pick<DeliveryOrderRow, "id" | "total" | "payment_collections">
 ): string | null {
   const payments = (order.payment_collections ?? [])
     .flatMap((pc) => pc?.payments ?? [])
     .filter((p): p is NonNullable<typeof p> => !!p && !p.canceled_at)
+  if (!payments.length && toPence(order.total) <= 0) {
+    return null
+  }
   if (!payments.length || payments.some((p) => !p.captured_at)) {
     return `Order ${order.id} can't be shipped: its payment hasn't been taken. Open the order and take the payment first.`
   }
-  const captured = payments.reduce((total, p) => total + sum(p.captures), 0)
-  const refunded = payments.reduce((total, p) => total + sum(p.refunds), 0)
+  const captured = payments.reduce((total, p) => total + sumPence(p.captures), 0)
+  const refunded = payments.reduce((total, p) => total + sumPence(p.refunds), 0)
   if (refunded >= captured) {
     return `Order ${order.id} can't be shipped: it was refunded in full.`
   }
