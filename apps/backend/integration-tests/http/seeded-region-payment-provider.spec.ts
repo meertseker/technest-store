@@ -7,7 +7,9 @@
 // reproduced, and the test runner does not run src/migration-scripts on its own, so the script is called here.
 import { medusaIntegrationTestRunner } from "@medusajs/test-utils"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
+import { updateRegionsWorkflow } from "@medusajs/medusa/core-flows"
 import initialDataSeed from "../../src/migration-scripts/initial-data-seed"
+import stripeOnlyRegion from "../../src/migration-scripts/stripe-only-region"
 import enableStripe from "../../src/scripts/enable-stripe"
 import { storeHeaders } from "../helpers/auth"
 import { waitForBackgroundWork } from "../helpers/background"
@@ -167,6 +169,19 @@ medusaIntegrationTestRunner({
         orders_created: 0,
       })
       expect(outcome.complete_result).not.toBe("order")
+    })
+
+    it("a database seeded before Stripe was configured gets Stripe only on its next migrate", async () => {
+      const container = getContainer()
+      const [region] = await gbpRegions()
+      await updateRegionsWorkflow(container).run({
+        input: { selector: { id: region.id }, update: { payment_providers: [SYSTEM_PROVIDER] } },
+      })
+      expect((await gbpRegions())[0].payment_providers).toEqual([SYSTEM_PROVIDER])
+
+      await stripeOnlyRegion({ container })
+
+      expect((await gbpRegions())[0].payment_providers).toEqual(["pp_stripe_stripe"])
     })
   },
 })
