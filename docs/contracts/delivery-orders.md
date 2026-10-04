@@ -8,8 +8,9 @@ Medusa's standard shape `{ "type": "invalid_data" | "not_allowed" | "not_found" 
 
 A **delivery order** is any order that is not Click & Collect (no shipping method on a "pickup"
 fulfilment set) and not cancelled or draft. It is `to_pack` until a live fulfilment has a shipment,
-`shipped` after that. Payment is captured when the order is placed (`order-placed-capture`), so
-shipping never touches money.
+`shipped` after that. Payment is normally captured when the order is placed (`order-placed-capture`),
+and shipping never touches money. That capture can fail, so marking an order shipped is refused
+(`not_allowed`) while its payment is only authorised, and when it was refunded in full.
 
 ## `GET /admin/delivery-orders?status=to_pack|shipped&limit=20&offset=0`
 

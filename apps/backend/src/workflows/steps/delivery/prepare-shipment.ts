@@ -1,6 +1,11 @@
 import { MedusaError } from "@medusajs/framework/utils"
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
-import { loadDeliveryOrder, shippedAtOf, unfulfilledItems } from "../../../lib/delivery"
+import {
+  loadDeliveryOrder,
+  paymentBlocker,
+  shippedAtOf,
+  unfulfilledItems,
+} from "../../../lib/delivery"
 
 export type PrepareShipmentOutput = {
   /** True when a shipment already exists: nothing to do. */
@@ -13,7 +18,8 @@ export type PrepareShipmentOutput = {
 
 /**
  * Validates that a delivery order can be marked shipped: not Click & Collect,
- * not cancelled. Shipping an order a second time is a no-op.
+ * not cancelled, and paid for (payment captured, not refunded in full).
+ * Shipping an order a second time is a no-op.
  */
 export const prepareShipmentStep = createStep(
   "prepare-shipment",
@@ -32,6 +38,10 @@ export const prepareShipmentStep = createStep(
     }
     if (order.status === "canceled") {
       throw new MedusaError(MedusaError.Types.NOT_ALLOWED, `Order ${order_id} is cancelled`)
+    }
+    const unpaid = paymentBlocker(order)
+    if (unpaid) {
+      throw new MedusaError(MedusaError.Types.NOT_ALLOWED, unpaid)
     }
     const items = unfulfilledItems(order)
     if (!items.length) {

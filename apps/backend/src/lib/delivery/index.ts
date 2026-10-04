@@ -37,6 +37,10 @@ export const DELIVERY_ORDER_FIELDS = [
   "fulfillments.id",
   "fulfillments.shipped_at",
   "fulfillments.canceled_at",
+  "payment_collections.payments.captured_at",
+  "payment_collections.payments.canceled_at",
+  "payment_collections.payments.captures.amount",
+  "payment_collections.payments.refunds.amount",
 ]
 
 export type DeliveryOrderRow = {
@@ -67,6 +71,14 @@ export type DeliveryOrderRow = {
     id: string
     shipped_at?: string | Date | null
     canceled_at?: string | Date | null
+  } | null)[] | null
+  payment_collections?: ({
+    payments?: ({
+      captured_at?: string | Date | null
+      canceled_at?: string | Date | null
+      captures?: ({ amount?: unknown } | null)[] | null
+      refunds?: ({ amount?: unknown } | null)[] | null
+    } | null)[] | null
   } | null)[] | null
 }
 
@@ -101,6 +113,32 @@ export function shippedAtOf(order: Pick<DeliveryOrderRow, "fulfillments">): stri
     .filter((f): f is NonNullable<typeof f> => !!f && !f.canceled_at && !!f.shipped_at)
     .map((f) => new Date(f.shipped_at as string | Date).getTime())
   return times.length ? new Date(Math.max(...times)).toISOString() : null
+}
+
+const sum = (rows?: ({ amount?: unknown } | null)[] | null) =>
+  (rows ?? []).reduce((total, row) => total + Number(row?.amount ?? 0), 0)
+
+/**
+ * Why a delivery order must not be shipped yet, or null when it is paid for.
+ * Delivery orders are captured right after order.placed, but that capture can
+ * fail and leave the order authorised only: shipping it would send goods that
+ * were never paid for. A full refund means the same.
+ */
+export function paymentBlocker(
+  order: Pick<DeliveryOrderRow, "id" | "payment_collections">
+): string | null {
+  const payments = (order.payment_collections ?? [])
+    .flatMap((pc) => pc?.payments ?? [])
+    .filter((p): p is NonNullable<typeof p> => !!p && !p.canceled_at)
+  if (!payments.length || payments.some((p) => !p.captured_at)) {
+    return `Order ${order.id} can't be shipped: its payment hasn't been taken. Open the order and take the payment first.`
+  }
+  const captured = payments.reduce((total, p) => total + sum(p.captures), 0)
+  const refunded = payments.reduce((total, p) => total + sum(p.refunds), 0)
+  if (refunded >= captured) {
+    return `Order ${order.id} can't be shipped: it was refunded in full.`
+  }
+  return null
 }
 
 /** Items (and quantities) not fulfilled yet. */

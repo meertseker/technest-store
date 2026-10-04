@@ -1,7 +1,9 @@
 import { medusaIntegrationTestRunner } from "@medusajs/test-utils"
 import { seedTechNest } from "../../src/scripts/seed"
+import { captureDeliveryOrderWorkflow } from "../../src/workflows/capture-delivery-order"
 import { adminHeaders } from "../helpers/auth"
 import {
+  orderOf,
   placeAuthorisedOrder,
   recordEvents,
   settle,
@@ -44,6 +46,12 @@ medusaIntegrationTestRunner({
         shippingOptionId: options["standard"],
         shippingAmount: 3.49,
       })
+    /** A delivery order as it normally reaches the Delivery tab: payment taken after order.placed. */
+    const paidDeliveryOrder = async () => {
+      const placed = await deliveryOrder()
+      await captureDeliveryOrderWorkflow(getContainer()).run({ input: { order_id: placed.order.id } })
+      return placed
+    }
     const pickupOrder = () =>
       placeAuthorisedOrder(getContainer(), {
         regionId,
@@ -81,8 +89,45 @@ medusaIntegrationTestRunner({
       expect(row.display_id).toEqual(expect.any(Number))
     })
 
-    it("marks an order shipped once: fulfilment + shipment, one email event, then a no-op", async () => {
+    it("refuses to ship an order whose payment was authorised but never taken, then ships it once it is", async () => {
       const { order } = await deliveryOrder()
+
+      const unpaid = await ship(order.id)
+      expect({ status: unpaid.status, message: unpaid.data.message }).toEqual({
+        status: 400,
+        message: expect.stringMatching(/payment hasn't been taken/),
+      })
+      await settle()
+      expect(events.for("shipment.created")).toHaveLength(0)
+      expect((await orderOf(getContainer(), order.id)).fulfillments ?? []).toHaveLength(0)
+
+      await captureDeliveryOrderWorkflow(getContainer()).run({ input: { order_id: order.id } })
+      expect((await ship(order.id)).status).toBe(200)
+    })
+
+    it("refuses to ship an order that was refunded in full", async () => {
+      const { order, amount, payment_id } = await paidDeliveryOrder()
+      await api.post(`/admin/payments/${payment_id}/refund`, { amount }, admin)
+
+      const res = await ship(order.id)
+
+      expect({ status: res.status, message: res.data.message }).toEqual({
+        status: 400,
+        message: expect.stringMatching(/refunded in full/),
+      })
+      await settle()
+      expect(events.for("shipment.created")).toHaveLength(0)
+    })
+
+    it("still ships an order that was refunded in part", async () => {
+      const { order, payment_id } = await paidDeliveryOrder()
+      await api.post(`/admin/payments/${payment_id}/refund`, { amount: 4.99 }, admin)
+
+      expect((await ship(order.id)).status).toBe(200)
+    })
+
+    it("marks an order shipped once: fulfilment + shipment, one email event, then a no-op", async () => {
+      const { order } = await paidDeliveryOrder()
 
       const first = await ship(order.id)
       expect(first.status).toBe(200)
