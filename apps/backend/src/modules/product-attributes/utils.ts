@@ -86,7 +86,7 @@ export type PublishCheckProduct = {
   status?: string | null
   categories?: CategoryRow[] | null
   tags?: ({ value?: string | null } | null)[] | null
-  product_attributes?: { safety_marking?: string | null } | null
+  product_attributes?: { safety_marking?: string | null; wattage?: number | null } | null
 }
 
 /** A category and its ancestors (as far as the query loaded them). */
@@ -104,6 +104,26 @@ function categoryChain(category: CategoryRow): NonNullable<CategoryRow>[] {
 export function inSafetyMarkedCategory(categories: CategoryRow[] | null | undefined) {
   return (categories ?? []).some((c) =>
     categoryChain(c).some((cat) => SAFETY_MARKED_CATEGORY_HANDLES.includes(cat.handle ?? ""))
+  )
+}
+
+/**
+ * Chargers and power banks by their own words. "Charging" alone doesn't
+ * count: a case that supports wireless charging isn't a power product.
+ */
+const POWER_PRODUCT_PATTERN = /\b(chargers?|power ?banks?)\b/i
+
+/**
+ * True for a charger or power product, which needs a UKCA or CE marking before
+ * it is published. The category is staff's filing choice and can be missing or
+ * wrong, so the product's title, handle, tags and wattage count as well.
+ */
+export function needsSafetyMarking(product: PublishCheckProduct): boolean {
+  const words = [product.title, product.handle, ...(product.tags ?? []).map((t) => t?.value)]
+  return (
+    inSafetyMarkedCategory(product.categories) ||
+    Number(product.product_attributes?.wattage) > 0 ||
+    words.some((w) => Boolean(w) && POWER_PRODUCT_PATTERN.test(w!.replace(/-/g, " ")))
   )
 }
 
@@ -135,10 +155,7 @@ export function publishBlocker(product: PublishCheckProduct): string | null {
     return `"${name}" looks like a vape product. Vapes are never sold online, so it can't be published.`
   }
 
-  if (
-    inSafetyMarkedCategory(product.categories) &&
-    !hasSafetyMarking(product.product_attributes?.safety_marking)
-  ) {
+  if (needsSafetyMarking(product) && !hasSafetyMarking(product.product_attributes?.safety_marking)) {
     return safetyMarkingMessage(name)
   }
   return null
@@ -159,4 +176,5 @@ export const PUBLISH_CHECK_FIELDS = [
   "categories.parent_category.parent_category.name",
   "categories.parent_category.parent_category.parent_category.handle",
   "product_attributes.safety_marking",
+  "product_attributes.wattage",
 ]

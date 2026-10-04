@@ -1,7 +1,7 @@
 import { z } from "@medusajs/framework/zod"
 import {
-  inSafetyMarkedCategory,
   looksLikeVape,
+  needsSafetyMarking,
   SAFETY_MARKINGS,
   SafetyMarking,
 } from "../../modules/product-attributes/utils"
@@ -163,7 +163,12 @@ export function mapSuggestion(
   const price = positiveOrNull(draft.suggested_price_gbp, PRICE_MAX_GBP)
   const title = clip(draft.title, TITLE_MAX)
 
-  const requiredToPublish = inSafetyMarkedCategory(category ? [category] : [])
+  const requiredToPublish = needsSafetyMarking({
+    id: "suggestion",
+    title,
+    categories: category ? [category] : [],
+    product_attributes: { wattage: positiveOrNull(draft.wattage, 500) },
+  })
   if (requiredToPublish && draft.safety_marking === "none") {
     warnings.push(
       "Chargers and power products need a UKCA or CE mark before they can be published. Check the label."

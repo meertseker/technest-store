@@ -291,6 +291,7 @@ export function buildImportPlan(read: ReadRowsResult, ctx: PlanContext): ImportP
         tags,
         product_attributes: {
           safety_marking: input.attributes.safety_marking ?? existing?.safety_marking ?? "none",
+          wattage: input.attributes.wattage ?? null,
         },
       }
       if (publishBlocker(check)) {

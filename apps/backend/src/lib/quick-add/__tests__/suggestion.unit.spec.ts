@@ -109,7 +109,15 @@ describe("mapSuggestion", () => {
     expect(noMark.safety_marking.required_to_publish).toBe(true)
     expect(noMark.warnings.join(" ")).toMatch(/UKCA or CE/)
 
-    const caseDraft = mapSuggestion(draft({ category_handle: "cases", safety_marking: "none" }), catalogue)
+    // A charger is a charger wherever it is filed.
+    const misfiled = mapSuggestion(draft({ category_handle: "cases", safety_marking: "none" }), catalogue)
+    expect(misfiled.safety_marking.required_to_publish).toBe(true)
+    expect(misfiled.warnings.join(" ")).toMatch(/UKCA or CE/)
+
+    const caseDraft = mapSuggestion(
+      draft({ title: "Clear Shockproof Case", category_handle: "cases", wattage: null, safety_marking: "none" }),
+      catalogue
+    )
     expect(caseDraft.safety_marking.required_to_publish).toBe(false)
     expect(caseDraft.warnings).toEqual([])
 

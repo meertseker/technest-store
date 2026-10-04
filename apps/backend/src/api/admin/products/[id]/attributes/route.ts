@@ -1,7 +1,7 @@
 import { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
 import {
-  inSafetyMarkedCategory,
+  needsSafetyMarking,
   PUBLISH_CHECK_FIELDS,
   ProductAttributesValues,
   PublishCheckProduct,
@@ -35,7 +35,7 @@ async function loadAttributes(req: AuthenticatedMedusaRequest, productId: string
       product.product_attributes as Partial<ProductAttributesValues> | null
     ),
     publish_check: {
-      needs_safety_marking: inSafetyMarkedCategory(product.categories),
+      needs_safety_marking: needsSafetyMarking(product),
       blocked_reason: publishBlocker({ ...product, status: "published" }),
     },
   }

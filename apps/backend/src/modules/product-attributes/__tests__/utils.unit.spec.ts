@@ -19,6 +19,38 @@ describe("publishBlocker", () => {
     expect(reason).toContain("safety marking (UKCA or CE)")
   })
 
+  // The category is staff's filing choice; the product is a charger wherever it is filed.
+  it.each([
+    ["no category, charger in the title", { title: "20W USB-C Charger" }],
+    ["filed under another category", { title: "35W Dual USB-C Wall Charger", categories: [{ handle: "cases" }] }],
+    ["a power bank by its title", { title: "10000mAh Power Bank" }],
+    ["one word: Powerbank", { title: "Slim Powerbank 5000" }],
+    ["the handle says charger", { title: "GaN 65", handle: "gan-65-laptop-charger" }],
+    ["a tag says power bank", { title: "Slim 5000", tags: [{ value: "power bank" }] }],
+    ["a wattage is set", { title: "Travel Plug", product_attributes: { safety_marking: "none", wattage: 20 } }],
+  ])("blocks an unmarked power product outside the charger categories: %s", (_label, product) => {
+    expect(publishBlocker({ id: "p", status: "published", ...product })).toContain(
+      "safety marking (UKCA or CE)"
+    )
+  })
+
+  it("lets a marked power product outside the charger categories through", () => {
+    expect(
+      publishBlocker({
+        id: "p",
+        title: "20W USB-C Charger",
+        status: "published",
+        product_attributes: { safety_marking: "UKCA", wattage: 20 },
+      })
+    ).toBeNull()
+  })
+
+  it("doesn't read a charger into words that only mention charging", () => {
+    expect(
+      publishBlocker({ id: "p", title: "Clear Case with Wireless Charging Support", status: "published" })
+    ).toBeNull()
+  })
+
   it("blocks when the attributes row is missing", () => {
     expect(
       publishBlocker({ id: "p", status: "published", categories: [{ handle: "power-banks" }] })
