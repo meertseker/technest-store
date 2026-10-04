@@ -404,6 +404,9 @@ Ayrıntılı kurallar: `docs/contracts/payments.md`.
    `technest-backup`; lisans kontrolü dahil) → GHCR'ye gönderilir → sunucuda
    `docker compose pull` → `migrate` (veritabanı tabloları + ilk veriler) → `up -d` →
    sağlık kontrolü. İlk derleme 15–25 dakika sürebilir.
+   İlk çalıştırmada `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` secret'ı henüz yoktur: storefront
+   imajı geçici bir anahtarla (placeholder) derlenir. Site açılır ama ürünleri gösteremez;
+   gerçek anahtar 5. adımda girilir.
 4. Kontrol:
    ```bash
    ssh deploy@SUNUCU_IP 'cd /opt/technest && docker compose ps'

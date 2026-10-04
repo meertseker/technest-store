@@ -68,6 +68,9 @@ jobs:
           file: ${{ matrix.file }}
           push: true
           # Staging and production get separate storefront images (NEXT_PUBLIC_* is inlined).
+          # The publishable key only exists once the backend is up, and the storefront build
+          # refuses an empty one: the first deploy builds with a placeholder, the second with
+          # the real key (DEPLOY.md section 6).
           tags: |
             ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/${{ matrix.name }}:${{ inputs.environment }}-${{ github.sha }}
             ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/${{ matrix.name }}:${{ inputs.environment }}
@@ -78,7 +81,7 @@ jobs:
             NEXT_PUBLIC_BASE_URL=https://${{ vars.SHOP_DOMAIN }}
             NEXT_PUBLIC_DEFAULT_REGION=gb
             NEXT_PUBLIC_IMAGE_HOSTNAME=${{ vars.NEXT_PUBLIC_IMAGE_HOSTNAME }}
-            NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY }}
+            NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || 'pk_first_deploy_placeholder' }}
             NEXT_PUBLIC_STRIPE_KEY=${{ secrets.NEXT_PUBLIC_STRIPE_KEY }}
             NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
             NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
@@ -112,6 +115,9 @@ jobs:
           TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
           TAG: ${{ inputs.environment }}-${{ github.sha }}
         # $TAG expands here on the runner; \$-escaped values expand on the server.
+        # The script reaches bash on stdin, and `docker compose run` reads stdin too: without
+        # -T and </dev/null it swallows the rest of the script, so `up -d` never runs and
+        # bash still exits 0.
         run: |
           # shellcheck disable=SC2087
           ssh "$TARGET" "cd /opt/technest && bash -se" <<EOF
@@ -120,7 +126,7 @@ jobs:
           echo "\$previous" > .previous_tag
           sed -i '/^IMAGE_TAG=/d' .env && echo "IMAGE_TAG=$TAG" >> .env
           docker compose pull --quiet
-          docker compose --profile ops run --rm migrate
+          docker compose --profile ops run --rm -T migrate </dev/null
           docker compose up -d --remove-orphans
           EOF
       - name: Health check (rolls back to the previous tag on failure)
