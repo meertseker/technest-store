@@ -1,5 +1,6 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
-import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
+import { isLockBusyError } from "../lib/click-collect"
 import { retryUncapturedDeliveryOrders } from "../lib/capture-retry"
 
 /**
@@ -10,11 +11,17 @@ import { retryUncapturedDeliveryOrders } from "../lib/capture-retry"
 export default async function captureRetryJob(container: MedusaContainer) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   try {
-    const { captured, failed, gave_up } = await retryUncapturedDeliveryOrders(container, new Date())
+    // One run at a time: a slow run (a payment outage) must not overlap the next.
+    const { captured, failed, gave_up } = await container
+      .resolve(Modules.LOCKING)
+      .execute("technest-capture-retry", () => retryUncapturedDeliveryOrders(container, new Date()), {
+        timeout: 1,
+      })
     if (captured || failed || gave_up) {
       logger.info(`capture-retry: ${captured} captured, ${failed} failed, ${gave_up} given up`)
     }
   } catch (e) {
+    if (isLockBusyError(e)) return
     // Don't throw from a scheduled job: log and try again next run.
     logger.error(`capture-retry: run failed: ${(e as Error).message}`)
   }

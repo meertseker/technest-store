@@ -135,6 +135,18 @@ medusaIntegrationTestRunner({
       expect(captures()).toBe(0)
     })
 
+    // Deleted or recreated options must never turn a Click & Collect order into a "delivery" one.
+    it("leaves an order alone when its shipping option can't be found", async () => {
+      const { payment_id } = await placeAuthorisedOrder(getContainer(), {
+        regionId,
+        shippingOptionId: "so_deleted_since",
+        shippingAmount: 0,
+      })
+
+      expect(await sweep(DAY)).toMatchObject({ captured: 0, failed: 0, gave_up: 0 })
+      expect(await capturedAt(payment_id)).toBeFalsy()
+    })
+
     it("order.placed fails loudly when the order's lock is held, so the event is retried", async () => {
       const { order: o } = await order()
       const locking = getContainer().resolve(Modules.LOCKING)

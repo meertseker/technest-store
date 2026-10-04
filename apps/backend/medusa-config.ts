@@ -15,7 +15,8 @@ const redisModules =
         {
           resolve: "@medusajs/medusa/event-bus-redis",
           // The default is one attempt: a subscriber that throws (a held order
-          // lock, a mail server blip) would never run again for that event.
+          // lock) would never run again for that event. Only subscribers that
+          // throw are retried; the email subscribers catch their own errors.
           options: {
             redisUrl,
             jobOptions: { attempts: 4, backoff: { type: "exponential", delay: 5000 } },

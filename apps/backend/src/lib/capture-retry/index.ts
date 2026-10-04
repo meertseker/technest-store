@@ -7,7 +7,6 @@ import {
   isLockBusyError,
   paymentsOf,
 } from "../click-collect"
-import { isPickupOrder } from "../email/order-email-data"
 import { captureDeliveryOrderWorkflow } from "../../workflows/capture-delivery-order"
 import { recordCaptureRetryWorkflow } from "../../workflows/record-capture-retry"
 import { CAPTURE_RETRY_AFTER_MS, CAPTURE_RETRY_MAX_ATTEMPTS, CaptureRetryMeta } from "./constants"
@@ -24,6 +23,25 @@ const PAGE = 200
 export const captureRetryBackoffMs = (attempts: number) =>
   Math.min(CAPTURE_RETRY_AFTER_MS * 2 ** Math.max(attempts - 1, 0), MAX_BACKOFF_MS)
 
+/**
+ * True only when every shipping option of the order still exists and none is
+ * Click & Collect. An order whose option was deleted since, or that has no
+ * shipping method, is left alone: capturing a Click & Collect order before it
+ * is collected would be worse than leaving a delivery order to staff.
+ */
+async function isDeliveryOrder(container: MedusaContainer, order: CollectOrderRow): Promise<boolean> {
+  const ids = [
+    ...new Set((order.shipping_methods ?? []).map((m) => m?.shipping_option_id).filter((id): id is string => !!id)),
+  ]
+  if (!ids.length) return false
+  const { data } = await container.resolve(ContainerRegistrationKeys.QUERY).graph({
+    entity: "shipping_option",
+    fields: ["id", "service_zone.fulfillment_set.type"],
+    filters: { id: ids },
+  })
+  return data.length === ids.length && data.every((o) => o.service_zone?.fulfillment_set?.type !== "pickup")
+}
+
 export type CaptureRetryResult = { captured: number; failed: number; gave_up: number }
 
 /**
@@ -31,9 +49,10 @@ export type CaptureRetryResult = { captured: number; failed: number; gave_up: nu
  * time after they were placed: the order.placed capture failed, or the event
  * never arrived. Each order is retried with a growing wait; after the last
  * attempt the shop and the shopper are told (technest.payment.capture_failed)
- * and the order is left for staff. Safe to run at any time and from several
- * runs at once: the capture workflow holds the order's lock and skips
- * payments that are already captured.
+ * and the order is left for staff. A payment is never captured twice (the
+ * capture workflow holds the order's lock and skips captured payments); the
+ * job itself runs one at a time (jobs/capture-retry.ts) so the attempt count
+ * and the give-up notice aren't doubled.
  */
 export async function retryUncapturedDeliveryOrders(
   container: MedusaContainer,
@@ -67,9 +86,8 @@ export async function retryUncapturedDeliveryOrders(
       if (attempts && now.getTime() - last < captureRetryBackoffMs(attempts)) continue
 
       try {
-        const optionIds = (order.shipping_methods ?? []).map((m) => m?.shipping_option_id)
         // Click & Collect is captured at the counter, not here.
-        if (await isPickupOrder(container, optionIds)) continue
+        if (!(await isDeliveryOrder(container, order))) continue
         const { result: run } = await captureDeliveryOrderWorkflow(container).run({
           input: { order_id: order.id, notify_on_failure: false },
         })
@@ -85,18 +103,20 @@ export async function retryUncapturedDeliveryOrders(
             (e as Error).message
         )
         try {
-          await recordCaptureRetryWorkflow(container).run({
-            input: { order_id: order.id, attempts: attempts + 1, at: now.toISOString(), gave_up: gaveUp },
-          })
+          // Tell people before noting that we gave up: if the note failed first, the
+          // order would be skipped for good and nobody would know.
           if (gaveUp) {
-            result.gave_up++
             await container
               .resolve(Modules.EVENT_BUS)
               .emit({ name: ClickCollectEvents.CAPTURE_FAILED, data: { order_id: order.id } })
+            result.gave_up++
           }
+          await recordCaptureRetryWorkflow(container).run({
+            input: { order_id: order.id, attempts: attempts + 1, at: now.toISOString(), gave_up: gaveUp },
+          })
         } catch (recordError) {
           logger.error(
-            `capture-retry: order ${order.id} could not be recorded: ${(recordError as Error).message}`
+            `capture-retry: order ${order.id}: telling or noting the failed attempt failed: ${(recordError as Error).message}`
           )
         }
       }
