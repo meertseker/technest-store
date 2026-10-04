@@ -2,11 +2,12 @@ import { sdk } from "@lib/config"
 import { placeOrder } from "@lib/data/cart"
 import { getAuthHeaders, setCartId } from "@lib/data/cookies"
 import { HttpTypes } from "@medusajs/types"
+import { seeOther } from "@lib/http/see-other"
 import { unstable_rethrow } from "next/navigation"
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest } from "next/server"
 
 export async function GET(req: NextRequest) {
-  const { origin, searchParams } = req.nextUrl
+  const { searchParams } = req.nextUrl
 
   const cartId = searchParams.get("cart_id")
   const paymentIntent = searchParams.get("payment_intent")
@@ -15,11 +16,12 @@ export async function GET(req: NextRequest) {
   )
   const redirectStatus = searchParams.get("redirect_status")
 
-  // Every redirect below stays on this origin (UK-only site, no country prefix).
+  // Every redirect below stays on this site, so it is relative: in the Docker
+  // image the request's own origin is the container's address, not the public host.
   // Errors go back to the payment step, which shows them in its error summary
   // (codes: modules/checkout/payment/helpers.ts returnErrorMessage).
   const backToPayment = (code: "payment_failed" | "declined" | "order_failed") =>
-    NextResponse.redirect(`${origin}/checkout?step=payment&payment_error=${code}`)
+    seeOther(`/checkout?step=payment&payment_error=${code}`)
   const rejected = () => backToPayment("payment_failed")
 
   if (!cartId || !paymentIntent || !paymentIntentClientSecret) {
