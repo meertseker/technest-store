@@ -13,6 +13,7 @@ export async function POST(
       variant_id: req.params.variant_id,
       price_pence: req.validatedBody.price_pence,
       stock: req.validatedBody.stock,
+      expected_stock: req.validatedBody.expected_stock,
     },
   })
   res.json(result)

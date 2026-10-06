@@ -120,6 +120,156 @@ medusaIntegrationTestRunner({
       expect(Number((await read()).gbp.amount)).toBe(14.99)
     })
 
+    const priceSetId = async () => {
+      const { data } = await getContainer().resolve(ContainerRegistrationKeys.QUERY).graph({
+        entity: "product_variant",
+        fields: ["price_set.id"],
+        filters: { id: variantId },
+      })
+      return (data[0] as any).price_set.id as string
+    }
+    const plainPrices = async () => {
+      const prices = await getContainer()
+        .resolve(Modules.PRICING)
+        .listPrices(
+          { price_set_id: [await priceSetId()], price_list_id: null } as any,
+          { select: ["id", "amount", "min_quantity", "rules_count"], take: null }
+        )
+      return prices
+        .map((p) => ({
+          amount: Number(p.amount),
+          min_quantity: p.min_quantity == null ? null : Number(p.min_quantity),
+          rules_count: Number((p as any).rules_count ?? 0),
+        }))
+        .sort((a, b) => a.amount - b.amount)
+    }
+    const level = async () => {
+      const { data } = await getContainer().resolve(ContainerRegistrationKeys.QUERY).graph({
+        entity: "product_variant",
+        fields: ["inventory_items.inventory_item_id", "inventory_items.inventory.location_levels.*"],
+        filters: { id: variantId },
+      })
+      const item = (data[0] as any).inventory_items[0]
+      const l = item.inventory.location_levels[0]
+      return {
+        inventory_item_id: item.inventory_item_id as string,
+        location_id: l.location_id as string,
+        stocked: Number(l.stocked_quantity),
+        reserved: Number(l.reserved_quantity),
+      }
+    }
+
+    it("changes only the plain price: a quantity-tier price and a region price stay", async () => {
+      const { data: regions } = await getContainer()
+        .resolve(ContainerRegistrationKeys.QUERY)
+        .graph({ entity: "region", fields: ["id"] })
+      await getContainer()
+        .resolve(Modules.PRICING)
+        .addPrices({
+          priceSetId: await priceSetId(),
+          prices: [
+            { currency_code: "gbp", amount: 4.25, min_quantity: 10 },
+            { currency_code: "gbp", amount: 4.75, rules: { region_id: regions[0].id } },
+          ],
+        })
+      expect(await plainPrices()).toEqual([
+        { amount: 4.25, min_quantity: 10, rules_count: 0 },
+        { amount: 4.75, min_quantity: null, rules_count: 1 },
+        { amount: 4.99, min_quantity: null, rules_count: 0 },
+      ])
+
+      const res = await post({ price_pence: 549 })
+
+      expect(res.status).toBe(200)
+      expect(res.data.price_pence).toBe(549)
+      expect(await plainPrices()).toEqual([
+        { amount: 4.25, min_quantity: 10, rules_count: 0 },
+        { amount: 4.75, min_quantity: null, rules_count: 1 },
+        { amount: 5.49, min_quantity: null, rules_count: 0 },
+      ])
+    })
+
+    it("refuses to guess when a variant has two plain prices", async () => {
+      await getContainer()
+        .resolve(Modules.PRICING)
+        .addPrices({ priceSetId: await priceSetId(), prices: [{ currency_code: "gbp", amount: 6.5 }] })
+      expect((await plainPrices()).map((p) => p.amount)).toEqual([4.99, 6.5])
+
+      const res = await post({ price_pence: 549 })
+
+      expect({ status: res.status, message: res.data.message }).toEqual({
+        status: 400,
+        message: expect.stringMatching(/more than one standard price/),
+      })
+      expect((await plainPrices()).map((p) => p.amount)).toEqual([4.99, 6.5])
+      // Stock on its own is still fine.
+      expect((await post({ stock: 5 })).status).toBe(200)
+    })
+
+    it("refuses a stock number typed against stock that has since changed", async () => {
+      // The page showed 3; an order then took 1.
+      const l = await level()
+      await getContainer().resolve(Modules.INVENTORY).adjustInventory(l.inventory_item_id, l.location_id, -1)
+
+      const stale = await post({ stock: 8, expected_stock: 3 })
+      expect({ status: stale.status, message: stale.data.message }).toEqual({
+        status: 409,
+        message: expect.stringMatching(/now 2, not 3/),
+      })
+      expect((await level()).stocked).toBe(2)
+
+      const gone = await post({ stock: 8, expected_stock: null })
+      expect(gone.status).toBe(409)
+
+      const fresh = await post({ stock: 7, expected_stock: 2 })
+      expect(fresh.status).toBe(200)
+      expect(fresh.data.stock).toBe(7)
+    })
+
+    it("does not write a new price when the stock in the same request is refused", async () => {
+      const res = await post({ price_pence: 999, stock: 8, expected_stock: 99 })
+      expect(res.status).toBe(409)
+      const v = await read()
+      expect(Number(v.gbp.amount)).toBe(4.99)
+      expect(v.stock).toBe(3)
+    })
+
+    it("refuses stock below what is set aside for orders not yet sent", async () => {
+      const l = await level()
+      await getContainer()
+        .resolve(Modules.INVENTORY)
+        .createReservationItems([{ inventory_item_id: l.inventory_item_id, location_id: l.location_id, quantity: 2 }])
+      expect((await level()).reserved).toBe(2)
+
+      const res = await post({ stock: 1, expected_stock: 3 })
+      expect({ status: res.status, message: res.data.message }).toEqual({
+        status: 400,
+        message: expect.stringMatching(/2 are set aside/),
+      })
+      expect((await level()).stocked).toBe(3)
+      expect((await post({ stock: 2, expected_stock: 3 })).status).toBe(200)
+    })
+
+    it("puts the stock back when the price write fails", async () => {
+      const pricing = getContainer().resolve(Modules.PRICING) as any
+      const spy = jest.spyOn(pricing, "addPrices").mockRejectedValueOnce(new Error("boom"))
+      try {
+        const res = await post({ price_pence: 999, stock: 9 })
+        expect(res.status).toBeGreaterThanOrEqual(400)
+      } finally {
+        spy.mockRestore()
+      }
+      const v = await read()
+      expect(Number(v.gbp.amount)).toBe(4.99)
+      expect(v.stock).toBe(3)
+    })
+
+    it("needs an admin", async () => {
+      const res = await api.post(url(), { stock: 1 }).catch((e: any) => e.response)
+      expect(res.status).toBe(401)
+      expect((await read()).stock).toBe(3)
+    })
+
     it("refuses bad input and changes nothing", async () => {
       for (const body of [
         {},
@@ -127,6 +277,9 @@ medusaIntegrationTestRunner({
         { price_pence: -1 },
         { price_pence: 5.5 },
         { price_pence: "5" },
+        { price_pence: 500_001 },
+        { stock: 1, expected_stock: -1 },
+        { stock: 1, expected_stock: 1.5 },
         { stock: -1 },
         { stock: 1.5 },
         { stock: 100_001 },

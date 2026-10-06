@@ -99,6 +99,8 @@ async function loadExistingVariants(
       "prices.amount",
       "prices.currency_code",
       "prices.rules_count",
+      "prices.min_quantity",
+      "prices.max_quantity",
       "prices.price_list_id",
       "inventory_items.inventory_item_id",
       "inventory_items.inventory.location_levels.location_id",
@@ -148,6 +150,8 @@ async function loadExistingVariants(
           currency_code: p.currency_code,
           amount: Number(p.amount),
           rules_count: p.rules_count ?? 0,
+          min_quantity: p.min_quantity == null ? null : Number(p.min_quantity),
+          max_quantity: p.max_quantity == null ? null : Number(p.max_quantity),
         })),
     })
   }

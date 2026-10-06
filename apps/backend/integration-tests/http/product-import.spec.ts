@@ -387,6 +387,36 @@ medusaIntegrationTestRunner({
         expect((await variantBySku("IMP-CHG-65")).prices[0].amount).toBe(39.99)
       })
 
+      it("keeps a variant's quantity-tier price when the import changes its price", async () => {
+        await importCsv(csv(NEW_CABLE))
+        const query = getContainer().resolve(ContainerRegistrationKeys.QUERY)
+        const pricing = getContainer().resolve(Modules.PRICING)
+        const { data } = await query.graph({
+          entity: "product_variant",
+          fields: ["price_set.id"],
+          filters: { sku: "IMP-CBL-1" },
+        })
+        const priceSetId = (data[0] as any).price_set.id as string
+        await pricing.addPrices({
+          priceSetId,
+          prices: [{ currency_code: "gbp", amount: 2.99, min_quantity: 10 }],
+        })
+        const amounts = async () =>
+          (
+            await pricing.listPrices(
+              { price_set_id: [priceSetId], price_list_id: null } as any,
+              { select: ["id", "amount", "min_quantity"], take: null }
+            )
+          )
+            .map((p) => [Number(p.amount), p.min_quantity == null ? null : Number(p.min_quantity)])
+            .sort((a, b) => (a[0] as number) - (b[0] as number))
+        expect(await amounts()).toEqual([[2.99, 10], [3.49, null]])
+
+        await importCsv(csv("IMP-CBL-1,,,,,3.79,,,,,,,,,,,,"))
+
+        expect(await amounts()).toEqual([[2.99, 10], [3.79, null]])
+      })
+
       it("rolls every row back when a later step fails", async () => {
         const service = getContainer().resolve(PRODUCT_ATTRIBUTES_MODULE) as any
         const spy = jest

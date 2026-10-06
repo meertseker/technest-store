@@ -4,9 +4,11 @@ import { loadDefaults } from "../build-product-import-plan"
 
 export type VariantPriceStock = {
   variant_id: string
-  /** The variant's plain GBP price (no price list), null when it has none yet. */
+  /** The variant's plain GBP price (no price list, rules or quantity tier), null when it has none yet. */
   gbp_price_id: string | null
   price_pence: number | null
+  /** How many plain GBP prices the variant has; more than one can't be edited here. */
+  plain_price_count: number
   inventory_item_id: string | null
   /** The shop's stock location (the one the import and Quick add use). */
   location_id: string
@@ -23,18 +25,31 @@ const VARIANT_FIELDS = [
   "price_set.prices.currency_code",
   "price_set.prices.amount",
   "price_set.prices.price_list_id",
+  "price_set.prices.rules_count",
+  "price_set.prices.min_quantity",
+  "price_set.prices.max_quantity",
   "inventory_items.inventory_item_id",
   "inventory_items.inventory.id",
   "inventory_items.inventory.location_levels.location_id",
   "inventory_items.inventory.location_levels.stocked_quantity",
 ]
 
+type PriceRow = {
+  id: string
+  currency_code: string
+  amount: unknown
+  price_list_id?: string | null
+  rules_count?: unknown
+  min_quantity?: unknown
+  max_quantity?: unknown
+}
+
 type Row = {
   id: string
   product_id: string
   price_set?: {
     id: string
-    prices?: ({ id: string; currency_code: string; amount: unknown; price_list_id?: string | null } | null)[] | null
+    prices?: (PriceRow | null)[] | null
   } | null
   inventory_items?: ({
     inventory_item_id: string
@@ -43,6 +58,24 @@ type Row = {
       location_levels?: ({ location_id: string; stocked_quantity: unknown } | null)[] | null
     } | null
   } | null)[] | null
+}
+
+/**
+ * The price shoppers pay when nothing special applies: GBP, not on a price
+ * list, with no rules (a region or customer-group price) and no quantity tier.
+ * Normally exactly one; every candidate is returned so the caller can refuse
+ * to guess when there are several.
+ */
+export function plainGbpPrices<T extends PriceRow>(prices: (T | null)[] | null | undefined): T[] {
+  return (prices ?? []).filter(
+    (p): p is T =>
+      !!p &&
+      p.currency_code === "gbp" &&
+      !p.price_list_id &&
+      !Number(p.rules_count ?? 0) &&
+      p.min_quantity == null &&
+      p.max_quantity == null
+  )
 }
 
 /** Medusa stores amounts as-is in major units (3.49 = £3.49); our API talks in integer pence. */
@@ -64,9 +97,8 @@ export async function readVariantPriceStock(
   if (!variant || (productId && variant.product_id !== productId)) {
     throw new MedusaError(MedusaError.Types.NOT_FOUND, `Variant ${variantId} not found on this product`)
   }
-  const gbp = (variant.price_set?.prices ?? []).find(
-    (p) => !!p && p.currency_code === "gbp" && !p.price_list_id
-  )
+  const plain = plainGbpPrices(variant.price_set?.prices)
+  const gbp = plain[0]
   const item = (variant.inventory_items ?? []).find((i) => !!i) ?? null
   const level = (item?.inventory?.location_levels ?? []).find(
     (l) => !!l && l.location_id === defaults.location_id
@@ -75,6 +107,7 @@ export async function readVariantPriceStock(
     variant_id: variant.id,
     gbp_price_id: gbp?.id ?? null,
     price_pence: gbp ? amountToPence(gbp.amount) : null,
+    plain_price_count: plain.length,
     inventory_item_id: item?.inventory_item_id ?? null,
     location_id: defaults.location_id,
     has_level: !!level,
@@ -85,8 +118,17 @@ export async function readVariantPriceStock(
 /** Loads the variant for a price/stock update (404 when it is not on the product). */
 export const loadVariantPriceStockStep = createStep(
   "load-variant-price-stock",
-  async (input: { product_id: string; variant_id: string; stock?: number }, { container }) => {
+  async (
+    input: { product_id: string; variant_id: string; stock?: number; price_pence?: number },
+    { container }
+  ) => {
     const current = await readVariantPriceStock(container, input.variant_id, input.product_id)
+    if (input.price_pence !== undefined && current.plain_price_count > 1) {
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        "This product has more than one standard price, so its price can't be changed from this page. Open the product and keep one price."
+      )
+    }
     if (input.stock !== undefined && !current.inventory_item_id) {
       throw new MedusaError(
         MedusaError.Types.INVALID_DATA,

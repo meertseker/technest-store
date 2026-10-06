@@ -29,8 +29,11 @@ export type ExistingPrice = {
   id: string
   currency_code: string
   amount: number
-  /** Prices with rules (region, quantity) are left alone by the import. */
+  /** Prices with rules (region, customer group) are left alone by the import. */
   rules_count: number
+  /** So are quantity-tier prices ("10 or more"). */
+  min_quantity?: number | null
+  max_quantity?: number | null
 }
 
 /** A variant that already exists, found by SKU. */
@@ -56,9 +59,10 @@ export type ExistingVariant = {
 }
 
 /**
- * The full price list to write for an existing variant, or null when the price
- * doesn't change. Medusa replaces a variant's whole (non price-list) price set on
- * update, so every other price is sent back unchanged. Major units, as-is.
+ * The price to write for an existing variant, or null when the price
+ * doesn't change. Only the plain GBP price is listed: with an `id` it is
+ * changed, without one it is added; the variant's other prices are not
+ * touched (see set-import-variant-prices.ts). Major units, as-is.
  */
 export type PriceWrite = { id?: string; currency_code: string; amount: number }[]
 
@@ -149,12 +153,15 @@ const GBP = "gbp"
 
 function priceWrite(existing: ExistingVariant | undefined, price: number | undefined) {
   if (!existing || price === undefined) return null
-  const base = existing.prices.find((p) => p.currency_code === GBP && p.rules_count === 0)
+  const base = existing.prices.find(
+    (p) =>
+      p.currency_code === GBP &&
+      p.rules_count === 0 &&
+      p.min_quantity == null &&
+      p.max_quantity == null
+  )
   if (base && base.amount === price) return null
-  const others = existing.prices
-    .filter((p) => p !== base)
-    .map(({ id, currency_code, amount }) => ({ id, currency_code, amount }))
-  return [...others, { ...(base ? { id: base.id } : {}), currency_code: GBP, amount: price }]
+  return [{ ...(base ? { id: base.id } : {}), currency_code: GBP, amount: price }]
 }
 
 export const DRAFT_SAFETY_WARNING =

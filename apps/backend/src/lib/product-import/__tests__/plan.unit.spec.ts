@@ -198,10 +198,12 @@ describe("buildImportPlan", () => {
     expect(byTag.rows[0].action).toBe("error")
   })
 
-  it("writes the price in major units and keeps the variant's other prices", () => {
+  it("writes the plain GBP price in major units and leaves the variant's other prices out", () => {
     const priced = {
       ...existingCable,
       prices: [
+        // A bulk price comes first: it has no rules either, but it is not the plain price.
+        { id: "price_tier", currency_code: "gbp", amount: 3.2, rules_count: 0, min_quantity: 10 },
         { id: "price_gbp", currency_code: "gbp", amount: 3.99, rules_count: 0 },
         { id: "price_eur", currency_code: "eur", amount: 4.5, rules_count: 0 },
         { id: "price_region", currency_code: "gbp", amount: 3.5, rules_count: 1 },
@@ -209,8 +211,6 @@ describe("buildImportPlan", () => {
     }
     const c = ctx({ variantsBySku: new Map([["TN-CABLE", priced]]) })
     expect(plan(["TN-CABLE,,,,3.49,,,,"], c).rows[0].resolved!.prices).toEqual([
-      { id: "price_eur", currency_code: "eur", amount: 4.5 },
-      { id: "price_region", currency_code: "gbp", amount: 3.5 },
       { id: "price_gbp", currency_code: "gbp", amount: 3.49 },
     ])
     // Same price or a blank cell: no price write at all.
