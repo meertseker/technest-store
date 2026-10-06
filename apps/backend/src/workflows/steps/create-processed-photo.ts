@@ -53,8 +53,8 @@ export const createProcessedPhotoStep = createStep(
 
     const name = `${baseName(input.original.id)}-processed`
     const [webp, avif] = await fileModule.createFiles([
-      { filename: `${name}.webp`, mimeType: "image/webp", content: rendered.webp.toString("base64") },
-      { filename: `${name}.avif`, mimeType: "image/avif", content: rendered.avif.toString("base64") },
+      { filename: `${name}.webp`, mimeType: "image/webp", content: rendered.webp.toString("base64"), access: "public" },
+      { filename: `${name}.avif`, mimeType: "image/avif", content: rendered.avif.toString("base64"), access: "public" },
     ])
 
     const size = { width: rendered.width, height: rendered.height }

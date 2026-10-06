@@ -26,6 +26,8 @@ export const storeOriginalPhotoStep = createStep(
           filename: input.upload.filename,
           mimeType: input.upload.mime_type,
           content: input.upload.content_base64,
+          // Shown in the admin and linked from the product, like Medusa's own uploads.
+          access: "public",
         },
       ])
       return new StepResponse<StoredPhoto, string | null>({ id: file.id, url: file.url }, file.id)
