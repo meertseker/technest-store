@@ -72,7 +72,10 @@ export type SignupInput = {
 }
 
 /** Registers and signs in. Callers (the form actions) validate the input first. */
-export async function signup({ password, ...customerForm }: SignupInput): Promise<CustomerAuthState> {
+export async function signup({ password, ...fields }: SignupInput): Promise<CustomerAuthState> {
+  // One spelling everywhere: the password-reset lookup is lower case, so an
+  // account registered as "Sam@..." would never get its reset email.
+  const customerForm = { ...fields, email: normaliseEmail(fields.email) }
 
   try {
     await sdk.auth.register("customer", "emailpass", {
@@ -104,8 +107,15 @@ export async function signup({ password, ...customerForm }: SignupInput): Promis
 
 /** Signs in. Callers (the form actions) validate the input first. */
 export async function login(email: string, password: string): Promise<CustomerAuthState> {
-  return completeLogin(email, password)
+  const typed = email.trim()
+  const lower = normaliseEmail(email)
+  const result = await completeLogin(lower, password)
+  // An account made before emails were lower-cased is stored as it was typed.
+  if (result?.state === "error" && typed !== lower) return completeLogin(typed, password)
+  return result
 }
+
+const normaliseEmail = (email: string) => email.trim().toLowerCase()
 
 // Logs the customer in and reconciles the customer record. The behavior is
 // driven entirely by the backend's login response, so it works whether or not
