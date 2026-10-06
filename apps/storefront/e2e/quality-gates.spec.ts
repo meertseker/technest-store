@@ -115,11 +115,15 @@ type Product = {
   id: string
   handle: string
   metadata: Record<string, unknown> | null
+  product_attributes?: { is_addon_item?: boolean } | null
   variants: { id: string }[]
 }
 
+// the add-on flag lives in the attributes module; older seeds wrote it to metadata
+const isAddon = (p: Product) => (p.product_attributes?.is_addon_item ?? p.metadata?.is_addon_item) === true
+
 async function products(request: APIRequestContext): Promise<Product[]> {
-  const res = await request.get(`${BACKEND}/store/products?limit=100&fields=id,handle,metadata,*variants`, { headers: h })
+  const res = await request.get(`${BACKEND}/store/products?limit=100&fields=id,handle,metadata,+product_attributes.*,*variants`, { headers: h })
   return (await res.json()).products
 }
 
@@ -130,7 +134,7 @@ async function cartWithItem(request: APIRequestContext): Promise<string> {
     await request.post(`${BACKEND}/store/carts`, { headers: h, data: { region_id: regions[0].id } })
   ).json()
   for (const p of await products(request)) {
-    if (p.metadata?.is_addon_item === true) continue
+    if (isAddon(p)) continue
     for (const v of p.variants) {
       const res = await request.post(`${BACKEND}/store/carts/${cart.id}/line-items`, {
         headers: h,
@@ -229,7 +233,7 @@ test.describe("quality gates (spec 8)", () => {
   })
 
   test("product page", async ({ page, request }) => {
-    const p = (await products(request)).find((x) => x.metadata?.is_addon_item !== true)!
+    const p = (await products(request)).find((x) => !isAddon(x))!
     await visit(page, `/p/${p.handle}`)
     await expectQualityGates(page, "product")
   })

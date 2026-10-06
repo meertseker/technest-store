@@ -6,12 +6,15 @@ import { useEffect } from "react"
 // --- mocks -----------------------------------------------------------------
 const confirmPayment = vi.fn()
 const refresh = vi.fn()
+// the Payment Element's latest onChange, so a test can emit Stripe's "change" event
+let elementChange: (() => void) | undefined
 
 vi.mock("@stripe/stripe-js", () => ({ loadStripe: vi.fn(() => Promise.resolve({})) }))
 vi.mock("@stripe/react-stripe-js", () => ({
   Elements: ({ children }: { children: React.ReactNode }) => <div data-testid="elements">{children}</div>,
-  PaymentElement: ({ onReady }: { onReady?: () => void }) => {
+  PaymentElement: ({ onReady, onChange }: { onReady?: () => void; onChange?: () => void }) => {
     useEffect(() => onReady?.(), [onReady])
+    elementChange = onChange
     return <div data-testid="mock-payment-element" />
   },
   useStripe: () => ({ confirmPayment }),
@@ -100,6 +103,20 @@ describe("PaymentForm (Stripe)", () => {
     expect(document.activeElement).toBe(summary)
     expect(complete).not.toHaveBeenCalled()
     expect((placeButton() as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it("keeps the decline on screen when Stripe's form emits a change (it does so as it shows its own error)", async () => {
+    confirmPayment.mockResolvedValue({
+      error: { type: "card_error", code: "card_declined", message: "Your card has been declined." },
+    })
+    render(<PaymentForm {...base} />)
+    await waitFor(() => expect((placeButton() as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(placeButton())
+    await screen.findByTestId("error-summary")
+
+    act(() => elementChange?.())
+
+    expect(screen.getByTestId("error-summary").textContent).toContain("Your card has been declined.")
   })
 
   it("a network failure during confirm is reported without charging", async () => {

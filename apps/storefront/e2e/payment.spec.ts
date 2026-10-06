@@ -24,18 +24,27 @@ async function shot(page: Page, state: string, fullPage = true) {
 }
 
 type Variant = { id: string; manage_inventory?: boolean; allow_backorder?: boolean; inventory_quantity?: number }
-type Product = { id: string; handle: string; metadata: Record<string, unknown> | null; variants: Variant[] }
+type Product = {
+  id: string
+  handle: string
+  metadata: Record<string, unknown> | null
+  product_attributes?: { is_addon_item?: boolean } | null
+  variants: Variant[]
+}
+
+/** The add-on flag lives in the attributes module; older seeds wrote it to metadata */
+const isAddon = (p: Product) => (p.product_attributes?.is_addon_item ?? p.metadata?.is_addon_item) === true
 
 /** A non-add-on variant with stock to spare (the dev backend is shared and these tests place real orders) */
 async function regularVariant(page: Page, skip = 0): Promise<string> {
   const res = await page.request.get(
-    `${BACKEND}/store/products?limit=100&fields=id,handle,metadata,*variants,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder`,
+    `${BACKEND}/store/products?limit=100&fields=id,handle,metadata,+product_attributes.*,*variants,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder`,
     { headers: h }
   )
   const products: Product[] = (await res.json()).products
   const inStock = (v: Variant) => v.manage_inventory === false || v.allow_backorder || (v.inventory_quantity ?? 0) > 5
   const ok = products
-    .filter((p) => p.metadata?.is_addon_item !== true)
+    .filter((p) => !isAddon(p))
     .flatMap((p) => p.variants.filter(inStock))
     .sort((a, b) => (b.inventory_quantity ?? 1e9) - (a.inventory_quantity ?? 1e9))
   expect(ok.length, "no in-stock product in the backend").toBeGreaterThan(0)
@@ -229,13 +238,23 @@ test.describe("payment step: Stripe test mode", () => {
     await toPayment(page, "stripe-3ds", true)
     await fillCard(page, "4000002500003155")
     await page.getByTestId("place-order").click()
-    // Stripe's test challenge: nested frames inside the 3DS modal
-    const challenge = page
-      .frameLocator('iframe[name^="__privateStripeFrame"][src*="three-ds"], iframe[src*="authorize"]')
-      .first()
-      .frameLocator("#challengeFrame")
-      .frameLocator('iframe[name="acsFrame"]')
-    await challenge.getByRole("button", { name: /Complete/ }).click({ timeout: 60_000 })
+    // Stripe's test challenge sits in nested frames whose names and depth change between
+    // Stripe.js releases, so look for its Complete button in every frame
+    await expect
+      .poll(
+        async () => {
+          for (const frame of page.frames()) {
+            const complete = frame.getByRole("button", { name: "Complete", exact: true })
+            if (await complete.count()) {
+              await complete.first().click()
+              return true
+            }
+          }
+          return false
+        },
+        { timeout: 60_000 }
+      )
+      .toBe(true)
     await page.waitForURL(/\/order\/.+\/confirmed/, { timeout: 90_000 })
   })
 })

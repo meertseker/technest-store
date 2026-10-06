@@ -19,15 +19,17 @@ type Product = {
   id: string
   handle: string
   metadata: Record<string, unknown> | null
+  product_attributes?: { is_addon_item?: boolean } | null
   variants: { id: string; inventory_quantity?: number | null; manage_inventory?: boolean | null }[]
 }
 
 async function listProducts(page: Page): Promise<Product[]> {
-  const res = await page.request.get(`${BACKEND}/store/products?limit=100&fields=id,handle,metadata,*variants,+variants.inventory_quantity`, { headers: h })
+  const res = await page.request.get(`${BACKEND}/store/products?limit=100&fields=id,handle,metadata,+product_attributes.*,*variants,+variants.inventory_quantity`, { headers: h })
   return (await res.json()).products
 }
 
-const isAddon = (p: Product) => p.metadata?.is_addon_item === true
+// the add-on flag lives in the attributes module; older seeds wrote it to metadata
+const isAddon = (p: Product) => (p.product_attributes?.is_addon_item ?? p.metadata?.is_addon_item) === true
 
 test.describe("basket and checkout", () => {
   test.skip(!KEY, "needs NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY (load apps/storefront/.env.local)")

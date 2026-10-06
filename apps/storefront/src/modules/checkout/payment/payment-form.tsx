@@ -244,8 +244,9 @@ function StripeCheckout({
               layout: { type: "accordion", defaultCollapsed: false, radios: true, spacedAccordionItems: false },
               business: { name: "Tech Nest" },
             }}
+            // no onChange: Stripe emits "change" as it shows its own decline message, which
+            // would wipe our summary at once. The summary is cleared on the next Place order.
             onReady={() => setReady(true)}
-            onChange={() => clear()}
             onLoadError={() => setLoadError(true)}
           />
         )}
