@@ -56,6 +56,9 @@ export default function DeliveryForm({
   return (
     <form action={action} noValidate className="flex flex-col gap-6" data-testid="delivery-form">
       <ErrorSummary errors={state.errors} submission={state.submission} fieldId={fieldId} />
+      {/* A postcode the lookup did not know, which the server asked the shopper
+          to check: sending the same one again confirms it (lib/data/checkout-actions.ts) */}
+      <input type="hidden" name="postcode_confirmed" value={state.values.postcode_confirmed ?? ""} />
 
       {addonOnly && <AddonNotice />}
 

@@ -92,10 +92,17 @@ export async function saveDelivery(
 
   const errors = validateDelivery(input, { addonOnly: view.addon_only })
   if (!errors.length && input.kind && input.kind !== "collect") {
-    if (!(await postcodeExists(input.postal_code))) {
+    // The lookup's data is published quarterly, so a brand-new postcode is
+    // missing from it. The first time we ask the shopper to check; when the
+    // same (correctly formatted) postcode comes back, we take their word.
+    const postcode = normalisePostcode(input.postal_code)
+    const confirmed = text(formData, "postcode_confirmed") === postcode
+    if (!confirmed && !(await postcodeExists(postcode))) {
+      values.postcode_confirmed = postcode
       errors.push({
         field: "postal_code",
-        message: "We can't find that postcode. Check it and try again",
+        message:
+          "We can't find that postcode. Check it. If it is correct (for example a new building), select Continue to payment again to use it",
       })
     }
   }
