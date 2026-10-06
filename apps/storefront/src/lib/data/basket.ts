@@ -9,6 +9,7 @@ import {
   type ShippingOptionLike,
 } from "@lib/basket/shipping-options"
 import { HttpTypes } from "@medusajs/types"
+import { cache } from "react"
 import { getAuthHeaders } from "./cookies"
 import { listCartShippingMethods } from "./fulfillment"
 import { getTechnestSettings } from "./technest-settings"
@@ -32,7 +33,7 @@ export type BasketView = {
  * E1's `GET /store/carts/:id/basket-rules` (lands on e1/basket-rules). Returns
  * null while the route is missing so the storefront fallback is used.
  */
-async function getBackendBasketRules(cartId: string) {
+const getBackendBasketRules = cache(async (cartId: string) => {
   try {
     const body = await sdk.client.fetch<unknown>(`/store/carts/${cartId}/basket-rules`, {
       headers: { ...(await getAuthHeaders()) },
@@ -42,7 +43,10 @@ async function getBackendBasketRules(cartId: string) {
   } catch {
     return null
   }
-}
+})
+
+// The header and the page both build the basket view: one read per render.
+const cartShippingOptions = cache((cartId: string) => listCartShippingMethods(cartId))
 
 /**
  * Product ids flagged `is_addon_item` through the attributes module
@@ -79,7 +83,7 @@ export async function getBasketView(cart: HttpTypes.StoreCart | null): Promise<B
   const [settings, backendRules, options, addonIds] = await Promise.all([
     getTechnestSettings(),
     cart && items.length ? getBackendBasketRules(cart.id) : Promise.resolve(null),
-    cart && items.length ? listCartShippingMethods(cart.id) : Promise.resolve(null),
+    cart && items.length ? cartShippingOptions(cart.id) : Promise.resolve(null),
     items.length ? getAddonProductIds(productIds) : Promise.resolve(null),
   ])
 

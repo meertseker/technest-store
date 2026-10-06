@@ -6,6 +6,7 @@ import { HttpTypes } from "@medusajs/types"
 import { FetchError } from "@medusajs/js-sdk"
 import { revalidateTag } from "next/cache"
 import { redirect } from "next/navigation"
+import { cache } from "react"
 import {
   getAuthHeaders,
   getCacheTag,
@@ -39,29 +40,29 @@ async function requestVerificationEmail(email: string, token: string) {
   )
 }
 
-export const retrieveCustomer =
-  async (): Promise<HttpTypes.StoreCustomer | null> => {
-    const authHeaders = await getAuthHeaders()
+// One backend read per page render (the layout, the account layout and the page
+// all ask for the customer); outside a render every call reads again.
+const readCustomer = cache(async (): Promise<HttpTypes.StoreCustomer | null> => {
+  const headers = await getAuthHeaders()
 
-    if (!authHeaders) return null
+  // a guest: nothing to ask the backend
+  if (!("authorization" in headers)) return null
 
-    const headers = {
-      ...authHeaders,
-    }
+  return await sdk.client
+    .fetch<{ customer: HttpTypes.StoreCustomer }>(`/store/customers/me`, {
+      method: "GET",
+      query: {
+        fields: "*orders",
+      },
+      headers,
+      // personal data: read fresh, never stored
+      cache: "no-store",
+    })
+    .then(({ customer }) => customer)
+    .catch(() => null)
+})
 
-    return await sdk.client
-      .fetch<{ customer: HttpTypes.StoreCustomer }>(`/store/customers/me`, {
-        method: "GET",
-        query: {
-          fields: "*orders",
-        },
-        headers,
-        // personal data: read fresh, never stored
-        cache: "no-store",
-      })
-      .then(({ customer }) => customer)
-      .catch(() => null)
-  }
+export const retrieveCustomer = async (): Promise<HttpTypes.StoreCustomer | null> => readCustomer()
 
 export const updateCustomer = async (body: HttpTypes.StoreUpdateCustomer) => {
   const headers = {

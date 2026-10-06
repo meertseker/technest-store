@@ -6,6 +6,7 @@ import { addressErrorMessage } from "@lib/util/address-error"
 import { HttpTypes } from "@medusajs/types"
 import { revalidateTag } from "next/cache"
 import { redirect } from "next/navigation"
+import { cache } from "react"
 import {
   getAuthHeaders,
   getCacheTag,
@@ -15,6 +16,34 @@ import {
 } from "./cookies"
 import { getRegion } from "./regions"
 import { getLocale } from "./locale-actions"
+
+/**
+ * One backend read per page render: the layout, the header and the page all ask
+ * for the same basket. (Calls with a deadline are not de-duplicated by Next.)
+ * Outside a render (form actions, route handlers) every call reads again.
+ */
+const readCart = cache(async (id: string, fields: string): Promise<HttpTypes.StoreCart | null> => {
+  const headers = {
+    ...(await getAuthHeaders()),
+  }
+
+  try {
+    // A basket belongs to one visitor and changes outside this app (the payment
+    // webhook completes it), so it is read fresh and never stored.
+    const { cart } = await sdk.client.fetch<HttpTypes.StoreCartResponse>(`/store/carts/${id}`, {
+      method: "GET",
+      query: {
+        fields,
+      },
+      headers,
+      cache: "no-store",
+    })
+    return cart
+  } catch (error) {
+    if ((error as { status?: number } | null)?.status === 404) return null
+    throw error
+  }
+})
 
 /**
  * The shopper's basket (the cart from the cookie, or `cartId`).
@@ -38,28 +67,8 @@ export async function retrieveCart(
     return null
   }
 
-  const headers = {
-    ...(await getAuthHeaders()),
-  }
-
-  let cart: HttpTypes.StoreCart
-  try {
-    // A basket belongs to one visitor and changes outside this app (the payment
-    // webhook completes it), so it is read fresh and never stored.
-    cart = (
-      await sdk.client.fetch<HttpTypes.StoreCartResponse>(`/store/carts/${id}`, {
-        method: "GET",
-        query: {
-          fields,
-        },
-        headers,
-        cache: "no-store",
-      })
-    ).cart
-  } catch (error) {
-    if ((error as { status?: number } | null)?.status === 404) return null
-    throw error
-  }
+  const cart = await readCart(id, fields)
+  if (!cart) return null
 
   const completedAt = (cart as { completed_at?: string | null }).completed_at
   if (completedAt && !options?.includeCompleted) return null
