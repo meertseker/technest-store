@@ -26,6 +26,7 @@ import {
   validateRegister,
   validateReset,
 } from "@/lib/forms/validation"
+import { reportUnexpected } from "@lib/monitoring/report"
 import { getAuthHeaders, getCacheTag, removeAuthToken } from "./cookies"
 import {
   confirmEmailVerification,
@@ -108,8 +109,10 @@ export async function forgotPasswordAction(prev: FormState, formData: FormData):
 
   try {
     await sdk.auth.resetPassword("customer", "emailpass", { identifier: values.email.toLowerCase() })
-  } catch {
-    // Unknown email and backend errors look the same to the visitor (see above)
+  } catch (e) {
+    // Unknown email and backend errors look the same to the visitor (see above),
+    // but a backend error must still be seen by us
+    await reportUnexpected(e, "account.forgot-password")
   }
   return { status: "success", attempt: prev.attempt, errors: {}, values: { email: values.email } }
 }
@@ -125,7 +128,8 @@ export async function resetPasswordAction(prev: FormState, formData: FormData): 
   }
   try {
     await sdk.auth.updateProvider("customer", "emailpass", { password: String(formData.get("password")) }, token)
-  } catch {
+  } catch (e) {
+    await reportUnexpected(e, "account.reset-password")
     return errorState(
       prev,
       {},
@@ -151,6 +155,7 @@ export async function updateProfileAction(prev: FormState, formData: FormData): 
     )
   } catch (e) {
     if (isUnauthorized(e)) await signInAgain("/account/profile")
+    await reportUnexpected(e, "account.update-profile")
     return errorState(prev, values, {}, "Sorry, we could not save your details. Please try again.")
   }
   await revalidateCustomer()
@@ -186,6 +191,7 @@ export async function saveAddressAction(prev: FormState, formData: FormData): Pr
     }
   } catch (e) {
     if (isUnauthorized(e)) await signInAgain("/account/addresses")
+    await reportUnexpected(e, "account.save-address")
     return errorState(prev, values, {}, "Sorry, we could not save this address. Please try again.")
   }
   await revalidateCustomer()
@@ -201,6 +207,7 @@ export async function deleteAddressAction(formData: FormData): Promise<void> {
     await sdk.store.customer.deleteAddress(id, headers)
   } catch (e) {
     if (isUnauthorized(e)) await signInAgain("/account/addresses")
+    await reportUnexpected(e, "account.delete-address")
     ok = false
   }
   await revalidateCustomer()

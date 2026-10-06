@@ -2,6 +2,7 @@
 
 import { CHECKOUT_CART_FIELDS } from "@lib/data/basket"
 import { initiatePaymentSession, placeOrder, retrieveCart } from "@lib/data/cart"
+import { reportUnexpected } from "@lib/monitoring/report"
 import { unstable_rethrow } from "next/navigation"
 import { HOLD_RELEASED, ORDER_FAILED, SESSION_FAILED, sessionErrorMessage, providerForMode, sessionDecision } from "./helpers"
 import { getPaymentMode } from "./mode"
@@ -54,6 +55,7 @@ export async function preparePaymentSession(): Promise<PaymentActionResult> {
     await ensureSession(cart, provider)
     return { ok: true }
   } catch (e) {
+    await reportUnexpected(e, "checkout.payment-session")
     return { ok: false, message: sessionErrorMessage(e) }
   }
 }
@@ -87,6 +89,8 @@ export async function completeOrder(): Promise<PaymentActionResult> {
     if ((e as { payment_released?: boolean } | null)?.payment_released) {
       return { ok: false, message: HOLD_RELEASED }
     }
+    // the card may be authorised with no order: the shop must hear about it
+    await reportUnexpected(e, "checkout.place-order")
     return { ok: false, message: ORDER_FAILED }
   }
   // placeOrder returned: the cart did not become an order

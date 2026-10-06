@@ -1,5 +1,6 @@
 import "server-only"
 import { sdk } from "@lib/config"
+import { reportUnexpected } from "@lib/monitoring/report"
 import { retrieveCustomer } from "@lib/data/customer"
 import { HttpTypes } from "@medusajs/types"
 import { redirect } from "next/navigation"
@@ -34,7 +35,8 @@ export async function listOrdersPage(
       cache: "no-store",
     })
     return { orders, count }
-  } catch {
+  } catch (e) {
+    await reportUnexpected(e, "account.orders")
     return null
   }
 }
@@ -57,7 +59,8 @@ export async function retrieveAccountOrder(id: string): Promise<HttpTypes.StoreO
       }
     )
     return order
-  } catch {
+  } catch (e) {
+    await reportUnexpected(e, "account.order")
     return null
   }
 }

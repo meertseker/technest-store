@@ -1,6 +1,7 @@
 import "server-only"
 
 import { sdk } from "@lib/config"
+import { reportError } from "@lib/monitoring/report"
 import medusaError from "@lib/util/medusa-error"
 import { HttpTypes } from "@medusajs/types"
 import { revalidateTag } from "next/cache"
@@ -40,6 +41,8 @@ const readCart = cache(async (id: string, fields: string): Promise<HttpTypes.Sto
     return cart
   } catch (error) {
     if ((error as { status?: number } | null)?.status === 404) return null
+    // callers show their own message; this is the one place that sees every failed read
+    await reportError(error, "basket.read")
     throw error
   }
 })

@@ -14,6 +14,10 @@ vi.mock("@lib/data/cart", () => ({
   initiatePaymentSession: (...a: unknown[]) => initiatePaymentSession(...a),
 }))
 vi.mock("./mode", () => ({ getPaymentMode: (...a: unknown[]) => getPaymentMode(...a) }))
+const captureException = vi.fn()
+vi.mock("@sentry/nextjs", () => ({ captureException: (...a: unknown[]) => captureException(...a) }))
+/** What reaches monitoring: [error, where it was handled] */
+const reported = () => captureException.mock.calls.map(([error, hint]) => [error, hint?.tags?.handled_in])
 
 import { completeOrder, preparePaymentSession } from "./actions"
 import { ORDER_FAILED, SESSION_FAILED } from "./helpers"
@@ -26,6 +30,8 @@ beforeEach(() => {
   placeOrder.mockReset()
   initiatePaymentSession.mockReset()
   getPaymentMode.mockReset()
+  captureException.mockReset()
+  vi.stubEnv("SENTRY_DSN", "https://key@example.invalid/1")
   getPaymentMode.mockResolvedValue("stripe")
 })
 
@@ -68,5 +74,22 @@ describe("placing an order for a basket the payment webhook already completed", 
     placeOrder.mockResolvedValue(undefined)
     await expect(completeOrder()).resolves.toEqual({ ok: false, message: ORDER_FAILED })
     expect(placeOrder).toHaveBeenCalledWith("cart_1")
+  })
+})
+
+describe("an order that could not be placed reaches monitoring", () => {
+  it("a backend failure after the card step is reported", async () => {
+    const error = Object.assign(new Error("Error setting up the request: boom"), { status: 500 })
+    retrieveCart.mockResolvedValue(cart)
+    placeOrder.mockRejectedValue(error)
+    await expect(completeOrder()).resolves.toEqual({ ok: false, message: ORDER_FAILED })
+    expect(reported()).toEqual([[error, "checkout.place-order"]])
+  })
+
+  it("a refusal that released the hold is an ordinary outcome, not an alert", async () => {
+    retrieveCart.mockResolvedValue(cart)
+    placeOrder.mockRejectedValue(Object.assign(new Error("Out of stock."), { payment_released: true }))
+    await completeOrder()
+    expect(reported()).toEqual([])
   })
 })

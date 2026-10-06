@@ -11,6 +11,7 @@ import {
   toTradeApplicationBody,
   validateTradeApplication,
 } from "@/lib/forms/validation"
+import { reportUnexpected } from "@lib/monitoring/report"
 import { getAuthHeaders, removeAuthToken } from "./cookies"
 
 /** POST /store/trade-applications for the signed-in customer (docs/contracts/trade.md) */
@@ -43,6 +44,7 @@ export async function submitTradeApplication(prev: FormState, formData: FormData
     if (err?.status === 400) {
       return errorState(prev, values, {}, "Some details were not accepted. Check your VAT and Companies House numbers and try again.")
     }
+    await reportUnexpected(e, "trade.apply")
     return errorState(prev, values, {}, "Sorry, we could not send your application. Please try again, or call the shop.")
   }
   redirect("/account/trade?submitted=1")

@@ -7,7 +7,6 @@ const deleteAddress = vi.fn()
 const resetPassword = vi.fn()
 const tradeFetch = vi.fn()
 const removeAuthToken = vi.fn()
-const reportError = vi.fn()
 const redirect = vi.fn((to: string) => {
   throw Object.assign(new Error("NEXT_REDIRECT"), { to })
 })
@@ -41,15 +40,10 @@ vi.mock("./customer", () => ({
   transferCart: vi.fn(),
   confirmEmailVerification: vi.fn(),
 }))
-vi.mock("@lib/monitoring/report", async (original) => ({
-  ...(await original<typeof import("@lib/monitoring/report")>()),
-  reportError: (...a: unknown[]) => reportError(...a),
-}))
 
 import { initialFormState } from "@/lib/forms/state"
 import {
   deleteAddressAction,
-  forgotPasswordAction,
   saveAddressAction,
   updateProfileAction,
 } from "./account-actions"

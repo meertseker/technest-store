@@ -3,6 +3,7 @@ import "server-only"
 import { sdk } from "@lib/config"
 import { HttpTypes } from "@medusajs/types"
 import { FetchError } from "@medusajs/js-sdk"
+import { reportUnexpected } from "@lib/monitoring/report"
 import { revalidateTag } from "next/cache"
 import { redirect } from "next/navigation"
 import { cache } from "react"
@@ -58,7 +59,12 @@ const readCustomer = cache(async (): Promise<HttpTypes.StoreCustomer | null> => 
       cache: "no-store",
     })
     .then(({ customer }) => customer)
-    .catch(() => null)
+    .catch(async (error) => {
+      // 401 = not signed in any more. Anything else is a backend problem: the
+      // page still treats the visitor as signed out, but we need to know.
+      await reportUnexpected(error, "customer.read")
+      return null
+    })
 })
 
 export const retrieveCustomer = async (): Promise<HttpTypes.StoreCustomer | null> => readCustomer()
@@ -91,6 +97,7 @@ export async function signup({ password, ...fields }: SignupInput): Promise<Cust
       fetchError.statusText !== "Unauthorized" ||
       fetchError.message !== "Identity with email already exists"
     ) {
+      await reportUnexpected(error, "account.register")
       return { state: "error", error: String(error) }
     }
   }
@@ -129,6 +136,7 @@ async function completeLogin(
   try {
     result = await sdk.auth.login("customer", "emailpass", { email, password })
   } catch (error) {
+    await reportUnexpected(error, "account.login")
     return { state: "error", error: String(error) }
   }
 
@@ -195,6 +203,7 @@ async function completeLogin(
         password,
       })) as string
     } catch (error) {
+      await reportUnexpected(error, "account.create-customer")
       return { state: "error", error: String(error) }
     }
 
@@ -209,6 +218,7 @@ async function completeLogin(
   try {
     await transferCart()
   } catch (error) {
+    await reportUnexpected(error, "account.transfer-basket")
     return { state: "error", error: String(error) }
   }
 

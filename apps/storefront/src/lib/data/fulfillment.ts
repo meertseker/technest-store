@@ -1,6 +1,7 @@
 import "server-only"
 
 import { sdk } from "@lib/config"
+import { reportUnexpected } from "@lib/monitoring/report"
 import { HttpTypes } from "@medusajs/types"
 import { getAuthHeaders } from "./cookies"
 
@@ -23,7 +24,8 @@ export const listCartShippingMethods = async (cartId: string) => {
       }
     )
     .then(({ shipping_options }) => shipping_options)
-    .catch(() => {
+    .catch(async (error) => {
+      await reportUnexpected(error, "basket.delivery-options")
       return null
     })
 }

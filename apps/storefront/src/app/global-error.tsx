@@ -1,7 +1,9 @@
 "use client"
 
 import "../styles/globals.css"
+import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { reportClientError } from "@lib/monitoring/report-client"
 import { siteConfig } from "@lib/site-config"
 
 /**
@@ -10,7 +12,11 @@ import { siteConfig } from "@lib/site-config"
  * its own <html> and <body> and depends on nothing that could have failed
  * (no data, no header, no footer).
  */
-export default function GlobalError(_props: { error: Error & { digest?: string }; reset: () => void }) {
+export default function GlobalError({ error }: { error: Error & { digest?: string }; reset: () => void }) {
+  // a boundary swallows the error, so report it here or nobody hears of it
+  // (never from /checkout: see lib/monitoring/report-client.ts)
+  useEffect(() => reportClientError(error), [error])
+
   return (
     <html lang="en-GB" data-mode="light">
       <head>

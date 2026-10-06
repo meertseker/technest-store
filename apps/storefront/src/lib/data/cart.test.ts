@@ -30,6 +30,10 @@ vi.mock("next/headers", () => ({
 }))
 vi.mock("next/cache", () => ({ revalidateTag: vi.fn() }))
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }))
+const captureException = vi.fn()
+vi.mock("@sentry/nextjs", () => ({ captureException: (...a: unknown[]) => captureException(...a) }))
+/** What reaches monitoring: [error, where it was handled] */
+const reported = () => captureException.mock.calls.map(([error, hint]) => [error, hint?.tags?.handled_in])
 
 import { getOrSetCart, retrieveCart } from "./cart"
 
@@ -50,6 +54,8 @@ beforeEach(() => {
   createCart.mockReset()
   createLineItem.mockReset()
   setCookie.mockReset()
+  captureException.mockReset()
+  vi.stubEnv("SENTRY_DSN", "https://key@example.invalid/1")
   for (const k of Object.keys(jar)) delete jar[k]
   jar._medusa_cart_id = "cart_old"
   createCart.mockResolvedValue({ cart: { id: "cart_new", region_id: "reg_1" } })
@@ -80,6 +86,18 @@ describe("retrieveCart", () => {
   it("throws when the backend cannot be reached", async () => {
     backend(new TypeError("fetch failed"))
     await expect(retrieveCart()).rejects.toThrow("fetch failed")
+  })
+
+  it("a failed read reaches monitoring; a basket that simply does not exist does not", async () => {
+    const error = httpError(503)
+    backend(error)
+    await retrieveCart().catch(() => {})
+    expect(reported()).toEqual([[error, "basket.read"]])
+
+    captureException.mockReset()
+    backend(httpError(404))
+    await retrieveCart()
+    expect(reported()).toEqual([])
   })
 
   it("is null for a basket that has already become an order", async () => {

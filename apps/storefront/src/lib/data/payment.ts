@@ -1,6 +1,7 @@
 import "server-only"
 
 import { sdk } from "@lib/config"
+import { reportUnexpected } from "@lib/monitoring/report"
 import { getAuthHeaders } from "./cookies"
 import { HttpTypes } from "@medusajs/types"
 
@@ -26,7 +27,9 @@ export const listCartPaymentMethods = async (regionId: string) => {
         return a.id > b.id ? 1 : -1
       })
     )
-    .catch(() => {
+    .catch(async (error) => {
+      // null makes checkout say "payments are unavailable": we must hear about it
+      await reportUnexpected(error, "checkout.payment-providers")
       return null
     })
 }

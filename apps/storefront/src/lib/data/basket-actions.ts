@@ -1,6 +1,7 @@
 "use server"
 
 import { STORE_COUNTRY } from "@lib/constants/store"
+import { reportUnexpected } from "@lib/monitoring/report"
 import { addToCart, deleteLineItem, updateLineItem } from "./cart"
 
 /**
@@ -29,6 +30,7 @@ export async function changeLineQuantity(
     else await updateLineItem({ lineId, quantity })
     return { error: null, at: Date.now() }
   } catch (e) {
+    await reportUnexpected(e, "basket.change-line")
     return { error: friendly(e), at: Date.now() }
   }
 }
@@ -43,6 +45,7 @@ export async function removeLine(
     await deleteLineItem(lineId)
     return { error: null, at: Date.now() }
   } catch (e) {
+    await reportUnexpected(e, "basket.remove-line")
     return { error: friendly(e), at: Date.now() }
   }
 }
@@ -65,6 +68,8 @@ export async function addToBasket(input: { variantId: unknown; quantity: unknown
     return { ok: true }
   } catch (e) {
     const msg = e instanceof Error ? e.message : ""
-    return { ok: false, reason: /inventory|stock/i.test(msg) ? "stock" : "error" }
+    if (/inventory|stock/i.test(msg)) return { ok: false, reason: "stock" }
+    await reportUnexpected(e, "basket.add")
+    return { ok: false, reason: "error" }
   }
 }

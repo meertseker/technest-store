@@ -10,6 +10,7 @@ import {
   type FieldError,
 } from "@lib/checkout/validate"
 import type { DeliveryKind } from "@lib/basket/shipping-options"
+import { reportUnexpected } from "@lib/monitoring/report"
 import { siteConfig } from "@lib/site-config"
 import { TRADE_ACCOUNT_EMAIL_MESSAGE, isTradeAccountEmailRefusal } from "@lib/util/address-error"
 import { HttpTypes } from "@medusajs/types"
@@ -49,6 +50,7 @@ export async function saveContact(
     cart = await updateCart({ email: values.email })
   } catch (e) {
     const message = isTradeAccountEmailRefusal(e) ? TRADE_ACCOUNT_EMAIL_MESSAGE : SERVICE_ERROR
+    await reportUnexpected(e, "checkout.contact")
     return { errors: [{ field: "email", message }], values, submission: Date.now() }
   }
   redirect(nextStepUrl(cart))
@@ -75,8 +77,9 @@ export async function saveDelivery(
   let cart: Awaited<ReturnType<typeof retrieveCart>>
   try {
     cart = await retrieveCart(undefined, CHECKOUT_CART_FIELDS)
-  } catch {
+  } catch (e) {
     // the backend could not answer: keep what was typed and let the shopper retry
+    await reportUnexpected(e, "checkout.delivery")
     return fail([{ field: "option", message: SERVICE_ERROR }])
   }
   if (!cart?.items?.length) redirect("/basket")
@@ -131,7 +134,8 @@ export async function saveDelivery(
   try {
     updated = await updateCart({ shipping_address, billing_address })
     await setShippingMethod({ cartId: cart.id, shippingMethodId: choice!.id })
-  } catch {
+  } catch (e) {
+    await reportUnexpected(e, "checkout.delivery")
     return fail([{ field: "option", message: SERVICE_ERROR }])
   }
   redirect(nextStepUrl({ ...updated, shipping_methods: [{}], shipping_address }))

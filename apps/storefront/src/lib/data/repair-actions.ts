@@ -2,6 +2,7 @@
 
 import { sdk } from "@lib/config"
 import { FetchError } from "@medusajs/js-sdk"
+import { reportUnexpected } from "@lib/monitoring/report"
 import { headers as nextHeaders } from "next/headers"
 import { errorState, type FormState } from "@/lib/forms/state"
 import {
@@ -61,6 +62,7 @@ export async function submitRepairBooking(prev: FormState, formData: FormData): 
     if (err?.status === 400) {
       return errorState(prev, values, {}, "Some details were not accepted. Check the form and try again, or call the shop.")
     }
+    await reportUnexpected(e, "repairs.book")
     return errorState(prev, values, {}, "Sorry, we could not send your request. Please try again, or call the shop.")
   }
 }
