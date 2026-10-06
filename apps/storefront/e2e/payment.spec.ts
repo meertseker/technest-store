@@ -203,6 +203,26 @@ test.describe("payment step: Stripe test mode", () => {
     if (await postcode.count()) await postcode.fill("SE16 3TU")
   }
 
+  // Stripe's test challenge sits in nested frames whose names and depth change between
+  // Stripe.js releases, so look for its button in every frame
+  async function pressChallenge(page: Page, name: "Complete" | "Fail") {
+    await expect
+      .poll(
+        async () => {
+          for (const frame of page.frames()) {
+            const button = frame.getByRole("button", { name, exact: true })
+            if (await button.count()) {
+              await button.first().click()
+              return true
+            }
+          }
+          return false
+        },
+        { timeout: 60_000 }
+      )
+      .toBe(true)
+  }
+
   async function toPayment(page: Page, tag: string, delivery: boolean) {
     await seedCart(page, [await regularVariant(page)])
     await contact(page, tag)
@@ -238,23 +258,27 @@ test.describe("payment step: Stripe test mode", () => {
     await toPayment(page, "stripe-3ds", true)
     await fillCard(page, "4000002500003155")
     await page.getByTestId("place-order").click()
-    // Stripe's test challenge sits in nested frames whose names and depth change between
-    // Stripe.js releases, so look for its Complete button in every frame
-    await expect
-      .poll(
-        async () => {
-          for (const frame of page.frames()) {
-            const complete = frame.getByRole("button", { name: "Complete", exact: true })
-            if (await complete.count()) {
-              await complete.first().click()
-              return true
-            }
-          }
-          return false
-        },
-        { timeout: 60_000 }
-      )
-      .toBe(true)
+    await pressChallenge(page, "Complete")
+    await page.waitForURL(/\/order\/.+\/confirmed/, { timeout: 90_000 })
+  })
+
+  test("3DS card: failed challenge shows the error summary, no order", async ({ page }) => {
+    await toPayment(page, "stripe-3ds-fail", false)
+    await fillCard(page, "4000002500003155")
+    await page.getByTestId("place-order").click()
+    await pressChallenge(page, "Fail")
+    const summary = page.getByTestId("error-summary")
+    await expect(summary).toBeFocused({ timeout: 30_000 })
+    await expect(page).toHaveURL(/\/checkout/)
+    // the button is usable again, so the shopper can try another card
+    await expect(page.getByTestId("place-order")).toBeEnabled()
+  })
+
+  test("Click & Collect with card 4242: the hold is explained, order placed", async ({ page }) => {
+    await toPayment(page, "stripe-collect", false)
+    await expect(page.getByTestId("collect-payment-note")).toBeVisible()
+    await fillCard(page, "4242424242424242")
+    await page.getByTestId("place-order").click()
     await page.waitForURL(/\/order\/.+\/confirmed/, { timeout: 90_000 })
   })
 })
