@@ -344,4 +344,59 @@ describe("TechNestStripeService", () => {
       expect((result.data as any).status).toBe("canceled")
     })
   })
+
+  // An event is handled seconds after Stripe sent it. By then the session may be gone (the basket
+  // changed, or the order was refused and the hold released), which cancels the intent at Stripe.
+  // Medusa then can't find the session's cart and picks another one, so a "paid" event for an
+  // intent that is cancelled by now must not be acted on.
+  describe("getWebhookActionAndData", () => {
+    const event = (type: string) => ({
+      type,
+      data: {
+        object: {
+          id: "pi_123",
+          amount: 1148,
+          amount_capturable: 1148,
+          amount_received: 1148,
+          currency: "gbp",
+          metadata: { session_id: "payses_1" },
+        },
+      },
+    })
+    function withEvent(type: string, statusNow: string | Error) {
+      const made = makeService()
+      const retrieve = jest.fn(async () => {
+        if (statusNow instanceof Error) throw statusNow
+        return { id: "pi_123", object: "payment_intent", status: statusNow }
+      })
+      ;(made.service as any).stripe_.paymentIntents.retrieve = retrieve
+      ;(made.service as any).stripe_.webhooks = { constructEvent: () => event(type) }
+      const payload = { data: {}, rawData: "{}", headers: { "stripe-signature": "t=1,v1=x" } } as any
+      return { run: () => made.service.getWebhookActionAndData(payload), retrieve }
+    }
+
+    it.each(["payment_intent.amount_capturable_updated", "payment_intent.succeeded"])(
+      "ignores %s when the intent has been cancelled since",
+      async (type) => {
+        const { run } = withEvent(type, "canceled")
+        expect(await run()).toEqual({ action: "not_supported" })
+      }
+    )
+
+    it("passes an authorised event on when the intent is still authorised", async () => {
+      const { run } = withEvent("payment_intent.amount_capturable_updated", "requires_capture")
+      expect(await run()).toEqual({ action: "authorized", data: { session_id: "payses_1", amount: 11.48 } })
+    })
+
+    it("passes the event on when Stripe can't be asked, so a paid order is never dropped", async () => {
+      const { run } = withEvent("payment_intent.succeeded", new Error("network"))
+      expect(await run()).toMatchObject({ action: "captured", data: { session_id: "payses_1" } })
+    })
+
+    it("asks Stripe nothing for events that never place an order", async () => {
+      const { run, retrieve } = withEvent("payment_intent.payment_failed", "requires_payment_method")
+      expect(await run()).toMatchObject({ action: "failed" })
+      expect(retrieve).not.toHaveBeenCalled()
+    })
+  })
 })

@@ -4,7 +4,7 @@
 import StripeProviderService from "@medusajs/payment-stripe/dist/services/stripe-provider"
 // eslint-disable-next-line @medusajs/import-from-framework-not-internal
 import { getSmallestUnit } from "@medusajs/payment-stripe/dist/utils/get-smallest-unit"
-import { isPresent, MedusaError } from "@medusajs/framework/utils"
+import { isPresent, MedusaError, PaymentActions } from "@medusajs/framework/utils"
 import type {
   AuthorizePaymentInput,
   AuthorizePaymentOutput,
@@ -12,8 +12,10 @@ import type {
   CancelPaymentOutput,
   InitiatePaymentInput,
   InitiatePaymentOutput,
+  ProviderWebhookPayload,
   UpdatePaymentInput,
   UpdatePaymentOutput,
+  WebhookActionResult,
 } from "@medusajs/framework/types"
 
 export type TechNestStripeOptions = {
@@ -192,6 +194,30 @@ class TechNestStripeService extends StripeProviderService {
    */
   async cancelPayment(input: CancelPaymentInput): Promise<CancelPaymentOutput> {
     return super.cancelPayment({ ...input, context: { ...input.context, idempotency_key: undefined } })
+  }
+
+  /**
+   * An event is handled seconds after Stripe sent it. By then its payment
+   * session may be gone (the basket changed, or the order was refused and the
+   * hold released), which cancels the intent at Stripe. Medusa's webhook
+   * workflow can't find a deleted session's cart and would act on another
+   * one, so a "paid" event is dropped when the intent is cancelled by now.
+   * If Stripe can't be asked the event goes through: completion checks the
+   * intent again, and a paid order must never be lost here.
+   */
+  async getWebhookActionAndData(webhookData: ProviderWebhookPayload["payload"]): Promise<WebhookActionResult> {
+    const result = await super.getWebhookActionAndData(webhookData)
+    if (result.action !== PaymentActions.AUTHORIZED && result.action !== PaymentActions.SUCCESSFUL) {
+      return result
+    }
+    try {
+      const sent = this.constructWebhookEvent(webhookData).data.object as { id: string }
+      const now = await this.stripe_.paymentIntents.retrieve(sent.id)
+      if (now.status === "canceled") return { action: PaymentActions.NOT_SUPPORTED }
+    } catch {
+      // fall through with the event as sent
+    }
+    return result
   }
 
   async updatePayment(input: UpdatePaymentInput): Promise<UpdatePaymentOutput> {
