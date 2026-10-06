@@ -1,5 +1,6 @@
 import "server-only"
 import { cookies as nextCookies } from "next/headers"
+import { authCookieMaxAge, isTokenExpired } from "@lib/account/session"
 
 export const getAuthHeaders = async (): Promise<
   { authorization: string } | Record<string, never>
@@ -8,7 +9,8 @@ export const getAuthHeaders = async (): Promise<
     const cookies = await nextCookies()
     const token = cookies.get("_medusa_jwt")?.value
 
-    if (!token) {
+    // An expired token would only earn a 401: the visitor is signed out.
+    if (!token || isTokenExpired(token)) {
       return {}
     }
 
@@ -45,7 +47,8 @@ export const getCacheTag = async (tag: string): Promise<string> => {
 export const setAuthToken = async (token: string) => {
   const cookies = await nextCookies()
   cookies.set("_medusa_jwt", token, {
-    maxAge: 60 * 60 * 24 * 7,
+    // as long as the backend's token is valid (at most 7 days), never longer
+    maxAge: authCookieMaxAge(token),
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

@@ -11,7 +11,7 @@ import {
   toTradeApplicationBody,
   validateTradeApplication,
 } from "@/lib/forms/validation"
-import { getAuthHeaders } from "./cookies"
+import { getAuthHeaders, removeAuthToken } from "./cookies"
 
 /** POST /store/trade-applications for the signed-in customer (docs/contracts/trade.md) */
 export async function submitTradeApplication(prev: FormState, formData: FormData): Promise<FormState> {
@@ -19,8 +19,9 @@ export async function submitTradeApplication(prev: FormState, formData: FormData
   const errors = validateTradeApplication(values)
   if (hasErrors(errors)) return errorState(prev, values, errors)
 
+  const signIn = `/account/login?next=${encodeURIComponent("/trade/apply")}`
   const headers = await getAuthHeaders()
-  if (!("authorization" in headers)) redirect("/account/login?next=/trade/apply")
+  if (!("authorization" in headers)) redirect(signIn)
 
   try {
     await sdk.client.fetch("/store/trade-applications", {
@@ -30,7 +31,11 @@ export async function submitTradeApplication(prev: FormState, formData: FormData
     })
   } catch (e) {
     const err = e as FetchError
-    if (err?.status === 401) redirect("/account/login?next=/trade/apply")
+    if (err?.status === 401) {
+      // the backend no longer accepts the sign-in: stop looking signed in, then ask again
+      await removeAuthToken()
+      redirect(signIn)
+    }
     // The contract's two business-rule errors are safe, plain messages
     if (err?.status === 400 && /already (have a pending|approved)/i.test(err.message)) {
       redirect("/account/trade")

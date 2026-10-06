@@ -26,7 +26,7 @@ import {
   validateRegister,
   validateReset,
 } from "@/lib/forms/validation"
-import { getAuthHeaders, getCacheTag } from "./cookies"
+import { getAuthHeaders, getCacheTag, removeAuthToken } from "./cookies"
 import {
   confirmEmailVerification,
   login,
@@ -45,6 +45,18 @@ import {
 async function revalidateCustomer() {
   const tag = await getCacheTag("customers")
   if (tag) revalidateTag(tag)
+}
+
+const isUnauthorized = (e: unknown) => (e as { status?: unknown } | null)?.status === 401
+
+/**
+ * The backend no longer accepts the sign-in (the token expired or was
+ * replaced): drop the cookie, so the visitor stops looking signed in, and ask
+ * them to sign in again, coming back to the page they were on.
+ */
+async function signInAgain(returnTo: string): Promise<never> {
+  await removeAuthToken()
+  redirect(`/account/login?next=${encodeURIComponent(returnTo)}`)
 }
 
 export async function loginAction(prev: FormState, formData: FormData): Promise<FormState> {
@@ -137,7 +149,8 @@ export async function updateProfileAction(prev: FormState, formData: FormData): 
       {},
       headers
     )
-  } catch {
+  } catch (e) {
+    if (isUnauthorized(e)) await signInAgain("/account/profile")
     return errorState(prev, values, {}, "Sorry, we could not save your details. Please try again.")
   }
   await revalidateCustomer()
@@ -171,7 +184,8 @@ export async function saveAddressAction(prev: FormState, formData: FormData): Pr
     } else {
       await sdk.store.customer.createAddress(body as HttpTypes.StoreCreateCustomerAddress, {}, headers)
     }
-  } catch {
+  } catch (e) {
+    if (isUnauthorized(e)) await signInAgain("/account/addresses")
     return errorState(prev, values, {}, "Sorry, we could not save this address. Please try again.")
   }
   await revalidateCustomer()
@@ -185,7 +199,8 @@ export async function deleteAddressAction(formData: FormData): Promise<void> {
   let ok = true
   try {
     await sdk.store.customer.deleteAddress(id, headers)
-  } catch {
+  } catch (e) {
+    if (isUnauthorized(e)) await signInAgain("/account/addresses")
     ok = false
   }
   await revalidateCustomer()
