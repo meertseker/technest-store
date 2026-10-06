@@ -3,6 +3,8 @@ import { AlertCircle } from "lucide-react"
 import { retrieveCart } from "@lib/data/cart"
 import { getBasketView } from "@lib/data/basket"
 import { toPence } from "@lib/basket/money"
+import { siteConfig } from "@lib/site-config"
+import { buttonVariants } from "@/components/ui/button"
 import AddonNotice from "@modules/basket/components/addon-notice"
 import BasketEmpty from "@modules/basket/components/basket-empty"
 import BasketLines from "@modules/basket/components/basket-lines"
@@ -31,7 +33,13 @@ export default async function BasketPage(props: {
   searchParams: Promise<{ error?: string }>
 }) {
   const { error } = await props.searchParams
-  const cart = await retrieveCart().catch(() => null)
+  // A backend that cannot answer is not an empty basket: say so and offer a retry.
+  const loaded = await retrieveCart().then(
+    (cart) => ({ cart, failed: false }),
+    () => ({ cart: null, failed: true })
+  )
+  if (loaded.failed) return <BasketUnavailable />
+  const cart = loaded.cart
   const view = await getBasketView(cart)
   const count = itemCount(cart)
   const returnError = error ? RETURN_ERRORS[error] : undefined
@@ -73,6 +81,35 @@ export default async function BasketPage(props: {
       ) : (
         <BasketEmpty />
       )}
+    </div>
+  )
+}
+
+function BasketUnavailable() {
+  return (
+    <div className="content-container py-8 lg:py-12" data-testid="basket-unavailable">
+      <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em] lg:text-4xl">Your basket</h1>
+      <div role="alert" className="mt-4 flex gap-3 rounded border border-destructive p-4 text-base">
+        <AlertCircle aria-hidden className="mt-0.5 size-5 shrink-0 text-destructive" />
+        <div>
+          <p className="font-semibold">We couldn&apos;t load your basket just now.</p>
+          <p className="mt-1 text-muted-foreground">
+            Anything you added is still saved. Try again in a moment, or call the shop on{" "}
+            <a
+              href={`tel:${siteConfig.phone.e164}`}
+              className="inline-flex min-h-11 items-center text-foreground underline underline-offset-4"
+            >
+              {siteConfig.phone.display}
+            </a>
+            .
+          </p>
+          {/* a plain link so the retry is a full, fresh page load */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a href="/basket" className={`mt-3 ${buttonVariants({ variant: "secondary", size: "md" })}`}>
+            Try again
+          </a>
+        </div>
+      </div>
     </div>
   )
 }

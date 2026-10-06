@@ -39,7 +39,8 @@ export default async function Checkout(props: { searchParams: Promise<{ step?: s
   const step = resolveStep(requested, cart)
   if (needsStepRedirect(requested, step)) redirect(`/checkout?step=${step}`)
 
-  const [customer, view] = await Promise.all([retrieveCustomer(), getBasketView(cart)])
+  // the customer only pre-fills the forms: checkout works without it
+  const [customer, view] = await Promise.all([retrieveCustomer().catch(() => null), getBasketView(cart)])
   const rank = stepRank(step)
 
   const method = cart.shipping_methods?.at(-1)

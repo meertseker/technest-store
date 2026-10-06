@@ -70,7 +70,13 @@ export async function saveDelivery(
   const values: Record<string, string> = { ...input, option_id: optionId }
   const fail = (errors: FieldError[]) => ({ errors, values, submission: Date.now() })
 
-  const cart = await retrieveCart(undefined, CHECKOUT_CART_FIELDS)
+  let cart: Awaited<ReturnType<typeof retrieveCart>>
+  try {
+    cart = await retrieveCart(undefined, CHECKOUT_CART_FIELDS)
+  } catch {
+    // the backend could not answer: keep what was typed and let the shopper retry
+    return fail([{ field: "option", message: SERVICE_ERROR }])
+  }
   if (!cart?.items?.length) redirect("/basket")
 
   // Only an option this cart really offers can be chosen; its kind comes from Medusa

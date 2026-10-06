@@ -17,10 +17,17 @@ export type PaymentActionResult = { ok: true } | { ok: false; message: string }
 
 const CART_GONE = "Your basket has changed or expired. Please go back to your basket and try again."
 
-async function loadCart() {
-  const cart = await retrieveCart(undefined, CHECKOUT_CART_FIELDS)
+/**
+ * The basket from the cookie, or null when there is none. Throws when the
+ * backend cannot answer. `includeCompleted` also returns a basket that already
+ * became an order (the payment webhook can finish before the browser does).
+ */
+async function loadCart(options?: { includeCompleted?: boolean }) {
+  const cart = await retrieveCart(undefined, CHECKOUT_CART_FIELDS, options)
   return cart?.items?.length ? cart : null
 }
+
+const isCompleted = (cart: object) => Boolean((cart as { completed_at?: string | null }).completed_at)
 
 async function ensureSession(cart: NonNullable<Awaited<ReturnType<typeof loadCart>>>, providerId: string) {
   const decision = sessionDecision({
@@ -34,7 +41,12 @@ async function ensureSession(cart: NonNullable<Awaited<ReturnType<typeof loadCar
 
 /** Creates the payment session if the cart has none for its current total (e.g. after a delivery change) */
 export async function preparePaymentSession(): Promise<PaymentActionResult> {
-  const cart = await loadCart()
+  let cart: Awaited<ReturnType<typeof loadCart>>
+  try {
+    cart = await loadCart()
+  } catch {
+    return { ok: false, message: SESSION_FAILED }
+  }
   if (!cart) return { ok: false, message: CART_GONE }
   const provider = providerForMode(await getPaymentMode(cart.region_id ?? ""))
   if (!provider) return { ok: false, message: SESSION_FAILED }
@@ -53,14 +65,21 @@ export async function preparePaymentSession(): Promise<PaymentActionResult> {
  * Manual mode (dev/CI only, see resolvePaymentMode) creates its session here.
  */
 export async function completeOrder(): Promise<PaymentActionResult> {
-  const cart = await loadCart()
+  let cart: Awaited<ReturnType<typeof loadCart>>
+  try {
+    // A basket the webhook already completed still goes to the backend below:
+    // completing it again answers with the order that exists.
+    cart = await loadCart({ includeCompleted: true })
+  } catch {
+    return { ok: false, message: ORDER_FAILED }
+  }
   if (!cart) return { ok: false, message: CART_GONE }
   const mode = await getPaymentMode(cart.region_id ?? "")
   if (mode === "unavailable") {
     return { ok: false, message: "Payments are unavailable right now. Please try again in a few minutes or call the shop." }
   }
   try {
-    if (mode === "manual") await ensureSession(cart, providerForMode(mode)!)
+    if (mode === "manual" && !isCompleted(cart)) await ensureSession(cart, providerForMode(mode)!)
     await placeOrder(cart.id)
   } catch (e) {
     // placeOrder's redirect to the confirmation page is thrown; let Next handle it

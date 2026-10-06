@@ -7,13 +7,14 @@ import BasketDrawer from "@modules/basket/components/basket-drawer"
 /**
  * Header basket: server-fetched cart + delivery facts, rendered into the client drawer.
  * Rendered without a Suspense boundary (see the note in templates/nav), so it must
- * never throw: if the basket data can't be built, the header shows a plain link.
+ * never throw: if the basket can't be read or its data can't be built, the header
+ * shows a plain link (never "0 items" for a basket we simply could not load).
  * Next's own control-flow errors (redirect, dynamic rendering) still pass through.
  */
 export default async function CartButton() {
   let data: { cart: Awaited<ReturnType<typeof retrieveCart>>; view: Awaited<ReturnType<typeof getBasketView>> } | null
   try {
-    const cart = await retrieveCart().catch(() => null)
+    const cart = await retrieveCart()
     data = { cart, view: await getBasketView(cart) }
   } catch (error) {
     unstable_rethrow(error)

@@ -16,8 +16,12 @@ export const metadata: Metadata = {
 }
 
 export default async function PageLayout(props: { children: React.ReactNode }) {
-  const customer = await retrieveCustomer()
-  const cart = await retrieveCart()
+  // Only needed for the optional banner below: a backend failure here must not
+  // take the whole page down (pages that need the basket handle it themselves).
+  const [customer, cart] = await Promise.all([
+    retrieveCustomer().catch(() => null),
+    retrieveCart().catch(() => null),
+  ])
 
   return (
     <>

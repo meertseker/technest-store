@@ -17,11 +17,19 @@ import { getRegion } from "./regions"
 import { getLocale } from "./locale-actions"
 
 /**
- * Retrieves a cart by its ID. If no ID is provided, it will use the cart ID from the cookies.
- * @param cartId - optional - The ID of the cart to retrieve.
- * @returns The cart object if found, or null if not found.
+ * The shopper's basket (the cart from the cookie, or `cartId`).
+ *
+ * null means there is no basket: no cookie, the backend says the cart does not
+ * exist, or the cart has already become an order (the payment webhook completes
+ * it when the shopper closes the tab after paying). Any other failure is
+ * thrown: a backend that cannot answer is not an empty basket, and callers must
+ * not replace the cookie or show "your basket is empty" because of it.
  */
-export async function retrieveCart(cartId?: string, fields?: string) {
+export async function retrieveCart(
+  cartId?: string,
+  fields?: string,
+  options?: { includeCompleted?: boolean }
+) {
   const id = cartId || (await getCartId())
   fields ??=
     "*items, *region, *items.product, *items.variant, *items.thumbnail, *items.metadata, +items.total, *promotions, +shipping_methods.name"
@@ -34,19 +42,28 @@ export async function retrieveCart(cartId?: string, fields?: string) {
     ...(await getAuthHeaders()),
   }
 
-  // A basket belongs to one visitor and changes outside this app (the payment
-  // webhook completes it), so it is read fresh and never stored.
-  return await sdk.client
-    .fetch<HttpTypes.StoreCartResponse>(`/store/carts/${id}`, {
-      method: "GET",
-      query: {
-        fields,
-      },
-      headers,
-      cache: "no-store",
-    })
-    .then(({ cart }: { cart: HttpTypes.StoreCart }) => cart)
-    .catch(() => null)
+  let cart: HttpTypes.StoreCart
+  try {
+    // A basket belongs to one visitor and changes outside this app (the payment
+    // webhook completes it), so it is read fresh and never stored.
+    cart = (
+      await sdk.client.fetch<HttpTypes.StoreCartResponse>(`/store/carts/${id}`, {
+        method: "GET",
+        query: {
+          fields,
+        },
+        headers,
+        cache: "no-store",
+      })
+    ).cart
+  } catch (error) {
+    if ((error as { status?: number } | null)?.status === 404) return null
+    throw error
+  }
+
+  const completedAt = (cart as { completed_at?: string | null }).completed_at
+  if (completedAt && !options?.includeCompleted) return null
+  return cart
 }
 
 export async function getOrSetCart(countryCode: string) {
@@ -56,7 +73,9 @@ export async function getOrSetCart(countryCode: string) {
     throw new Error(`Region not found for country code: ${countryCode}`)
   }
 
-  let cart = await retrieveCart(undefined, "id,region_id")
+  // A missing or completed basket is replaced below; if the backend fails this
+  // throws, so a bad moment never swaps the shopper's basket for an empty one.
+  let cart = await retrieveCart(undefined, "id,region_id,completed_at")
 
   const headers = {
     ...(await getAuthHeaders()),

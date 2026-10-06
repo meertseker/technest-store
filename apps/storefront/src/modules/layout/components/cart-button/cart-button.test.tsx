@@ -39,8 +39,18 @@ describe("CartButton", () => {
     expect(screen.getByRole("link", { name: "Basket" }).getAttribute("href")).toBe("/basket")
   })
 
-  it("treats a failed cart fetch as no cart", async () => {
+  it("renders the plain Basket link, not an empty basket, when the cart can't be read", async () => {
     retrieveCart.mockRejectedValue(new Error("backend down"))
+    getBasketView.mockResolvedValue({})
+
+    render(await CartButton())
+
+    expect(screen.getByRole("link", { name: "Basket" }).getAttribute("href")).toBe("/basket")
+    expect(screen.queryByText(/drawer for/)).toBeNull()
+  })
+
+  it("renders the drawer with no cart when there is no basket", async () => {
+    retrieveCart.mockResolvedValue(null)
     getBasketView.mockResolvedValue({})
 
     render(await CartButton())
