@@ -29,6 +29,18 @@ function multipart(photo: Buffer, fields: Record<string, string> = {}, type = "i
   return form
 }
 
+/** A photo as a phone sends it: turned on its side, with the device and the place it was taken. */
+async function phonePhoto() {
+  return sharp(await makePhoto(1600, 1200))
+    .withMetadata({ orientation: 6 })
+    .withExif({
+      IFD0: { Make: "PhoneMaker", Model: "Phone 15 Pro" },
+      IFD3: { GPSLatitudeRef: "N", GPSLatitude: "51/1 29/1 3317/100", GPSLongitudeRef: "W", GPSLongitude: "0/1 3/1 4366/100" },
+    })
+    .jpeg({ quality: 92 })
+    .toBuffer()
+}
+
 medusaIntegrationTestRunner({
   inApp: true,
   env: {},
@@ -250,6 +262,99 @@ medusaIntegrationTestRunner({
         const res = await api.post("/admin/photos/process", multipart(photo)).catch((e: any) => e.response)
         expect(res.status).toBe(401)
         expect(worker.requests).toHaveLength(0)
+      })
+
+      it("goes by what the file is, not by its name or declared type", async () => {
+        const call = (body: unknown) =>
+          api.post("/admin/photos/process", body, admin).catch((e: any) => e.response)
+
+        // An iPhone HEIC renamed to .jpg
+        const heic = Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from("ftypheic\0\0\0\0mif1heic"), Buffer.alloc(64)])
+        const renamed = await call(multipart(heic, {}, "image/jpeg", "IMG_1.jpg"))
+        expect(renamed.status).toBe(400)
+        expect(renamed.data.message).toMatch(/not a supported image/)
+
+        const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>')
+        expect((await call(multipart(svg, {}, "image/png", "logo.png"))).status).toBe(400)
+        expect(worker.requests).toHaveLength(0)
+
+        // A real JPEG sent with a wrong name and type is stored as a JPEG.
+        const { status, data } = await call(multipart(photo, {}, "text/html", "page.html"))
+        expect(status).toBe(200)
+        expect(data.original.id).toMatch(/\.jpg$/)
+      })
+
+      it("stores the original without the phone's location and device details", async () => {
+        const taken = await phonePhoto()
+        expect(taken.toString("latin1")).toContain("Phone 15 Pro")
+
+        const { data } = await api.post("/admin/photos/process", multipart(taken), admin)
+        const stored = await getContainer().resolve(Modules.FILE).getAsBuffer(data.original.id)
+
+        expect(stored.toString("latin1")).not.toContain("Phone 15 Pro")
+        const meta = await sharp(stored).metadata()
+        expect(meta.orientation).toBe(6)
+        expect(meta.exif!.length).toBeLessThanOrEqual(32)
+        // The picture itself is the one that was taken.
+        const pixels = (f: Buffer) => sharp(f).raw().toBuffer()
+        expect((await pixels(stored)).equals(await pixels(taken))).toBe(true)
+      })
+    })
+
+    describe("POST /admin/uploads (Medusa's own upload route)", () => {
+      const upload = (files: [Buffer, string, string][], headers = admin) => {
+        const form = new FormData()
+        for (const [content, type, name] of files) {
+          form.append("files", new Blob([new Uint8Array(content)], { type }), name)
+        }
+        return api.post("/admin/uploads", form, headers).catch((e: any) => e.response)
+      }
+
+      it("refuses an upload over 30 MB and stores nothing", async () => {
+        const before = listStatic()
+        const res = await upload([[Buffer.alloc(40 * 1024 * 1024, 1), "image/jpeg", "huge.jpg"]])
+        expect(res.status).toBe(400)
+        expect(res.data.message).toMatch(/larger than 30 MB/)
+        expect(newFiles(before)).toEqual([])
+      })
+
+      it("refuses files that are not JPEG, PNG, WebP or GIF, whatever they are called", async () => {
+        const before = listStatic()
+        const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>')
+        const html = Buffer.from("<!doctype html><script>alert(1)</script>")
+
+        const asSvg = await upload([[svg, "image/svg+xml", "logo.svg"]])
+        expect(asSvg.status).toBe(400)
+        expect(asSvg.data.message).toMatch(/"logo.svg" is not a supported image/)
+        expect((await upload([[html, "image/jpeg", "photo.jpg"]])).status).toBe(400)
+        // one bad file refuses the whole request
+        expect((await upload([[photo, "image/jpeg", "ok.jpg"], [html, "text/html", "page.html"]])).status).toBe(400)
+        expect(newFiles(before)).toEqual([])
+      })
+
+      it("refuses more than 10 files at once", async () => {
+        const small = await makePhoto(40, 30)
+        const res = await upload(Array.from({ length: 11 }, (_, i) => [small, "image/jpeg", `p${i}.jpg`] as [Buffer, string, string]))
+        expect(res.status).toBe(400)
+        expect(res.data.message).toMatch(/at most 10 files/)
+      })
+
+      it("stores a photo under its real type, without location or device details", async () => {
+        const taken = await phonePhoto()
+        const res = await upload([[taken, "text/html", "counter.html"]])
+        expect(res.status).toBe(200)
+        expect(res.data.files[0].id).toMatch(/counter.*\.jpg$/)
+
+        const stored = await getContainer().resolve(Modules.FILE).getAsBuffer(res.data.files[0].id)
+        expect(stored.toString("latin1")).not.toContain("Phone 15 Pro")
+        expect((await sharp(stored).metadata()).orientation).toBe(6)
+        const pixels = (f: Buffer) => sharp(f).raw().toBuffer()
+        expect((await pixels(stored)).equals(await pixels(taken))).toBe(true)
+      })
+
+      it("still needs an admin", async () => {
+        const res = await upload([[photo, "image/jpeg", "a.jpg"]], { headers: {} })
+        expect(res.status).toBe(401)
       })
     })
 

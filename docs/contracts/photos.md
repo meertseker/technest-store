@@ -9,7 +9,18 @@ All routes are admin routes: they need an admin session or bearer token. From th
 `sdk.client.fetch(...)` (never plain `fetch`). Errors use Medusa's standard shape:
 `{ "type": "invalid_data" | "not_allowed" | "not_found" | "unexpected_state", "message": string }`.
 
-What the pipeline does (see ADR 0003): keep the original untouched as its own file, ask the background-removal
+Uploads (both `POST /admin/photos/process` with a file and Medusa's `POST /admin/uploads`):
+
+- The file type is read from the file's content, never from its name or the type the browser sends.
+  `/admin/uploads` stores JPEG, PNG, WebP and GIF only; anything else is `400 invalid_data`
+  (`"<name>" is not a supported image…`). The stored content type and file extension follow the content.
+- `/admin/uploads` takes at most 10 files and 30 MB per request (`400 invalid_data` above that).
+- Before a photo is stored, everything that says where, when and with what it was taken is removed
+  (EXIF including GPS, XMP, IPTC, comments, anything appended after the image). The picture data and
+  its colour profile are copied byte for byte and the orientation is kept, so the original stays the
+  original picture. Originals are public files, which is why this is done.
+
+What the pipeline does (see ADR 0003): keep the original picture as its own file, ask the background-removal
 provider (fal.ai in production, our own `photo-worker` locally; ADR 0004) for a cut-out mask, then with `sharp`: auto-crop to 1:1 with 8% padding, soft shadow, pure
 white `#FFFFFF` background, up to 2000 x 2000 px, WebP (primary) + AVIF, saved as new files. Only the
 background changes: no colour correction, nothing generated, the product is only ever downscaled.
@@ -70,7 +81,7 @@ and show a busy state. The worker handles one job at a time; concurrent requests
 Two request forms:
 
 1. `multipart/form-data` (upload straight from the phone camera)
-   - `file` (required): one image, `image/jpeg`, `image/png` or `image/webp`, max 25 MB
+   - `file` (required): one JPEG, PNG or WebP image (decided by its content), max 25 MB
    - `model` (optional): `PhotoModel`
 2. `application/json` (the image was already uploaded with Medusa's `POST /admin/uploads`)
 

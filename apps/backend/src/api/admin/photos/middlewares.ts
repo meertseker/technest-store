@@ -9,9 +9,10 @@ import { MedusaError } from "@medusajs/framework/utils"
 import { z } from "@medusajs/framework/zod"
 import multer from "multer"
 import { PHOTO_MODELS } from "../../../modules/photo/providers/types"
+import { cleanUploadedImage } from "../uploads/middlewares"
 
 export const MAX_PHOTO_BYTES = 25 * 1024 * 1024
-export const ACCEPTED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"]
+export const ACCEPTED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"] as const
 
 /** A File Module key (e.g. "1727712345678-photo.jpg"): no absolute paths, no "..", no backslashes. */
 const FileId = z
@@ -59,7 +60,7 @@ export function parsePhotoUpload(req: MedusaRequest, res: MedusaResponse, next: 
   })
 }
 
-/** Exactly one of an uploaded `file` or a `file_id`, and only image types sharp can read. */
+/** Exactly one of an uploaded `file` or a `file_id`; an upload must really be a JPEG, PNG or WebP. */
 export function requirePhotoSource(req: MedusaRequest, _res: MedusaResponse, next: MedusaNextFunction) {
   const file = (req as MedusaRequest & { file?: Express.Multer.File }).file
   const fileId = (req.validatedBody as AdminProcessPhoto | undefined)?.file_id
@@ -68,10 +69,13 @@ export function requirePhotoSource(req: MedusaRequest, _res: MedusaResponse, nex
       new MedusaError(MedusaError.Types.INVALID_DATA, "Send either a photo as `file` (multipart) or a `file_id`")
     )
   }
-  if (file && !ACCEPTED_PHOTO_TYPES.includes(file.mimetype)) {
-    return next(
-      new MedusaError(MedusaError.Types.INVALID_DATA, "The file is not a supported image (use JPEG, PNG or WebP)")
-    )
+  if (file) {
+    // The type comes from the file's content, never from its name or declared type.
+    try {
+      cleanUploadedImage(file, ACCEPTED_PHOTO_TYPES)
+    } catch (e) {
+      return next(e)
+    }
   }
   next()
 }

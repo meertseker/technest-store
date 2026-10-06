@@ -5,6 +5,7 @@ import { adminDeviceMiddlewares } from './admin/devices/middlewares'
 import { adminProductAttributesMiddlewares } from './admin/products/[id]/attributes/middlewares'
 import { adminVariantPriceStockMiddlewares } from './admin/products/[id]/variants/middlewares'
 import { adminPhotoMiddlewares } from './admin/photos/middlewares'
+import { adminUploadMiddlewares } from './admin/uploads/middlewares'
 import { adminProductImportMiddlewares } from './admin/product-import/middlewares'
 import { adminTechnestSettingsMiddlewares } from './admin/technest-settings/middlewares'
 import { verifyStripeWebhookSignature } from './hooks/payment/verify-stripe-signature'
@@ -61,6 +62,7 @@ export default defineMiddlewares({
     ...storeRepairMiddlewares,
     ...adminRepairMiddlewares,
     ...adminPhotoMiddlewares,
+    ...adminUploadMiddlewares,
     ...adminProductImportMiddlewares,
     ...adminClickCollectMiddlewares,
     ...adminDeliveryOrdersMiddlewares,
