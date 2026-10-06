@@ -11,7 +11,7 @@ import {
   releaseLockStep,
 } from "@medusajs/medusa/core-flows"
 import { deliveryLockKey } from "../lib/delivery"
-import { prepareShipmentStep } from "./steps/delivery/prepare-shipment"
+import { prepareShipmentStep, shipPackedFulfillmentsStep } from "./steps/delivery/prepare-shipment"
 
 export type MarkDeliveryShippedInput = {
   order_id: string
@@ -20,11 +20,14 @@ export type MarkDeliveryShippedInput = {
 }
 
 /**
- * Delivery order packed and handed to the carrier: fulfils every remaining
- * item and creates the shipment. The shipment is what the customer hears
- * about: `shipment.created` sends the "on its way" email
- * (subscribers/order-dispatched-email). Payment was captured at order time.
- * Pressing the button twice ships once: the second run is a no-op.
+ * Delivery order packed and handed to the carrier. Ships every fulfilment
+ * that was packed but never marked shipped, then fulfils and ships whatever
+ * is left. Each shipment is what the customer hears about: `shipment.created`
+ * sends the "on its way" email (subscribers/order-dispatched-email).
+ *
+ * Refused until the payment has been taken. The order's lock is the one the
+ * payment capture uses, so the two never run side by side. Pressing the button
+ * twice ships once: the second run is a no-op.
  */
 export const markDeliveryShippedWorkflow = createWorkflow(
   "mark-delivery-shipped",
@@ -39,7 +42,20 @@ export const markDeliveryShippedWorkflow = createWorkflow(
 
     const prepared = prepareShipmentStep({ order_id: input.order_id })
 
-    const shipped = when("ship-if-needed", { prepared }, ({ prepared }) => !prepared.already_shipped).then(
+    const sentPacked = when(
+      "ship-packed-fulfilments",
+      { prepared },
+      ({ prepared }) => prepared.unshipped_fulfillments.length > 0
+    ).then(() => {
+      const packed = transform({ input, prepared }, ({ input, prepared }) => ({
+        order_id: input.order_id,
+        fulfillments: prepared.unshipped_fulfillments,
+        created_by: input.actor_id,
+      }))
+      return shipPackedFulfillmentsStep(packed)
+    })
+
+    const shipped = when("ship-remaining-items", { prepared }, ({ prepared }) => prepared.items.length > 0).then(
       () => {
         const fulfilmentInput = transform({ input, prepared }, ({ input, prepared }) => ({
           order_id: input.order_id,
@@ -67,11 +83,16 @@ export const markDeliveryShippedWorkflow = createWorkflow(
     const unlock = transform({ input }, ({ input }) => ({ key: deliveryLockKey(input.order_id) }))
     releaseLockStep(unlock)
 
-    const result = transform({ input, prepared, shipped }, ({ input, prepared, shipped }) => ({
-      order_id: input.order_id,
-      fulfillment_id: prepared.already_shipped ? prepared.fulfillment_id : (shipped?.id ?? null),
-      already_shipped: prepared.already_shipped,
-    }))
+    const result = transform(
+      { input, prepared, shipped, sentPacked },
+      ({ input, prepared, shipped, sentPacked }) => ({
+        order_id: input.order_id,
+        fulfillment_id: prepared.already_shipped
+          ? prepared.fulfillment_id
+          : (shipped?.id ?? sentPacked?.[sentPacked.length - 1] ?? null),
+        already_shipped: prepared.already_shipped,
+      })
+    )
     return new WorkflowResponse(result)
   }
 )
