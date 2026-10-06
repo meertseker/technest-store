@@ -21,7 +21,7 @@ vi.mock("@lib/data/catalogue", () => ({
   listCollectionProducts: (...a: unknown[]) => listCollectionProducts(...a),
   listDeviceProductIds: async () => null,
 }))
-vi.mock("@lib/data/cart", () => ({ addToCart: vi.fn() }))
+vi.mock("@lib/data/basket-actions", () => ({ addToBasket: vi.fn() }))
 
 import { product } from "@/lib/catalogue/test-fixtures"
 import * as page from "../(main)/collections/[handle]/page"

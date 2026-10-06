@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { acceptTransferRequest, declineTransferRequest } from "@lib/data/orders"
+import { acceptTransferAction, declineTransferAction } from "@lib/data/order-actions"
 import { TransferOutcome } from "@modules/order/components/transfer-result"
 
 type Choice = "accept" | "decline"
@@ -19,7 +19,7 @@ const TransferActions = ({ id, token }: { id: string; token: string }) => {
 
   const run = async (choice: Choice) => {
     setPending(choice)
-    const action = choice === "accept" ? acceptTransferRequest : declineTransferRequest
+    const action = choice === "accept" ? acceptTransferAction : declineTransferAction
     const { success } = await action(id, token)
     setPending(null)
     setResult({ choice, success })

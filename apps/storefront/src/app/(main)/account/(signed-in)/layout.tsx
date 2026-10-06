@@ -1,4 +1,5 @@
-import { retrieveCustomer, signout } from "@lib/data/customer"
+import { signoutAction } from "@lib/data/account-actions"
+import { retrieveCustomer } from "@lib/data/customer"
 import AccountNav from "@modules/account/components/account-nav"
 
 /**
@@ -11,7 +12,7 @@ export default async function SignedInLayout({ children }: { children: React.Rea
   return (
     <div className="content-container py-8 lg:py-12" data-testid="account-page">
       <div className="grid gap-8 lg:grid-cols-[240px_1fr] lg:gap-12">
-        <div>{customer && <AccountNav signOut={signout} />}</div>
+        <div>{customer && <AccountNav signOut={signoutAction} />}</div>
         <div className="min-w-0">{children}</div>
       </div>
     </div>

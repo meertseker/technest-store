@@ -1,4 +1,4 @@
-"use server"
+import "server-only"
 
 import { sdk } from "@lib/config"
 import { STORE_COUNTRY } from "@lib/constants/store"

@@ -2,7 +2,7 @@
 
 import { CheckCircle2 } from "lucide-react"
 import { useActionState } from "react"
-import { signup } from "@lib/data/customer"
+import { createAccountAfterOrderAction } from "@lib/data/account-actions"
 import SubmitButton from "@modules/checkout/sections/submit-button"
 import TextField from "@modules/checkout/sections/text-field"
 
@@ -22,7 +22,7 @@ export default function CreateAccountOffer({
   lastName: string
   phone: string
 }) {
-  const [state, action] = useActionState(signup, null)
+  const [state, action] = useActionState(createAccountAfterOrderAction, null)
 
   if (state?.state === "success" || state?.state === "verification_required") {
     return (

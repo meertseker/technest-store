@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react"
 import { buttonVariants } from "@/components/ui/button"
 import Notice from "@/components/ui/notice"
 import { h1Class } from "@/lib/typography"
-import { confirmEmailVerification } from "@lib/data/customer"
+import { confirmEmailVerificationAction } from "@lib/data/account-actions"
 
 type VerificationState = "verifying" | "success" | "error"
 
@@ -31,7 +31,7 @@ const VerifyAccount = () => {
       return
     }
 
-    confirmEmailVerification(token).then(({ success }) =>
+    confirmEmailVerificationAction(token).then(({ success }) =>
       setState(success ? "success" : "error")
     )
   }, [token])

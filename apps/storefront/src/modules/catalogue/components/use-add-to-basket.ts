@@ -3,13 +3,12 @@
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useRef, useState, useTransition } from "react"
 import { announceAddedToBasket } from "@lib/basket/events"
-import { addToCart } from "@lib/data/cart"
-import { STORE_COUNTRY } from "@lib/constants/store"
+import { addToBasket } from "@lib/data/basket-actions"
 
 export type AddState = "idle" | "pending" | "added" | "error"
 
 /**
- * Adds a variant with the existing cart server action (lib/data/cart.ts), then
+ * Adds a variant with the basket server action (lib/data/basket-actions.ts), then
  * refreshes the server components so the header basket count updates, and
  * announces it so the header opens the basket drawer, which shows "Added to
  * basket" at the top (spec 7.4). The shopper stays on the page. "added" falls back to idle
@@ -29,18 +28,17 @@ export function useAddToBasket() {
       window.clearTimeout(timer.current)
       setState("pending")
       setError(null)
-      try {
-        await addToCart({ variantId, quantity, countryCode: STORE_COUNTRY })
+      // the action reports its outcome; a rejection means the request itself failed
+      const result = await addToBasket({ variantId, quantity }).catch(() => ({ ok: false, reason: "error" }) as const)
+      if (result.ok) {
         setState("added")
         announceAddedToBasket()
         startTransition(() => router.refresh())
         timer.current = window.setTimeout(() => setState("idle"), 4000)
-      } catch (e) {
+      } else {
         setState("error")
-        // Medusa's messages are shopper-safe ("... is out of stock"); never log them with ids
-        const message = e instanceof Error && e.message ? e.message : ""
         setError(
-          /stock|inventory/i.test(message)
+          result.reason === "stock"
             ? "Sorry, there isn't enough stock for that quantity."
             : "We couldn't add this to your basket. Please try again."
         )

@@ -7,8 +7,8 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(token ? { token } : {}),
 }))
 const confirmEmailVerification = vi.fn()
-vi.mock("@lib/data/customer", () => ({
-  confirmEmailVerification: (...a: unknown[]) => confirmEmailVerification(...a),
+vi.mock("@lib/data/account-actions", () => ({
+  confirmEmailVerificationAction: (...a: unknown[]) => confirmEmailVerification(...a),
 }))
 
 import VerifyAccount from "."

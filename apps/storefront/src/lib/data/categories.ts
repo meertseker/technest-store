@@ -1,3 +1,4 @@
+import "server-only"
 import { sdk } from "@lib/config"
 import { HttpTypes } from "@medusajs/types"
 

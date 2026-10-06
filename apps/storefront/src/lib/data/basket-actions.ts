@@ -1,6 +1,7 @@
 "use server"
 
-import { deleteLineItem, updateLineItem } from "./cart"
+import { STORE_COUNTRY } from "@lib/constants/store"
+import { addToCart, deleteLineItem, updateLineItem } from "./cart"
 
 /**
  * Basket line actions. They are plain form actions, so the quantity stepper and
@@ -43,5 +44,27 @@ export async function removeLine(
     return { error: null, at: Date.now() }
   } catch (e) {
     return { error: friendly(e), at: Date.now() }
+  }
+}
+
+export type AddToBasketResult = { ok: true } | { ok: false; reason: "stock" | "invalid" | "error" }
+
+/**
+ * "Add to basket" on product cards and the product page. The outcome is
+ * returned, not thrown: a production build hides thrown messages from the
+ * browser, so "not enough stock" would otherwise read as a generic failure.
+ */
+export async function addToBasket(input: { variantId: unknown; quantity: unknown }): Promise<AddToBasketResult> {
+  const variantId = typeof input?.variantId === "string" ? input.variantId : ""
+  const quantity = Number(input?.quantity)
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(variantId) || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
+    return { ok: false, reason: "invalid" }
+  }
+  try {
+    await addToCart({ variantId, quantity, countryCode: STORE_COUNTRY })
+    return { ok: true }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : ""
+    return { ok: false, reason: /inventory|stock/i.test(msg) ? "stock" : "error" }
   }
 }

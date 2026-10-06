@@ -14,7 +14,10 @@ import {
   REGISTER_FIELDS,
   RESET_FIELDS,
   formatUkPostcode,
+  PASSWORD_MIN,
   hasErrors,
+  isEmail,
+  isPhone,
   readForm,
   validateAddress,
   validateForgot,
@@ -24,7 +27,14 @@ import {
   validateReset,
 } from "@/lib/forms/validation"
 import { getAuthHeaders, getCacheTag } from "./cookies"
-import { login, signup } from "./customer"
+import {
+  confirmEmailVerification,
+  login,
+  signout,
+  signup,
+  transferCart,
+  type CustomerAuthState,
+} from "./customer"
 
 /*
  * Account form actions for the Tech Nest account pages. They validate with the
@@ -42,10 +52,7 @@ export async function loginAction(prev: FormState, formData: FormData): Promise<
   const errors = validateLogin(values)
   if (hasErrors(errors)) return errorState(prev, withoutSecrets(values), errors)
 
-  const clean = new FormData()
-  clean.set("email", values.email)
-  clean.set("password", String(formData.get("password") ?? ""))
-  const result = await login(null, clean)
+  const result = await login(values.email, String(formData.get("password") ?? ""))
   if (result?.state === "verification_required") {
     return { status: "success", attempt: prev.attempt, errors: {}, values: {}, message: "verify" }
   }
@@ -60,10 +67,14 @@ export async function registerAction(prev: FormState, formData: FormData): Promi
   const errors = validateRegister(values)
   if (hasErrors(errors)) return errorState(prev, withoutSecrets(values), errors)
 
-  // signup() reads these names from the FormData; pass trimmed values
-  const clean = new FormData()
-  for (const [k, v] of Object.entries(values)) clean.set(k, k === "password" ? String(formData.get(k) ?? "") : v)
-  const result = await signup(null, clean)
+  // trimmed values, except the password, which is used exactly as typed
+  const result = await signup({
+    email: values.email,
+    first_name: values.first_name,
+    last_name: values.last_name,
+    phone: values.phone,
+    password: String(formData.get("password") ?? ""),
+  })
   if (result?.state === "verification_required") {
     return { status: "success", attempt: prev.attempt, errors: {}, values: {}, message: "verify" }
   }
@@ -179,4 +190,52 @@ export async function deleteAddressAction(formData: FormData): Promise<void> {
   }
   await revalidateCustomer()
   redirect(`/account/addresses?saved=${ok ? "removed" : "remove-failed"}`)
+}
+
+/** The "Sign out" button in the account navigation */
+export async function signoutAction(): Promise<void> {
+  await signout()
+}
+
+/** "Run transfer again" in the banner shown when a basket did not follow the customer at sign-in */
+export async function transferCartAction(): Promise<void> {
+  await transferCart()
+}
+
+/** The page behind the link in the "verify your email" message */
+export async function confirmEmailVerificationAction(token: unknown): Promise<{ success: boolean }> {
+  if (typeof token !== "string" || !token || token.length > 2000) return { success: false }
+  const { success } = await confirmEmailVerification(token)
+  return { success }
+}
+
+/**
+ * "Save your details?" on the order confirmation page: an account for the
+ * order's email with the password the customer types. Only the outcome goes
+ * back to the browser, never the backend's own message.
+ */
+export async function createAccountAfterOrderAction(
+  _prev: CustomerAuthState,
+  formData: FormData
+): Promise<CustomerAuthState> {
+  const values = readForm(formData, REGISTER_FIELDS)
+  const password = String(formData.get("password") ?? "")
+  const valid =
+    isEmail(values.email) &&
+    password.length >= PASSWORD_MIN &&
+    password.length <= 200 &&
+    values.first_name.length <= 100 &&
+    values.last_name.length <= 100 &&
+    (!values.phone || isPhone(values.phone))
+  if (!valid) return { state: "error", error: "invalid" }
+
+  const result = await signup({
+    email: values.email,
+    first_name: values.first_name,
+    last_name: values.last_name,
+    phone: values.phone,
+    password,
+  })
+  if (result?.state === "error") return { state: "error", error: "failed" }
+  return result
 }

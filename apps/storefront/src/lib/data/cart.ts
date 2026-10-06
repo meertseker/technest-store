@@ -1,8 +1,7 @@
-"use server"
+import "server-only"
 
 import { sdk } from "@lib/config"
 import medusaError from "@lib/util/medusa-error"
-import { addressErrorMessage } from "@lib/util/address-error"
 import { HttpTypes } from "@medusajs/types"
 import { revalidateTag } from "next/cache"
 import { redirect } from "next/navigation"
@@ -15,7 +14,7 @@ import {
   setCartId,
 } from "./cookies"
 import { getRegion } from "./regions"
-import { getLocale } from "./locale-actions"
+import { getLocale } from "./locale"
 
 /**
  * One backend read per page render: the layout, the header and the page all ask
@@ -280,93 +279,6 @@ export async function initiatePaymentSession(
     .catch(medusaError)
 }
 
-export async function applyPromotions(codes: string[]) {
-  const cartId = await getCartId()
-
-  if (!cartId) {
-    throw new Error("No existing cart found")
-  }
-
-  const headers = {
-    ...(await getAuthHeaders()),
-  }
-
-  return sdk.store.cart
-    .update(cartId, { promo_codes: codes }, {}, headers)
-    .then(async () => {
-      const cartCacheTag = await getCacheTag("carts")
-      revalidateTag(cartCacheTag)
-
-      const fulfillmentCacheTag = await getCacheTag("fulfillment")
-      revalidateTag(fulfillmentCacheTag)
-    })
-    .catch(medusaError)
-}
-
-export async function submitPromotionForm(
-  currentState: unknown,
-  formData: FormData
-) {
-  const code = formData.get("code") as string
-  try {
-    await applyPromotions([code])
-  } catch (e) {
-    return errorMessage(e)
-  }
-}
-
-// TODO: Pass a POJO instead of a form entity here
-export async function setAddresses(currentState: unknown, formData: FormData) {
-  try {
-    if (!formData) {
-      throw new Error("No form data found when setting addresses")
-    }
-    const cartId = await getCartId()
-    if (!cartId) {
-      throw new Error("No existing cart found when setting addresses")
-    }
-
-    const field = (name: string) => (formData.get(name) as string | null) ?? ""
-    const data: HttpTypes.StoreUpdateCart = {
-      shipping_address: {
-        first_name: field("shipping_address.first_name"),
-        last_name: field("shipping_address.last_name"),
-        address_1: field("shipping_address.address_1"),
-        address_2: "",
-        company: field("shipping_address.company"),
-        postal_code: field("shipping_address.postal_code"),
-        city: field("shipping_address.city"),
-        country_code: field("shipping_address.country_code"),
-        province: field("shipping_address.province"),
-        phone: field("shipping_address.phone"),
-      },
-      email: field("email"),
-    }
-
-    const sameAsBilling = formData.get("same_as_billing")
-    if (sameAsBilling === "on") data.billing_address = data.shipping_address
-
-    if (sameAsBilling !== "on")
-      data.billing_address = {
-        first_name: field("billing_address.first_name"),
-        last_name: field("billing_address.last_name"),
-        address_1: field("billing_address.address_1"),
-        address_2: "",
-        company: field("billing_address.company"),
-        postal_code: field("billing_address.postal_code"),
-        city: field("billing_address.city"),
-        country_code: field("billing_address.country_code"),
-        province: field("billing_address.province"),
-        phone: field("billing_address.phone"),
-      }
-    await updateCart(data)
-  } catch (e) {
-    return addressErrorMessage(e)
-  }
-
-  redirect("/checkout?step=delivery")
-}
-
 /**
  * Places an order for a cart. If no cart ID is provided, it will use the cart ID from the cookies.
  * @param cartId - optional - The ID of the cart to place an order for.
@@ -410,9 +322,4 @@ export async function placeOrder(cartId?: string) {
   }
 
   return cartRes.cart
-}
-
-
-function errorMessage(e: unknown) {
-  return e instanceof Error ? e.message : String(e)
 }
