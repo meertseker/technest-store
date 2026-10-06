@@ -11,6 +11,7 @@ import {
 } from "@lib/checkout/validate"
 import type { DeliveryKind } from "@lib/basket/shipping-options"
 import { siteConfig } from "@lib/site-config"
+import { TRADE_ACCOUNT_EMAIL_MESSAGE, isTradeAccountEmailRefusal } from "@lib/util/address-error"
 import { HttpTypes } from "@medusajs/types"
 import { redirect } from "next/navigation"
 import { CHECKOUT_CART_FIELDS, getBasketView } from "./basket"
@@ -46,8 +47,9 @@ export async function saveContact(
   let cart: HttpTypes.StoreCart
   try {
     cart = await updateCart({ email: values.email })
-  } catch {
-    return { errors: [{ field: "email", message: SERVICE_ERROR }], values, submission: Date.now() }
+  } catch (e) {
+    const message = isTradeAccountEmailRefusal(e) ? TRADE_ACCOUNT_EMAIL_MESSAGE : SERVICE_ERROR
+    return { errors: [{ field: "email", message }], values, submission: Date.now() }
   }
   redirect(nextStepUrl(cart))
 }

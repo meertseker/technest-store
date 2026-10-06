@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { addressErrorMessage } from "./address-error"
+import { isTradeAccountEmailRefusal } from "./address-error"
 import medusaError from "./medusa-error"
 
 // What the Medusa JS SDK throws for a refused request (FetchError: message + status, no `response`).
@@ -13,22 +13,16 @@ const thrownBy = (error: unknown) => {
   }
 }
 
-describe("addressErrorMessage", () => {
-  it("tells a shopper who typed a trade account's email to sign in", () => {
+describe("isTradeAccountEmailRefusal", () => {
+  it("recognises the backend's refusal after it has passed through medusaError", () => {
     const refused = thrownBy(sdkError(401, "This email belongs to a trade account. Sign in to use it."))
-
-    expect(addressErrorMessage(refused)).toBe(
-      "This email belongs to a trade account. Sign in to use this email, or enter a different one."
-    )
+    expect(isTradeAccountEmailRefusal(refused)).toBe(true)
   })
 
-  it("keeps the message of any other error", () => {
-    expect(addressErrorMessage(thrownBy(sdkError(400, "Postal code is required")))).toBe(
-      "Error setting up the request: Postal code is required"
-    )
-    expect(addressErrorMessage(new Error("No existing cart found when setting addresses"))).toBe(
-      "No existing cart found when setting addresses"
-    )
-    expect(addressErrorMessage("boom")).toBe("boom")
+  it("is false for every other failure", () => {
+    expect(isTradeAccountEmailRefusal(thrownBy(sdkError(400, "Postal code is required")))).toBe(false)
+    expect(isTradeAccountEmailRefusal(new Error("No existing cart found"))).toBe(false)
+    expect(isTradeAccountEmailRefusal("boom")).toBe(false)
+    expect(isTradeAccountEmailRefusal(null)).toBe(false)
   })
 })
