@@ -5,7 +5,8 @@ import { existsSync, readFileSync } from "node:fs"
 if (existsSync(".env.local")) {
   for (const line of readFileSync(".env.local", "utf8").split(/\r?\n/)) {
     const m = line.match(/^([A-Z0-9_]+)=(.*)$/)
-    if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2]
+    // never NODE_ENV: next sets it itself, and "development" from .env.local breaks `next build`
+    if (m && m[1] !== "NODE_ENV" && process.env[m[1]] === undefined) process.env[m[1]] = m[2]
   }
 }
 
