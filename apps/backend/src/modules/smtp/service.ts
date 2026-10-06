@@ -6,6 +6,7 @@ import type {
 } from "@medusajs/framework/types"
 import nodemailer, { type SendMailOptions, type Transporter } from "nodemailer"
 import { hasTemplate, renderEmail } from "@technest/emails"
+import { SMTP_SEND_FAILED } from "../../lib/email/safe-error"
 
 export type SmtpOptions = {
   host: string
@@ -41,6 +42,44 @@ export const SMTP_TIMEOUTS = {
   connectionTimeout: 10_000,
   greetingTimeout: 10_000,
   socketTimeout: 30_000,
+}
+
+export function createSmtpTransport(options: SmtpOptions): Transporter {
+  return nodemailer.createTransport(
+    (options.transport ?? {
+      host: options.host,
+      port: Number(options.port),
+      secure: isTrue(options.secure),
+      requireTLS: !isTrue(options.secure) && isTrue(options.require_tls),
+      auth: options.user ? { user: options.user, pass: options.pass } : undefined,
+      ...SMTP_TIMEOUTS,
+    }) as any
+  )
+}
+
+type SmtpError = { code?: string; responseCode?: number; command?: string }
+
+// SMTP errors often echo the recipient (e.g. "550 <jane@x.com> rejected"), and
+// Medusa logs and stores error messages: describe them by their codes only.
+const describe = (e: unknown) => {
+  const err = (e ?? {}) as SmtpError
+  return `code=${err.code ?? "unknown"} response_code=${err.responseCode ?? "-"} command=${err.command ?? "-"}`
+}
+
+/**
+ * Connects and logs in without sending anything, so a wrong key, host or port
+ * shows up at start instead of at the first order. Never throws.
+ */
+export async function checkSmtpLogin(options: SmtpOptions): Promise<{ ok: true } | { ok: false; summary: string }> {
+  const transporter = createSmtpTransport(options)
+  try {
+    await transporter.verify()
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, summary: describe(e) }
+  } finally {
+    transporter.close()
+  }
 }
 
 /**
@@ -87,16 +126,7 @@ class SmtpNotificationService extends AbstractNotificationProviderService {
     super()
     this.logger_ = logger
     this.options_ = options
-    this.transporter_ = nodemailer.createTransport(
-      (options.transport ?? {
-        host: options.host,
-        port: Number(options.port),
-        secure: isTrue(options.secure),
-        requireTLS: !isTrue(options.secure) && isTrue(options.require_tls),
-        auth: options.user ? { user: options.user, pass: options.pass } : undefined,
-        ...SMTP_TIMEOUTS,
-      }) as any
-    )
+    this.transporter_ = createSmtpTransport(options)
   }
 
   async send(
@@ -151,10 +181,7 @@ class SmtpNotificationService extends AbstractNotificationProviderService {
     try {
       return await this.transporter_.sendMail(message)
     } catch (e) {
-      const err = e as { code?: string; responseCode?: number; command?: string }
-      const summary =
-        `smtp: send failed template=${template} code=${err.code ?? "unknown"}` +
-        ` response_code=${err.responseCode ?? "-"} command=${err.command ?? "-"}`
+      const summary = `${SMTP_SEND_FAILED} template=${template} ${describe(e)}`
       this.logger_.error(summary)
       throw new MedusaError(MedusaError.Types.UNEXPECTED_STATE, summary)
     }

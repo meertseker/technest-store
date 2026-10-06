@@ -1,63 +1,43 @@
-import { Modules } from "@medusajs/framework/utils"
 import {
   createStep,
   createWorkflow,
   StepResponse,
   WorkflowResponse,
 } from "@medusajs/framework/workflows-sdk"
-import { sendEmailOnce, type SendEmailOnceResult } from "../lib/email/send-email-once"
-import { resolveEmail, type EmailRecipient } from "../lib/email/sources"
+import { reportError } from "../lib/alerting"
+import { deliverEmail, type SendEmailInput } from "../lib/email/deliver"
+import { isSmtpSendFailure } from "../lib/email/safe-error"
+import type { SendEmailOnceResult } from "../lib/email/send-email-once"
 
-/**
- * IDs only. The workflow engine persists workflow inputs (workflow_execution
- * table, Redis) because this step retries on an interval, so no addresses,
- * order contents or secrets may go in here (security review 2026-09-30).
- * Secrets such as reset tokens never use this workflow at all.
- */
-export type SendEmailInput = {
-  template: string
-  resource_id: string
-  resource_type: string
-  trigger_type: string
-  recipient: EmailRecipient
-  /** Extra non-PII entity ids the template needs (e.g. low-stock variant ids). */
-  ids?: string[]
-}
+export type { SendEmailInput }
 
 const sendEmailStep = createStep(
   {
     name: "technest-send-email",
     // SMTP hiccups retry every 60 s, up to 5 times. Each attempt reloads the
     // data and first checks for an earlier successful send, so a retry never
-    // emails twice.
+    // emails twice. An email still failing after that is picked up by the
+    // email-sweeper job (lib/email/sweeper), which keeps trying for a day.
     maxRetries: 5,
     retryInterval: 60,
   },
   async (input: SendEmailInput, { container }): Promise<StepResponse<SendEmailOnceResult>> => {
-    const resolved = await resolveEmail(
-      container,
-      input.template,
-      input.resource_id,
-      input.recipient,
-      input.ids
-    )
-    if (!resolved) {
-      return new StepResponse<SendEmailOnceResult>({ skipped: true })
-    }
-    const result = await sendEmailOnce(
-      {
-        notifications: container.resolve(Modules.NOTIFICATION),
-        locking: container.resolve(Modules.LOCKING),
-      },
-      {
-        ...resolved,
-        template: input.template,
-        resource_id: input.resource_id,
-        resource_type: input.resource_type,
-        trigger_type: input.trigger_type,
+    try {
+      return new StepResponse(await deliverEmail(container, input))
+    } catch (e) {
+      // A failed send is stored, retried and alerted on by the sweeper. Anything
+      // else (the order can't be loaded, the lock is stuck) leaves no trace
+      // for it to find, so report it here. Ids only.
+      if (!isSmtpSendFailure(e)) {
+        reportError(e, {
+          source: "workflow:send-email",
+          template: input.template,
+          resource_type: input.resource_type,
+          resource_id: input.resource_id,
+        })
       }
-    )
-    return new StepResponse(result)
+      throw e
+    }
   }
   // No compensation: an email can't be unsent.
 )
