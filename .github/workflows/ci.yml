@@ -153,6 +153,8 @@ jobs:
           docker run --rm -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" \
             -e SHOP_DOMAIN=technest.co.uk -e ACME_EMAIL=ci@example.com \
             caddy:2.10-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+      - name: Caddyfile routes (which host serves the admin, the API and the webhook)
+        run: bash infra/caddy/test-caddyfile.sh
 
   # The three production images build (nothing is pushed). Without this the first real
   # build would be the first deploy.

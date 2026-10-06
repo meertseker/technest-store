@@ -25,8 +25,8 @@
 
 {$SHOP_DOMAIN} {
 	import common
-	# The storefront forwards CF-Connecting-IP to the backend (repair booking rate limit):
-	# always overwrite it so a client that bypasses Cloudflare can't choose its own IP.
+	# The storefront forwards CF-Connecting-IP to the backend (sign-in, registration and repair
+	# booking limits): always overwrite it so a client that bypasses Cloudflare can't choose its own IP.
 	reverse_proxy storefront:8000 {
 		header_up CF-Connecting-IP {client_ip}
 	}
@@ -36,12 +36,15 @@ www.{$SHOP_DOMAIN} {
 	redir https://{$SHOP_DOMAIN}{uri} permanent
 }
 
-# Store API + Stripe webhooks. The admin UI lives on admin.<domain>.
+# Store API + Stripe webhooks (/hooks/payment/stripe_stripe). The admin dashboard, the admin
+# API and admin sign-in are served on admin.<domain> only: here they do not exist, so the
+# protection in front of the admin host (Cloudflare Access, DEPLOY.md) cannot be walked around.
 api.{$SHOP_DOMAIN} {
 	import common
-	redir /app* https://admin.{$SHOP_DOMAIN}{uri} permanent
+	@adminOnly path /admin /admin/* /app /app/* /auth/user/*
+	respond @adminOnly 404
 	reverse_proxy server:9000 {
-		# The API rate limits by CF-Connecting-IP. Overwrite it with the client IP Caddy
+		# The API throttles by CF-Connecting-IP. Overwrite it with the client IP Caddy
 		# resolved (trusted_proxies above), so a request that bypasses Cloudflare can't spoof it.
 		header_up CF-Connecting-IP {client_ip}
 	}
@@ -54,5 +57,8 @@ admin.{$SHOP_DOMAIN} {
 	redir / /app permanent
 	@notAdmin not path /app* /admin/* /auth/* /static/* /health
 	respond @notAdmin 404
-	reverse_proxy server:9000
+	reverse_proxy server:9000 {
+		# Admin sign-in is throttled by this header too: same rule as on the API site.
+		header_up CF-Connecting-IP {client_ip}
+	}
 }
