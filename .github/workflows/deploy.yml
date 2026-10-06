@@ -1,11 +1,13 @@
-# Deploy: build images -> push to GHCR -> SSH to the server -> pull, migrate, up -d -> health check.
+# Deploy: build images -> push to GHCR -> ask the server (SSH) to pull, migrate, up -d -> health check.
 #
 # DISABLED until the lead approves: it only runs by hand (workflow_dispatch) AND only when the
 # repository variable DEPLOY_ENABLED is "true". Nothing is built on the server.
 # Only `main` can be deployed, and only a commit whose CI run is green.
 # Needs (GitHub -> Settings, see DEPLOY.md "GitHub secrets"):
 #   environments "staging" and "production" (production with a required reviewer)
-#   secrets per environment: SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, SSH_KNOWN_HOSTS,
+#   secrets per environment: SSH_HOST, SSH_USER, SSH_PRIVATE_KEY (a key that
+#     infra/deploy/setup-deploy-key.sh has restricted to the deploy gate on that server),
+#     SSH_KNOWN_HOSTS,
 #     NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY, NEXT_PUBLIC_STRIPE_KEY, NEXT_PUBLIC_SENTRY_DSN
 #   variables per environment: SHOP_DOMAIN (technest.co.uk or staging.technest.co.uk),
 #     NEXT_PUBLIC_IMAGE_HOSTNAME, NEXT_PUBLIC_TURNSTILE_SITE_KEY (public site key)
@@ -85,6 +87,10 @@ jobs:
           - name: technest-backup
             file: infra/backup/Dockerfile
             context: infra/backup
+          # docker-compose.yml, Caddyfile and deploy.sh for this release (see infra/deploy/Dockerfile).
+          - name: technest-deploy
+            file: infra/deploy/Dockerfile
+            context: .
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Licence guard
@@ -127,35 +133,38 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     timeout-minutes: 20
+    env:
+      TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+    # The deploy key can only talk to infra/deploy/deploy-gate.sh on the server (it is listed
+    # in authorized_keys with a forced command, see infra/deploy/setup-deploy-key.sh). The gate
+    # accepts "deploy <tag>", "rollback", "prune" and "status"; nothing sent from here is run
+    # as a command, and no file is copied: the server takes docker-compose.yml, the Caddyfile
+    # and deploy.sh out of the technest-deploy image built above.
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          sparse-checkout: |
-            docker-compose.yml
-            Caddyfile
-            infra/staging/docker-compose.staging.yml
-            infra/deploy/deploy.sh
-          sparse-checkout-cone-mode: false
       - name: SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
         run: |
           install -m 700 -d ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
-          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
-      - name: Copy compose files
-        env:
-          TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
-        # The staging override is only used where .env sets COMPOSE_FILE to include it.
-        run: scp -q docker-compose.yml Caddyfile infra/staging/docker-compose.staging.yml "$TARGET:/opt/technest/"
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          {
+            echo "Host *"
+            echo "  BatchMode yes"
+            echo "  ConnectTimeout 20"
+            echo "  ServerAliveInterval 30"
+          } > ~/.ssh/config
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts ~/.ssh/config
       - name: Pull, migrate, start
-        env:
-          TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
-        # The script is fed to bash on stdin; it writes the new tag to .env only after the
-        # migration has succeeded (infra/deploy/deploy.sh, tested by test-deploy.sh).
-        run: ssh "$TARGET" "cd /opt/technest && bash -s -- '$TAG'" < infra/deploy/deploy.sh
+        # The new tag is written to .env only after the migration has succeeded
+        # (infra/deploy/deploy.sh). If the stack does not start, the gate goes back to the
+        # tag and config files that were running.
+        run: |
+          # shellcheck disable=SC2029 # the tag is expanded here on purpose; the gate validates it
+          ssh "$TARGET" "deploy $TAG"
       - name: Health check (rolls back to the previous tag on failure)
         env:
-          TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
           DOMAIN: ${{ vars.SHOP_DOMAIN }}
         run: |
           for _ in $(seq 1 30); do
@@ -165,12 +174,11 @@ jobs:
             sleep 10
           done
           echo "Unhealthy after 5 minutes: rolling back" >&2
-          ssh "$TARGET" "cd /opt/technest && prev=\$(cat .previous_tag) && test -n \"\$prev\" && sed -i '/^IMAGE_TAG=/d' .env && echo IMAGE_TAG=\$prev >> .env && docker compose up -d --remove-orphans"
+          ssh "$TARGET" status || true
+          ssh "$TARGET" rollback || echo "::error::rollback failed: the server needs a person"
           exit 1
       - name: Remove images older than two weeks
-        env:
-          TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
         # Only after a healthy deploy, and never the images in use (the previous tag stays
-        # for two weeks, so a rollback still has its image). Three images per deploy would
+        # for two weeks, so a rollback still has its image). Four images per deploy would
         # otherwise fill the disk.
-        run: ssh "$TARGET" "docker image prune -af --filter until=336h" || echo "::warning::image prune failed"
+        run: ssh "$TARGET" prune || echo "::warning::image prune failed"

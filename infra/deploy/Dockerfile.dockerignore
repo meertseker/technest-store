@@ -1,0 +1,6 @@
+# Build context of infra/deploy/Dockerfile: only the release files.
+*
+!docker-compose.yml
+!Caddyfile
+!infra/staging/docker-compose.staging.yml
+!infra/deploy/deploy.sh

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Runs on the server, in /opt/technest, from the Deploy workflow:
-#   ssh deploy@server "cd /opt/technest && bash -s -- <image tag>" < infra/deploy/deploy.sh
+# Runs on the server, in /opt/technest. The Deploy workflow asks for it over SSH
+# ("deploy <image tag>"); deploy-gate.sh checks the request, takes this file out of
+# the technest-deploy image with that tag and runs it.
 # Pull -> migrate -> record the tag -> start -> reload Caddy.
 #
 # The new tag is written to .env only after the migration has succeeded. Until
@@ -13,14 +14,16 @@ set -euo pipefail
 
 TAG="${1:?usage: deploy.sh <image tag>}"
 
-previous="$(grep -E '^IMAGE_TAG=' .env | cut -d= -f2 || true)"
+# The value only: the template's line carries a trailing comment, which must not
+# end up as the tag a rollback goes back to.
+previous="$(grep -E '^IMAGE_TAG=' .env | tail -1 | cut -d= -f2- | sed -E 's/[[:space:]]*(#.*)?$//' || true)"
 echo "$previous" > .previous_tag
 
 IMAGE_TAG="$TAG" docker compose pull --quiet
 
-# This script reaches bash on stdin and `docker compose run` reads stdin too:
-# without -T and </dev/null it swallows the rest of the script, so nothing
-# after it runs and bash still exits 0.
+# `docker compose run` reads stdin. If this script is ever fed to bash on stdin
+# (the test does), run without -T and </dev/null would swallow the rest of the
+# script: nothing after it would run and bash would still exit 0.
 IMAGE_TAG="$TAG" docker compose --profile ops run --rm -T migrate </dev/null
 
 sed -i '/^IMAGE_TAG=/d' .env

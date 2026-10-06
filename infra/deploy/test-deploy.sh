@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Tests infra/deploy/deploy.sh against a stand-in `docker` that records its calls.
+# (How the script is asked for, and by whom, is tested in test-deploy-gate.sh.)
 # Run: bash infra/deploy/test-deploy.sh   (also run by CI)
 set -uo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -18,7 +19,7 @@ run_case() {
 #!/usr/bin/env bash
 echo "IMAGE_TAG=\${IMAGE_TAG:-unset} \$*" >> "$work/calls"
 case "\$*" in *"$2"*) exit 1 ;; esac
-# Like the real one, `compose run` reads stdin unless told not to.
+# Like the real one, compose run reads stdin unless told not to.
 case "\$*" in *" run "*) cat >/dev/null ;; esac
 exit 0
 EOF
@@ -55,6 +56,14 @@ check "pull fails: no migration is run" "0" "$(calls 'migrate')"
 run_case "caddy reload fails" "caddy reload"
 check "reload fails: the deploy still succeeds (containers are up)" "0" "$status"
 check "reload fails: .env has the new tag" "production-new" "$(tag)"
+
+# The template's IMAGE_TAG line is empty with a trailing comment.
+run_case "first deploy" "none"
+printf 'GHCR_OWNER=shop\nIMAGE_TAG=                 # written by the Deploy workflow\n' > "$work/.env"
+(cd "$work" && PATH="$work/bin:$PATH" bash "$here/deploy.sh" production-new > "$work/out" 2>&1)
+check "first deploy: exit code" "0" "$?"
+check "first deploy: the comment is not taken for a previous tag" "" "$(cat "$work/.previous_tag")"
+check "first deploy: .env has one tag line, the new tag" "IMAGE_TAG=production-new" "$(grep '^IMAGE_TAG=' "$work/.env")"
 
 echo
 [ "$fails" -eq 0 ] && echo "all deploy.sh checks passed" || { echo "$fails check(s) failed"; exit 1; }
