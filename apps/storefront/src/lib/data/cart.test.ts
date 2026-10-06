@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 const fetchMock = vi.fn()
 const createCart = vi.fn()
 const createLineItem = vi.fn()
+const completeCart = vi.fn()
 const setCookie = vi.fn()
 const jar: Record<string, string> = {}
 
@@ -14,6 +15,7 @@ vi.mock("@lib/config", () => ({
       cart: {
         create: (...a: unknown[]) => createCart(...a),
         createLineItem: (...a: unknown[]) => createLineItem(...a),
+        complete: (...a: unknown[]) => completeCart(...a),
         update: vi.fn(),
       },
     },
@@ -35,7 +37,7 @@ vi.mock("@sentry/nextjs", () => ({ captureException: (...a: unknown[]) => captur
 /** What reaches monitoring: [error, where it was handled] */
 const reported = () => captureException.mock.calls.map(([error, hint]) => [error, hint?.tags?.handled_in])
 
-import { getOrSetCart, retrieveCart } from "./cart"
+import { getOrSetCart, placeOrder, retrieveCart } from "./cart"
 
 const httpError = (status: number) => Object.assign(new Error(`HTTP ${status}`), { status })
 const region = { regions: [{ id: "reg_1", countries: [{ iso_2: "gb" }] }] }
@@ -138,6 +140,24 @@ describe("getOrSetCart", () => {
     await expect(getOrSetCart("gb")).rejects.toMatchObject({ status: 503 })
     expect(createCart).not.toHaveBeenCalled()
     expect(setCookie).not.toHaveBeenCalled()
+    expect(jar._medusa_cart_id).toBe("cart_old")
+  })
+})
+
+describe("placeOrder", () => {
+  beforeEach(() => {
+    completeCart.mockReset()
+    completeCart.mockResolvedValue({ type: "order", order: { id: "order_1" } })
+  })
+
+  it("forgets the basket cookie once that basket has become an order", async () => {
+    await placeOrder("cart_old")
+    expect(setCookie).toHaveBeenCalledWith("_medusa_cart_id", "", expect.objectContaining({ maxAge: -1 }))
+  })
+
+  it("keeps the cookie when a different basket was completed", async () => {
+    await placeOrder("cart_someone_elses")
+    expect(setCookie).not.toHaveBeenCalledWith("_medusa_cart_id", "", expect.anything())
     expect(jar._medusa_cart_id).toBe("cart_old")
   })
 })

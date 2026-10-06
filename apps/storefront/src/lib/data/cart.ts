@@ -311,7 +311,9 @@ export async function placeOrder(cartId?: string) {
     const orderCacheTag = await getCacheTag("orders")
     revalidateTag(orderCacheTag)
 
-    removeCartId()
+    // Forget the basket cookie only if it is the basket that became this order
+    // (the payment return can complete a basket that is not the visitor's).
+    if ((await getCartId()) === id) await removeCartId()
     redirect(`/order/${cartRes?.order.id}/confirmed`)
   }
 

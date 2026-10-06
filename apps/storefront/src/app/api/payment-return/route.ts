@@ -1,6 +1,6 @@
 import { sdk } from "@lib/config"
 import { placeOrder } from "@lib/data/cart"
-import { getAuthHeaders, setCartId } from "@lib/data/cookies"
+import { getAuthHeaders, getCartId, setCartId } from "@lib/data/cookies"
 import { HttpTypes } from "@medusajs/types"
 import { seeOther } from "@lib/http/see-other"
 import { unstable_rethrow } from "next/navigation"
@@ -20,9 +20,18 @@ export async function GET(req: NextRequest) {
   // image the request's own origin is the container's address, not the public host.
   // Errors go back to the payment step, which shows them in its error summary
   // (codes: modules/checkout/payment/helpers.ts returnErrorMessage).
+  //
+  // The basket in the link is only treated as the visitor's own when their
+  // cookie already points at it, or when they have no basket (the cookie was
+  // lost on the way back from the bank). A link for some other basket never
+  // replaces the one they have: its outcome is shown on their own basket page.
+  const cookieCartId = await getCartId()
+  const ownBasket = !cookieCartId || cookieCartId === cartId
   const backToPayment = (code: "payment_failed" | "declined" | "order_failed" | "hold_released") =>
-    seeOther(`/checkout?step=payment&payment_error=${code}`)
-  const rejected = () => backToPayment("payment_failed")
+    ownBasket
+      ? seeOther(`/checkout?step=payment&payment_error=${code}`)
+      : seeOther(`/basket?error=${code === "declined" || code === "payment_failed" ? "payment_failed" : "order_failed"}`)
+  const rejected = () => seeOther("/checkout?step=payment&payment_error=payment_failed")
 
   if (!cartId || !paymentIntent || !paymentIntentClientSecret) {
     return rejected()
@@ -49,7 +58,7 @@ export async function GET(req: NextRequest) {
     return rejected()
   }
 
-  await setCartId(cartId)
+  if (ownBasket) await setCartId(cartId)
 
   // The customer backed out or the bank declined. Stripe puts the PaymentIntent
   // back into `requires_payment_method`, so the Payment Element can mount
