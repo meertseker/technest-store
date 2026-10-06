@@ -25,8 +25,20 @@ export type SmtpOptions = {
 type InjectedDependencies = { logger: Logger }
 
 // Exactly one plain address: no display name, lists, groups or line breaks.
-const ADDRESS_PART = String.raw`[^\s@<>,;:"'()\[\]\\]+`
-const SINGLE_ADDRESS = new RegExp(`^${ADDRESS_PART}@${ADDRESS_PART}\\.${ADDRESS_PART}$`)
+// An apostrophe is fine before the @ (o'brien@example.com), never after it.
+const LOCAL_PART = String.raw`[^\s@<>,;:"()\[\]\\]+`
+const DOMAIN_PART = String.raw`[^\s@<>,;:"'()\[\]\\]+`
+const SINGLE_ADDRESS = new RegExp(`^${LOCAL_PART}@${DOMAIN_PART}\\.${DOMAIN_PART}$`)
+
+/**
+ * Resend treats two sends with the same key within 24 hours as one email
+ * (https://resend.com/docs/send-with-smtp). It covers the one duplicate our
+ * own send-once check can't see: the server accepted the message but we never
+ * heard back, so the attempt was recorded as failed and sent again. Other
+ * SMTP servers ignore the header.
+ */
+const IDEMPOTENCY_HEADER = "Resend-Idempotency-Key"
+const IDEMPOTENCY_KEY = /^[A-Za-z0-9_-]{1,256}$/
 
 const isTrue = (v: unknown) => v === true || v === "true"
 
@@ -150,7 +162,9 @@ class SmtpNotificationService extends AbstractNotificationProviderService {
       )
     }
 
+    const key = notification.provider_data?.idempotency_key
     const info = await this.sendMail_(notification.template, {
+      headers: typeof key === "string" && IDEMPOTENCY_KEY.test(key) ? { [IDEMPOTENCY_HEADER]: key } : undefined,
       from: notification.from || this.options_.from,
       replyTo: this.options_.reply_to || undefined,
       to: notification.to,

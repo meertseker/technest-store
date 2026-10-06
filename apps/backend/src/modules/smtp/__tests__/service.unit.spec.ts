@@ -233,6 +233,70 @@ describe("SmtpNotificationService hardening (security review)", () => {
     expect(sendMail).not.toHaveBeenCalled()
   })
 
+  // Valid addresses that a too-strict check used to turn away: those people got no email at all.
+  it.each(["o'brien@example.com", "d'arcy.o'neil+shop@example.co.uk", "first.last@sub.example.com"])(
+    "sends to %s",
+    async (to) => {
+      const service = makeService()
+      const sendMail = jest.spyOn((service as any).transporter_, "sendMail")
+
+      await service.send({ to, channel: "email", template: "t", content: { subject: "s", text: "t" } })
+
+      const info: any = await sendMail.mock.results[0].value
+      expect(JSON.parse(info.message).to).toEqual([{ address: to, name: "" }])
+    }
+  )
+
+  it.each(["jane@exam'ple.com", "'@example.com'; x@evil.example", "a b@example.com"])(
+    "still rejects %j",
+    async (to) => {
+      const service = makeService()
+      await expect(
+        service.send({ to, channel: "email", template: "t", content: { subject: "s", text: "t" } })
+      ).rejects.toThrow("recipient")
+    }
+  )
+
+  describe("provider-side duplicate protection", () => {
+    const send = (service: SmtpNotificationService, provider_data?: Record<string, unknown>) =>
+      service.send({
+        to: "customer@example.com",
+        channel: "email",
+        template: "order-confirmation",
+        content: { subject: "s", text: "t" },
+        provider_data,
+      })
+    const headersOf = async (sendMail: jest.SpyInstance, call = 0) =>
+      JSON.parse(((await sendMail.mock.results[call].value) as any).message).headers
+
+    it("passes the email's key to the mail provider as Resend-Idempotency-Key, the same on every attempt", async () => {
+      const service = makeService()
+      const sendMail = jest.spyOn((service as any).transporter_, "sendMail")
+      const key = "email-0123456789abcdef0123456789abcdef"
+
+      await send(service, { idempotency_key: key })
+      await send(service, { idempotency_key: key })
+
+      for (const call of [0, 1]) {
+        expect(await headersOf(sendMail, call)).toEqual({ "Resend-Idempotency-Key": key })
+      }
+    })
+
+    it("sends no such header without a key, or with one that is not a plain token", async () => {
+      const service = makeService()
+      const sendMail = jest.spyOn((service as any).transporter_, "sendMail")
+
+      await send(service)
+      await send(service, { idempotency_key: "bad key\r\nBcc: evil@evil.example" })
+      await send(service, { idempotency_key: 42 })
+
+      for (const call of [0, 1, 2]) {
+        const headers = (await headersOf(sendMail, call)) ?? {}
+        expect(Object.keys(headers).filter((name) => /idempotency/i.test(name))).toEqual([])
+      }
+    })
+  })
+
   it("never reads local files or URLs, even if a caller passes an object as content", async () => {
     const service = makeService()
 

@@ -81,5 +81,31 @@ describe("sendEmailOnce", () => {
     expect(f.created[0].content).toEqual({ subject: "Reset", html: "<p>x</p>", text: "x" })
     expect(f.created[0].data).toEqual({})
   })
+
+  describe("key for the mail provider's own duplicate check", () => {
+    const keyOf = async (over: Partial<typeof input> = {}) => {
+      const f = fakes()
+      await sendEmailOnce(f as any, { ...input, ...over })
+      return f.created[0].provider_data.idempotency_key as string
+    }
+
+    it("is the same for every attempt at the same email", async () => {
+      const key = await keyOf()
+      expect(key).toMatch(/^email-[0-9a-f]{32}$/)
+      expect(await keyOf()).toBe(key)
+      expect(await keyOf({ to: "SAM@example.com" })).toBe(key)
+    })
+
+    it("differs by template, record and recipient, and does not contain the address", async () => {
+      const keys = new Set([
+        await keyOf(),
+        await keyOf({ template: "shop-new-order" }),
+        await keyOf({ resource_id: "order_2" }),
+        await keyOf({ to: "kim@example.com" }),
+      ])
+      expect(keys.size).toBe(4)
+      expect([...keys].join(" ")).not.toContain("sam")
+    })
+  })
 })
 

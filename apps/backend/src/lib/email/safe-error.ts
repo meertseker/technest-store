@@ -5,7 +5,7 @@ export const SMTP_SEND_FAILED = "smtp: send failed"
 export const isSmtpSendFailure = (e: unknown) =>
   String((e as { message?: unknown } | undefined)?.message ?? e).includes(SMTP_SEND_FAILED)
 
-const EMAIL = /[^\s<>"'@]+@[^\s<>"'@]+\.[^\s<>"'@]+/g
+const EMAIL = /[^\s<>"@]+@[^\s<>"'@]+\.[^\s<>"'@]+/g
 
 /**
  * An error message fit for logs: email addresses are masked. The SMTP

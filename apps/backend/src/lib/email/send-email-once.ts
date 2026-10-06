@@ -27,6 +27,10 @@ export type SendEmailOnceResult = { id?: string; skipped?: true }
  * the row, so every step retry would email the customer again. Instead we
  * check for an earlier success ourselves, under a lock, and create a fresh
  * (un-keyed) notification per attempt. Failed attempts stay as FAILURE rows.
+ *
+ * That check can't see a send the mail server accepted without us hearing
+ * back, so every attempt also carries one fixed key for the provider's own
+ * duplicate check (provider_data.idempotency_key).
  */
 export async function sendEmailOnce(
   deps: {
@@ -39,6 +43,9 @@ export async function sendEmailOnce(
   // logged and lock keys sit in Redis, so they must not contain an address.
   const recipient = createHash("sha256").update(send.to.toLowerCase()).digest("hex").slice(0, 16)
   const lockKey = `email:${send.template}:${send.resource_id}:${recipient}`
+  // The same for every attempt at this email: the mail provider drops a repeat
+  // it already accepted (see modules/smtp). A hash, so it holds no address.
+  const idempotencyKey = `email-${createHash("sha256").update(lockKey).digest("hex").slice(0, 32)}`
   return deps.locking.execute(lockKey, async () => {
     const earlier = await deps.notifications.listNotifications({
       to: send.to,
@@ -50,7 +57,7 @@ export async function sendEmailOnce(
       return { skipped: true as const, id: sent.id }
     }
     const [notification] = await deps.notifications.createNotifications([
-      { ...send, channel: "email" },
+      { ...send, channel: "email", provider_data: { idempotency_key: idempotencyKey } },
     ])
     return { id: notification?.id }
   })

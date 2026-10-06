@@ -5,6 +5,10 @@ describe("safeErrorMessage", () => {
     expect(safeErrorMessage(new Error("550 <jane.doe+x@example.co.uk> rejected"))).toBe("550 <<email>> rejected")
   })
 
+  it("masks the whole of an address with an apostrophe", () => {
+    expect(safeErrorMessage(new Error("550 <o'brien@example.com> rejected"))).toBe("550 <<email>> rejected")
+  })
+
   it("keeps ordinary messages and handles non-errors", () => {
     expect(safeErrorMessage(new Error("Order order_1 not found"))).toBe("Order order_1 not found")
     expect(safeErrorMessage("boom")).toBe("boom")
