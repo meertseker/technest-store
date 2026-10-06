@@ -1,3 +1,4 @@
+import net from "node:net"
 import SmtpNotificationService from "../service"
 
 const baseOptions = {
@@ -35,6 +36,82 @@ describe("SmtpNotificationService.validateOptions", () => {
   it("accepts a complete config", () => {
     expect(() => SmtpNotificationService.validateOptions(baseOptions)).not.toThrow()
   })
+
+  // A user name without a password connects fine and then fails every send at login.
+  it.each([undefined, "", "   "])("rejects a user name with password %j", (pass) => {
+    expect(() => SmtpNotificationService.validateOptions({ ...baseOptions, user: "resend", pass })).toThrow("pass")
+  })
+
+  it("rejects a password without a user name", () => {
+    expect(() => SmtpNotificationService.validateOptions({ ...baseOptions, pass: "re_x" })).toThrow("user")
+  })
+
+  it("accepts a user name with a password", () => {
+    expect(() =>
+      SmtpNotificationService.validateOptions({ ...baseOptions, user: "resend", pass: "re_x" })
+    ).not.toThrow()
+  })
+
+  describe("in production", () => {
+    const env = process.env.NODE_ENV
+    beforeEach(() => {
+      process.env.NODE_ENV = "production"
+    })
+    afterEach(() => {
+      process.env.NODE_ENV = env
+    })
+
+    it("refuses to start without a login", () => {
+      expect(() => SmtpNotificationService.validateOptions(baseOptions)).toThrow("user")
+    })
+
+    it("starts with a login", () => {
+      expect(() =>
+        SmtpNotificationService.validateOptions({ ...baseOptions, user: "resend", pass: "re_x" })
+      ).not.toThrow()
+    })
+  })
+})
+
+describe("SmtpNotificationService timeouts", () => {
+  it("sets connection, greeting and socket timeouts well below nodemailer's defaults", () => {
+    const service = new SmtpNotificationService({ logger: makeLogger().logger }, { ...baseOptions } as any)
+    const options = (service as any).transporter_.options
+    expect(options.connectionTimeout).toBe(10_000)
+    expect(options.greetingTimeout).toBe(10_000)
+    expect(options.socketTimeout).toBe(30_000)
+    expect(options.dnsTimeout).toBe(10_000)
+  })
+
+  // A server that accepts the connection and then says nothing: without a
+  // greeting timeout the send (and the event worker behind it) hangs for 30 s or more.
+  it("gives up on a server that never answers in under 15 seconds", async () => {
+    const sockets: net.Socket[] = []
+    const server = net.createServer((socket) => sockets.push(socket))
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve))
+    const port = (server.address() as net.AddressInfo).port
+    const service = new SmtpNotificationService({ logger: makeLogger().logger }, {
+      ...baseOptions,
+      host: "127.0.0.1",
+      port,
+    } as any)
+
+    const started = Date.now()
+    try {
+      await expect(
+        service.send({
+          to: "customer@example.com",
+          channel: "email",
+          template: "welcome",
+          content: { subject: "s", text: "t" },
+        })
+      ).rejects.toThrow("send failed")
+      expect(Date.now() - started).toBeLessThan(15_000)
+    } finally {
+      sockets.forEach((s) => s.destroy())
+      await new Promise((resolve) => server.close(resolve))
+    }
+  }, 45_000)
 })
 
 describe("SmtpNotificationService.send", () => {

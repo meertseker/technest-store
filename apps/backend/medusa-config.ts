@@ -119,7 +119,7 @@ const paymentModules = paymentProviders.length
   : []
 
 // Email (E2): our own SMTP provider. Dev/test default to Mailpit on
-// localhost:1025; production must set SMTP_HOST and MAIL_FROM explicitly
+// localhost:1025; production must set SMTP_HOST, MAIL_FROM and the login explicitly
 // (validateOptions fails the boot otherwise).
 const notificationModule = {
   resolve: "@medusajs/medusa/notification",

@@ -29,6 +29,20 @@ const SINGLE_ADDRESS = new RegExp(`^${ADDRESS_PART}@${ADDRESS_PART}\\.${ADDRESS_
 
 const isTrue = (v: unknown) => v === true || v === "true"
 
+const isSet = (v: unknown) => typeof v === "string" && v.trim() !== ""
+
+/**
+ * How long one send may wait on the server. Nodemailer's own defaults (2 min
+ * to connect, 30 s for the greeting, 10 min of silence) would hold up the
+ * event worker, and every order behind it, when the server hangs.
+ */
+export const SMTP_TIMEOUTS = {
+  dnsTimeout: 10_000,
+  connectionTimeout: 10_000,
+  greetingTimeout: 10_000,
+  socketTimeout: 30_000,
+}
+
 /**
  * Email channel provider for the Notification module. Sends through any SMTP
  * server: Mailpit in dev, Resend in production, or any other SMTP relay
@@ -50,6 +64,23 @@ class SmtpNotificationService extends AbstractNotificationProviderService {
         )
       }
     }
+    // A login with half its details connects fine and then fails every send,
+    // so refuse to start instead. Production always logs in (dev's Mailpit doesn't).
+    const user = isSet(options.user)
+    const pass = isSet(options.pass)
+    const loginRequired = process.env.NODE_ENV === "production" && !options.transport
+    if ((pass || loginRequired) && !user) {
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        'smtp notification provider: option "user" (SMTP_USER) is required'
+      )
+    }
+    if (user && !pass) {
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        'smtp notification provider: option "pass" (SMTP_PASS) is required when a user is set'
+      )
+    }
   }
 
   constructor({ logger }: InjectedDependencies, options: SmtpOptions) {
@@ -63,6 +94,7 @@ class SmtpNotificationService extends AbstractNotificationProviderService {
         secure: isTrue(options.secure),
         requireTLS: !isTrue(options.secure) && isTrue(options.require_tls),
         auth: options.user ? { user: options.user, pass: options.pass } : undefined,
+        ...SMTP_TIMEOUTS,
       }) as any
     )
   }

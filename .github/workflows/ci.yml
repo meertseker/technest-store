@@ -142,6 +142,7 @@ jobs:
           S3_BUCKET: x
           S3_ENDPOINT: x
           GHCR_OWNER: ci
+          SMTP_PASS: x
         run: docker compose --profile ops config --quiet
       - name: Deploy script (pull, migrate, tag, start) against a stand-in docker
         run: bash infra/deploy/test-deploy.sh
