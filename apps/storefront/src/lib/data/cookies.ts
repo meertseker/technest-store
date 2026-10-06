@@ -18,6 +18,9 @@ export const getAuthHeaders = async (): Promise<
   }
 }
 
+// Nothing that belongs to one visitor is kept in Next's data cache (see the
+// `cache: "no-store"` reads in this folder). The tag is only what a mutation
+// passes to `revalidateTag` so that Next re-renders the page in its response.
 export const getCacheTag = async (tag: string): Promise<string> => {
   try {
     const cookies = await nextCookies()
@@ -31,22 +34,6 @@ export const getCacheTag = async (tag: string): Promise<string> => {
   } catch {
     return ""
   }
-}
-
-export const getCacheOptions = async (
-  tag: string
-): Promise<{ tags: string[] } | Record<string, never>> => {
-  if (typeof window !== "undefined") {
-    return {}
-  }
-
-  const cacheTag = await getCacheTag(tag)
-
-  if (!cacheTag) {
-    return {}
-  }
-
-  return { tags: [`${cacheTag}`] }
 }
 
 // `sameSite: "lax"` rather than `"strict"`: the customer returns from a

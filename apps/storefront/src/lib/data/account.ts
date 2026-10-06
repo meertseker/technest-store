@@ -3,7 +3,7 @@ import { sdk } from "@lib/config"
 import { retrieveCustomer } from "@lib/data/customer"
 import { HttpTypes } from "@medusajs/types"
 import { redirect } from "next/navigation"
-import { getAuthHeaders, getCacheOptions } from "./cookies"
+import { getAuthHeaders } from "./cookies"
 
 /** The signed-in customer, or a redirect to sign in that comes back to `returnTo` */
 export async function requireCustomer(returnTo: string): Promise<HttpTypes.StoreCustomer> {
@@ -20,7 +20,6 @@ export async function listOrdersPage(
 ): Promise<{ orders: HttpTypes.StoreOrder[]; count: number } | null> {
   const headers = await getAuthHeaders()
   if (!("authorization" in headers)) return null
-  const next = await getCacheOptions("orders")
   try {
     const { orders, count } = await sdk.client.fetch<HttpTypes.StoreOrderListResponse>(`/store/orders`, {
       method: "GET",
@@ -31,8 +30,8 @@ export async function listOrdersPage(
         fields: "id,display_id,created_at,status,fulfillment_status,payment_status,total,currency_code,*items,*shipping_methods",
       },
       headers,
-      next,
-      cache: "force-cache",
+      // an order's status changes in the admin: read fresh, never stored
+      cache: "no-store",
     })
     return { orders, count }
   } catch {
@@ -44,7 +43,6 @@ export async function listOrdersPage(
 export async function retrieveAccountOrder(id: string): Promise<HttpTypes.StoreOrder | null> {
   const headers = await getAuthHeaders()
   if (!("authorization" in headers)) return null
-  const next = await getCacheOptions("orders")
   try {
     const { order } = await sdk.client.fetch<HttpTypes.StoreOrderResponse>(
       `/store/orders/${encodeURIComponent(id)}`,
@@ -55,8 +53,7 @@ export async function retrieveAccountOrder(id: string): Promise<HttpTypes.StoreO
             "*items,*items.variant,*items.product,*shipping_address,*billing_address,*shipping_methods,*payment_collections.payments,+customer_id",
         },
         headers,
-        next,
-        cache: "force-cache",
+        cache: "no-store",
       }
     )
     return order

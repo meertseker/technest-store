@@ -5,7 +5,6 @@ import { OptionValueIds } from "@lib/util/product-option-filters"
 import { sortProducts } from "@lib/util/sort-products"
 import { HttpTypes } from "@medusajs/types"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
-import { getAuthHeaders, getCacheOptions } from "./cookies"
 import { getRegion, retrieveRegion } from "./regions"
 
 type ProductListQueryParams = (HttpTypes.FindParams &
@@ -52,14 +51,6 @@ export const listProducts = async ({
     }
   }
 
-  const headers = {
-    ...(await getAuthHeaders()),
-  }
-
-  const next = {
-    ...(await getCacheOptions("products")),
-  }
-
   return sdk.client
     .fetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
       `/store/products`,
@@ -73,9 +64,9 @@ export const listProducts = async ({
             "*variants.calculated_price,+variants.inventory_quantity,*variants.images,*variants.options,+metadata,+tags,",
           ...queryParams,
         },
-        headers,
-        next,
-        cache: "force-cache",
+        // Sent without the customer's token, so this is the retail list, the same
+        // for every visitor, and it follows admin price and stock changes within a minute.
+        next: { revalidate: 60, tags: ["products"] },
       }
     )
     .then(({ products, count }) => {

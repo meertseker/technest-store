@@ -9,7 +9,7 @@ import {
   type ShippingOptionLike,
 } from "@lib/basket/shipping-options"
 import { HttpTypes } from "@medusajs/types"
-import { getAuthHeaders, getCacheOptions } from "./cookies"
+import { getAuthHeaders } from "./cookies"
 import { listCartShippingMethods } from "./fulfillment"
 import { getTechnestSettings } from "./technest-settings"
 
@@ -36,8 +36,7 @@ async function getBackendBasketRules(cartId: string) {
   try {
     const body = await sdk.client.fetch<unknown>(`/store/carts/${cartId}/basket-rules`, {
       headers: { ...(await getAuthHeaders()) },
-      next: { ...(await getCacheOptions("carts")) },
-      cache: "force-cache",
+      cache: "no-store",
     })
     return parseBasketRules(body)
   } catch {
