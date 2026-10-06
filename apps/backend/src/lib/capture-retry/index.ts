@@ -7,6 +7,7 @@ import {
   isLockBusyError,
   paymentsOf,
 } from "../click-collect"
+import { reportError } from "../alerting"
 import { captureDeliveryOrderWorkflow } from "../../workflows/capture-delivery-order"
 import { recordCaptureRetryWorkflow } from "../../workflows/record-capture-retry"
 import { CAPTURE_RETRY_AFTER_MS, CAPTURE_RETRY_MAX_ATTEMPTS, CaptureRetryMeta } from "./constants"
@@ -102,6 +103,7 @@ export async function retryUncapturedDeliveryOrders(
           `capture-retry: order ${order.id} attempt ${attempts + 1} of ${CAPTURE_RETRY_MAX_ATTEMPTS} failed: ` +
             (e as Error).message
         )
+        reportError(e, { source: "job:capture-retry", order_id: order.id, attempt: attempts + 1, gave_up: gaveUp })
         try {
           // Tell people before noting that we gave up: if the note failed first, the
           // order would be skipped for good and nobody would know.
@@ -118,6 +120,7 @@ export async function retryUncapturedDeliveryOrders(
           logger.error(
             `capture-retry: order ${order.id}: telling or noting the failed attempt failed: ${(recordError as Error).message}`
           )
+          reportError(recordError, { source: "job:capture-retry", order_id: order.id })
         }
       }
     }

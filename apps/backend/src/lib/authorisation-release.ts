@@ -1,5 +1,6 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
+import { reportError } from "./alerting"
 
 /** A card authorisation lapses by itself after about 7 days; older orders hold nothing. */
 const LOOKBACK_MS = 8 * 24 * 60 * 60 * 1000
@@ -61,6 +62,7 @@ export async function releaseStuckAuthorisations(
               `authorised (${(e as Error).message}). It is retried on the next run; if this repeats, ` +
               `release it in the Stripe dashboard.`
           )
+          reportError(e, { source: "job:authorisation-release", order_id: order.id, payment_id: payment.id })
         }
       }
     }

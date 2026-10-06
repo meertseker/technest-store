@@ -1,4 +1,5 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
+import { reportingSubscriber } from "../lib/alerting"
 import { runEmail } from "../lib/email/run-email"
 import { londonDay, MAX_DIGEST_VARIANTS } from "../lib/email/trade-sources"
 
@@ -23,7 +24,7 @@ export type LowStockEvent = {
  * Only the variant ids go into the (persisted) workflow input; the email
  * reloads titles, SKUs and stock, so a retry shows current numbers.
  */
-export default async function lowStockDigestEmail({
+async function lowStockDigestEmail({
   event: { name, data },
   container,
 }: SubscriberArgs<Partial<LowStockEvent> | undefined>) {
@@ -45,5 +46,7 @@ export default async function lowStockDigestEmail({
     ids: ids.slice(0, MAX_DIGEST_VARIANTS),
   })
 }
+
+export default reportingSubscriber("low-stock-digest-email", lowStockDigestEmail)
 
 export const config: SubscriberConfig = { event: LOW_STOCK_EVENT }

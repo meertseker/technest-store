@@ -1,5 +1,6 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { reportError } from "../lib/alerting"
 import { CollectMeta, collectionDeadlineOf, REMINDER_AFTER_MS } from "../lib/click-collect"
 import { listUncollectedOrders } from "../lib/click-collect/list"
 import {
@@ -23,6 +24,7 @@ export default async function clickCollectLifecycleJob(container: MedusaContaine
   } catch (e) {
     // Don't throw from a scheduled job: log and try again next hour.
     logger.error(`click-collect-lifecycle: listing uncollected orders failed: ${(e as Error).message}`)
+    reportError(e, { source: "job:click-collect-lifecycle" })
     return
   }
   let reminded = 0
@@ -48,6 +50,7 @@ export default async function clickCollectLifecycleJob(container: MedusaContaine
     } catch (e) {
       // One bad order must not stop the others. IDs only in logs.
       logger.error(`click-collect-lifecycle: order ${order.id} failed: ${(e as Error).message}`)
+      reportError(e, { source: "job:click-collect-lifecycle", order_id: order.id })
     }
   }
   if (reminded || expired) {

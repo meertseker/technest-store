@@ -1,4 +1,5 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
+import { reportingSubscriber } from "../lib/alerting"
 import { runEmail } from "../lib/email/run-email"
 
 const TEMPLATES: Record<string, string> = {
@@ -11,7 +12,7 @@ const TEMPLATES: Record<string, string> = {
  * board) and the day-3 reminder. Both events are emitted by the collection
  * workflows/job (C3) with { order_id }.
  */
-export default async function collectionEmails({
+async function collectionEmails({
   event: { name, data },
   container,
 }: SubscriberArgs<{ order_id: string }>) {
@@ -25,5 +26,7 @@ export default async function collectionEmails({
     trigger_type: name,
   })
 }
+
+export default reportingSubscriber("collection-emails", collectionEmails)
 
 export const config: SubscriberConfig = { event: Object.keys(TEMPLATES) }

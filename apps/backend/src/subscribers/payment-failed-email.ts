@@ -1,11 +1,12 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
+import { reportingSubscriber } from "../lib/alerting"
 import { runEmail } from "../lib/email/run-email"
 
 /**
  * technest.payment.capture_failed (emitted by the order.placed capture, C3)
  * → "We couldn't take payment" to the customer and a "don't ship" copy to the shop.
  */
-export default async function paymentFailedEmail({
+async function paymentFailedEmail({
   event: { name, data },
   container,
 }: SubscriberArgs<{ order_id: string }>) {
@@ -20,5 +21,7 @@ export default async function paymentFailedEmail({
     })
   }
 }
+
+export default reportingSubscriber("payment-failed-email", paymentFailedEmail)
 
 export const config: SubscriberConfig = { event: "technest.payment.capture_failed" }

@@ -2,6 +2,7 @@ import { ContainerRegistrationKeys, MedusaError, Modules } from "@medusajs/frame
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
 import { capturePaymentWorkflow } from "@medusajs/medusa/core-flows"
 import { ClickCollectEvents } from "../../../lib/click-collect"
+import { reportAlert } from "../../../lib/alerting"
 
 export type CaptureOrderPaymentsInput = {
   order_id: string
@@ -61,12 +62,11 @@ export const captureOrderPaymentsStep = createStep(
   async (comp, { container }) => {
     if (!comp?.captured.length) return
     // IDs only: never card data or customer details.
-    container
-      .resolve(ContainerRegistrationKeys.LOGGER)
-      .error(
-        `Payment captured for order ${comp.order_id} ` +
-          `(payments ${comp.captured.join(", ")}) but a later step failed. ` +
-          `Not refunded automatically: retry the action or refund from the order page.`
-      )
+    const message =
+      `Payment captured for order ${comp.order_id} ` +
+      `(payments ${comp.captured.join(", ")}) but a later step failed. ` +
+      `Not refunded automatically: retry the action or refund from the order page.`
+    container.resolve(ContainerRegistrationKeys.LOGGER).error(message)
+    reportAlert(message, { source: "workflow:capture-order-payments", order_id: comp.order_id })
   }
 )

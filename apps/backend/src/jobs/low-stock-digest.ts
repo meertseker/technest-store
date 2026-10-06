@@ -1,5 +1,6 @@
 import { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { reportError } from "../lib/alerting"
 import { defaultLowStockThreshold, isLowStockHour, LowStockItem } from "../lib/low-stock"
 import { emitLowStockDigestWorkflow } from "../workflows/emit-low-stock-digest"
 
@@ -31,6 +32,7 @@ export default async function lowStockDigestJob(container: MedusaContainer) {
     logger.info(`Low-stock check: ${items.length} variant(s) at or below reorder level.`)
   } catch (error) {
     logger.error(`Low-stock check failed: ${(error as Error).message}`)
+    reportError(error, { source: "job:technest-low-stock-digest" })
   }
 }
 

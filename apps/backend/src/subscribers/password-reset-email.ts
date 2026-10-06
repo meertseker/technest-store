@@ -3,6 +3,7 @@ import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, MedusaError, Modules } from "@medusajs/framework/utils"
 import { renderEmail } from "@technest/emails"
 import { createHash } from "node:crypto"
+import { reportError, reportingSubscriber } from "../lib/alerting"
 import { storefrontUrl } from "../lib/email/order-email-data"
 import { safeErrorMessage } from "../lib/email/safe-error"
 import { sendEmailOnce } from "../lib/email/send-email-once"
@@ -60,7 +61,7 @@ async function isAccountOfType(container: MedusaContainer, entityId: string, idK
  * and sent as `content` (not stored in notification.data); retries happen in
  * memory.
  */
-export default async function passwordResetEmail({
+async function passwordResetEmail({
   event: { data },
   container,
 }: SubscriberArgs<PasswordResetEvent>) {
@@ -109,8 +110,12 @@ export default async function passwordResetEmail({
     }
   } catch (e) {
     logger.error(`password reset email failed (request ${requestId}): ${safeErrorMessage(e)}`)
+    // Not retried later (the link lasts 15 minutes and is never stored): the person asks again.
+    reportError(e, { source: "subscriber:password-reset-email", actor_type: data.actor_type })
   }
 }
+
+export default reportingSubscriber("password-reset-email", passwordResetEmail)
 
 export const config: SubscriberConfig = {
   event: "auth.password_reset",

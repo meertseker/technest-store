@@ -3,6 +3,7 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { completeCartWorkflowId } from "@medusajs/medusa/core-flows"
 import { releaseCartPaymentHoldWorkflow } from "../workflows/release-cart-payment-hold"
 import { completionRefusedBeforePayment } from "./payment-hold"
+import { reportError } from "./alerting"
 
 export type CartCompletion =
   /** Another completion of this cart is still running. */
@@ -50,6 +51,7 @@ export async function completeCartReleasingHold(
       container
         .resolve(ContainerRegistrationKeys.LOGGER)
         .error(`Releasing the payment hold of cart ${cartId} failed: ${(e as Error).message}`)
+      reportError(e, { source: "cart-completion:release-hold", cart_id: cartId })
     }
   }
   return { outcome: "refused", error, payment_released: released }

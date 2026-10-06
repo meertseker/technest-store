@@ -1,8 +1,9 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
+import { reportingSubscriber } from "../lib/alerting"
 import { runEmail } from "../lib/email/run-email"
 
 /** shipment.created → "On its way" (id is the fulfillment id). */
-export default async function orderDispatchedEmail({
+async function orderDispatchedEmail({
   event: { data },
   container,
 }: SubscriberArgs<{ id: string; no_notification?: boolean }>) {
@@ -15,5 +16,7 @@ export default async function orderDispatchedEmail({
     trigger_type: "shipment.created",
   })
 }
+
+export default reportingSubscriber("order-dispatched-email", orderDispatchedEmail)
 
 export const config: SubscriberConfig = { event: "shipment.created" }

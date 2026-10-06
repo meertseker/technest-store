@@ -46,6 +46,8 @@ x-backend-env: &backend-env
   # Repair booking form (E1): Cloudflare Turnstile secret. Empty = every booking is refused in production.
   TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
   SENTRY_DSN: ${SENTRY_DSN_BACKEND:-}
+  # Dead-man's switch for the worker (docs/ops/uptime-and-sentry.md). Empty = no heartbeat.
+  WORKER_HEARTBEAT_URL: ${WORKER_HEARTBEAT_URL:-}
   # Payments and email (E2)
   STRIPE_API_KEY: ${STRIPE_API_KEY:-}
   STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}

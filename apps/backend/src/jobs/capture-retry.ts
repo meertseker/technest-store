@@ -1,5 +1,6 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
+import { reportError } from "../lib/alerting"
 import { isLockBusyError } from "../lib/click-collect"
 import { retryUncapturedDeliveryOrders } from "../lib/capture-retry"
 
@@ -24,6 +25,7 @@ export default async function captureRetryJob(container: MedusaContainer) {
     if (isLockBusyError(e)) return
     // Don't throw from a scheduled job: log and try again next run.
     logger.error(`capture-retry: run failed: ${(e as Error).message}`)
+    reportError(e, { source: "job:capture-retry" })
   }
 }
 

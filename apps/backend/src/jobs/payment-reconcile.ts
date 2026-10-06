@@ -1,5 +1,6 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
+import { reportError } from "../lib/alerting"
 import { isLockBusyError } from "../lib/click-collect"
 import { RECONCILE_CATCH_UP_MS, reconcilePayments } from "../lib/payment-reconcile"
 
@@ -32,6 +33,7 @@ export default async function paymentReconcileJob(container: MedusaContainer) {
     if (isLockBusyError(e)) return
     // Don't throw from a scheduled job: log and try again next run.
     logger.error(`payment-reconcile: run failed: ${(e as Error).message}`)
+    reportError(e, { source: "job:payment-reconcile" })
   }
 }
 

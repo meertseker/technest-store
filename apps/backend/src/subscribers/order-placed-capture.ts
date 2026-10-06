@@ -1,5 +1,6 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { reportError } from "../lib/alerting"
 import { isLockBusyError } from "../lib/click-collect"
 import { captureDeliveryOrderWorkflow } from "../workflows/capture-delivery-order"
 
@@ -31,6 +32,7 @@ export default async function orderPlacedCapture({
     logger.error(
       `order.placed capture failed for order ${data.id}, the capture-retry job will try again: ${(e as Error).message}`
     )
+    reportError(e, { source: "subscriber:order-placed-capture", order_id: data.id })
   }
 }
 

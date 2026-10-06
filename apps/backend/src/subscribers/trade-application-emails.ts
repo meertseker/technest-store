@@ -1,5 +1,6 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import type { EmailRecipient } from "../lib/email/sources"
+import { reportingSubscriber } from "../lib/alerting"
 import { runEmail } from "../lib/email/run-email"
 
 /** Event → emails (docs/contracts/emails.md rows 12–14; events from docs/contracts/trade.md). */
@@ -17,7 +18,7 @@ export const TRADE_EMAILS: Record<string, { template: string; recipient: EmailRe
  * the id is used: the application (and its rejection reason) is loaded fresh
  * on every attempt, and the customer email is the account's own address.
  */
-export default async function tradeApplicationEmails({
+async function tradeApplicationEmails({
   event: { name, data },
   container,
 }: SubscriberArgs<{ id: string; customer_id?: string; reason?: string }>) {
@@ -33,5 +34,7 @@ export default async function tradeApplicationEmails({
     })
   }
 }
+
+export default reportingSubscriber("trade-application-emails", tradeApplicationEmails)
 
 export const config: SubscriberConfig = { event: Object.keys(TRADE_EMAILS) }

@@ -1,5 +1,6 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { reportingSubscriber } from "../lib/alerting"
 import { runEmail } from "../lib/email/run-email"
 
 // Only refunds this recent are emailed, so an old refund whose email once
@@ -12,7 +13,7 @@ const RECENT_MS = 24 * 60 * 60 * 1000
  * (partial refunds), so every recent refund of it is sent; refunds already
  * emailed are skipped by the send-once check.
  */
-export default async function refundIssuedEmail({ event: { data }, container }: SubscriberArgs<{ id: string }>) {
+async function refundIssuedEmail({ event: { data }, container }: SubscriberArgs<{ id: string }>) {
   const query = container.resolve(ContainerRegistrationKeys.QUERY)
   const { data: payments } = await query.graph({
     entity: "payment",
@@ -33,5 +34,7 @@ export default async function refundIssuedEmail({ event: { data }, container }: 
     })
   }
 }
+
+export default reportingSubscriber("refund-issued-email", refundIssuedEmail)
 
 export const config: SubscriberConfig = { event: "payment.refunded" }

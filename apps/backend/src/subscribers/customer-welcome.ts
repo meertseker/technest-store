@@ -1,28 +1,19 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
-import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
-import { safeErrorMessage } from "../lib/email/safe-error"
-import { sendEmailWorkflow } from "../workflows/send-email"
+import { reportingSubscriber } from "../lib/alerting"
+import { runEmail } from "../lib/email/run-email"
 
 /** customer.created → "Welcome" (registered customers only; see lib/email/sources). */
-export default async function customerWelcome({
-  event: { data },
-  container,
-}: SubscriberArgs<{ id: string }>) {
-  const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
-  try {
-    await sendEmailWorkflow(container).run({
-      input: {
-        template: "welcome",
-        recipient: "customer",
-        resource_id: data.id,
-        resource_type: "customer",
-        trigger_type: "customer.created",
-      },
-    })
-  } catch (e) {
-    logger.error(`welcome email failed for customer ${data.id}: ${safeErrorMessage(e)}`)
-  }
+async function customerWelcome({ event: { data }, container }: SubscriberArgs<{ id: string }>) {
+  await runEmail(container, {
+    template: "welcome",
+    recipient: "customer",
+    resource_id: data.id,
+    resource_type: "customer",
+    trigger_type: "customer.created",
+  })
 }
+
+export default reportingSubscriber("customer-welcome", customerWelcome)
 
 export const config: SubscriberConfig = {
   event: "customer.created",

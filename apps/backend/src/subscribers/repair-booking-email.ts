@@ -1,4 +1,5 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
+import { reportingSubscriber } from "../lib/alerting"
 import { runEmail } from "../lib/email/run-email"
 
 export const REPAIR_BOOKING_CREATED = "technest.repair_booking.created"
@@ -9,7 +10,7 @@ export const REPAIR_BOOKING_CREATED = "technest.repair_booking.created"
  * gets no email: the booking form is public, so an email to the typed
  * address would let anyone send our mail to anyone.
  */
-export default async function repairBookingEmail({ event: { name, data }, container }: SubscriberArgs<{ id: string }>) {
+async function repairBookingEmail({ event: { name, data }, container }: SubscriberArgs<{ id: string }>) {
   if (typeof data?.id !== "string" || !data.id) return
   await runEmail(container, {
     template: "shop-repair-booking",
@@ -19,5 +20,7 @@ export default async function repairBookingEmail({ event: { name, data }, contai
     trigger_type: name,
   })
 }
+
+export default reportingSubscriber("repair-booking-email", repairBookingEmail)
 
 export const config: SubscriberConfig = { event: REPAIR_BOOKING_CREATED }

@@ -318,8 +318,9 @@ karşılaştırıldı (2026-09-30). "Zorunlu" = boşsa compose başlamaz ya da �
 | Değişken | Zorunlu mu | Nereden / not |
 |---|---|---|
 | `TURNSTILE_SECRET_KEY` | Evet | bölüm 4.3. Compose bunu backend'e geçirir; boşsa üretimde her tamir randevusu reddedilir |
-| `SENTRY_DSN_BACKEND` | Hayır | bölüm 9.1; compose `server`/`worker`'a `SENTRY_DSN` olarak verir. Boşsa Sentry kapalı |
-| `SENTRY_DSN_STOREFRONT` | Hayır | bölüm 9.1 (sunucu tarafı). Tarayıcı DSN'i ayrı: GitHub secret `NEXT_PUBLIC_SENTRY_DSN` |
+| `SENTRY_DSN_BACKEND` | Evet (canlıda) | bölüm 9.1; compose `server`/`worker`'a `SENTRY_DSN` olarak verir. Boşsa Sentry kapalı: uygulama açılır ama arka plan hataları kimseye ulaşmaz |
+| `SENTRY_DSN_STOREFRONT` | Evet (canlıda) | bölüm 9.1 (sunucu tarafı). Tarayıcı DSN'i ayrı: GitHub secret `NEXT_PUBLIC_SENTRY_DSN` |
+| `WORKER_HEARTBEAT_URL` | Evet (canlıda) | bölüm 9.5; worker'ın nabız adresi (healthchecks.io). Boşsa ölü ya da takılmış bir worker fark edilmez |
 
 **Üretimde asla kullanılmayanlar:** `SEED_DEMO_DATA` (demo ürünler; üretimde tanımsız kalır),
 `LOW_STOCK_THRESHOLD` (yalnızca ürün özelliği olmayan ürünler için yedek; varsayılan 3, compose geçirmez),
@@ -597,8 +598,11 @@ Ayrıntılı liste: `docs/ops/uptime-and-sentry.md`.
    Stripe anahtarları, yetki başlıkları, adresteki sorgu parametreleri) göndermeden önce siler;
    bu ikinci katmandır. Tarayıcıda Sentry `/checkout` sayfasında **hiç çalışmaz** (orada yalnızca
    Stripe'ın betiğine izin var).
-4. **Alerts**: "A new issue is created" → e-posta sahibine/lead'e.
-5. DSN boşsa Sentry tamamen kapalıdır; uygulama normal çalışır.
+4. **Alerts** (ikisi de gerekli): "A new issue is created" ve "The issue changes state from resolved to
+   unresolved" → e-posta sahibine/lead'e. Bir sorunu çözünce Sentry'de **Resolve** edin; aynı sorun
+   tekrar olursa yeniden e-posta gelir ("e-postalar gönderilemiyor" uyarısı her seferinde aynı kayıttır).
+5. DSN boşsa Sentry tamamen kapalıdır; uygulama çalışır ama arka plandaki hatalar (alınamayan tahsilat,
+   gönderilemeyen e-postalar, başarısız zamanlanmış işler) kimseye ulaşmaz. Bu yüzden canlıda zorunludur.
 
 ### 9.2 UptimeRobot (ücretsiz, 5 dakikada bir)
 
@@ -642,6 +646,22 @@ journalctl CONTAINER_TAG=technest-technest-worker-1 --since "2026-11-15 10:00"  
 
 Saklama süresi journald'ındır. Sunucuda bir kez: `/etc/systemd/journald.conf` içinde
 `SystemMaxUse=2G` ve `MaxRetentionSec=30day`, sonra `systemctl restart systemd-journald`.
+
+### 9.5 Worker nabzı (heartbeat, zorunlu)
+
+`worker` konteynerinin dışarıya açık bir adresi yoktur; ölürse ya da takılırsa UptimeRobot bunu göremez
+(`/health` her zaman 200 döner). Bunun için worker 5 dakikada bir, olay kuyruğu üzerinden
+`WORKER_HEARTBEAT_URL` adresine istek atar. İstekler kesilirse izleme servisi e-posta gönderir.
+
+1. https://healthchecks.io (yedekler için kullanılan hesap) → **Add Check** → ad `technest-worker`,
+   **Period: 5 minutes**, **Grace: 15 minutes**, bildirim: lead'in e-postası.
+2. Verilen adresi `/opt/technest/.env` dosyasına `WORKER_HEARTBEAT_URL=https://hc-ping.com/...` olarak yazın,
+   `docker compose up -d` çalıştırın. Bu adres gizlidir (bilen kişi alarmı susturabilir).
+3. 5 dakika içinde kontrol yeşile döner. Deneme: `docker compose stop worker` → yaklaşık 20 dakika içinde
+   uyarı e-postası gelir → `docker compose start worker`.
+
+Alarm gelirse: `docker compose ps` ve `docker compose logs --tail 100 worker`. Ayrıntı ve Sentry'ye düşen
+arka plan hatalarının anlamları: `docs/ops/uptime-and-sentry.md`.
 
 ---
 
@@ -825,7 +845,8 @@ başarısızsa canlıya geçmeyin.
 
 **Sentry (9.1)**
 - [ ] `SENTRY_DSN_BACKEND`, `SENTRY_DSN_STOREFRONT` `.env`'de; `NEXT_PUBLIC_SENTRY_DSN` GitHub'da
-- [ ] Data Scrubber ve "Prevent Storing of IP Addresses" açık; "new issue" uyarısı lead'e gidiyor
+- [ ] Data Scrubber ve "Prevent Storing of IP Addresses" açık; "new issue" ve "resolved → unresolved" uyarıları lead'e gidiyor
+- [ ] `WORKER_HEARTBEAT_URL` `.env`'de; healthchecks.io'da `technest-worker` yeşil; worker durdurulunca uyarı geldi (9.5)
 
 **Yedekler (bölüm 8)**
 - [ ] `docker compose run --rm backup backup.sh` → "backup: OK"; `restore.sh --list` dosyayı gösteriyor
