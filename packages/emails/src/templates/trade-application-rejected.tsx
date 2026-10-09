@@ -11,7 +11,7 @@ export function Email(d: TradeApplicationEmailData) {
     <Layout preview={subject(d)}>
       <Greeting first_name={d.first_name} />
       <Text style={styles.p}>
-        {`Thanks for applying for a trade account for ${d.company_name}. We can't approve it at the moment.`}
+        Thanks for applying for a Tech Nest trade account. We can't approve it at the moment.
       </Text>
       {d.reason ? <Text style={styles.p}>{`Reason: ${d.reason}`}</Text> : null}
       <Text style={styles.p}>

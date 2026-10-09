@@ -3,11 +3,22 @@ import assert from "node:assert/strict"
 import { renderEmail } from "../index"
 import { fixtures } from "../fixtures"
 
-test("trade application received names the company and the wait", async () => {
+test("trade application received says what happens next and when", async () => {
   const e = await renderEmail("trade-application-received", fixtures["trade-application-received"])
   assert.equal(e.subject, "We've received your trade account application")
-  assert.match(e.text, /Acme Phones Ltd/)
+  assert.match(e.text, /Thanks for applying for a Tech Nest trade account\./)
   assert.match(e.text, /1–2 working days/)
+})
+
+// The applicant types the company name, and the account's address is not verified:
+// whatever is typed there must not reach that address inside a genuine Tech Nest email.
+test("customer trade emails never show the typed company name", async () => {
+  const typed = "Your account is locked, sign in at evil.example/login"
+  for (const id of ["trade-application-received", "trade-application-approved", "trade-application-rejected"] as const) {
+    const e = await renderEmail(id, { ...fixtures[id], company_name: typed } as Record<string, unknown>)
+    assert.doesNotMatch(e.text + e.html, /evil\.example|account is locked/, id)
+    assert.doesNotMatch(e.text + e.html, /undefined|null/, id)
+  }
 })
 
 test("trade approved links to the trade account page and mentions ex-VAT prices", async () => {
@@ -21,7 +32,7 @@ test("trade rejected shows the staff reason and the apply-again link", async () 
   const e = await renderEmail("trade-application-rejected", fixtures["trade-application-rejected"])
   assert.match(e.text, /Reason: We couldn't verify the VAT number/)
   assert.match(e.html, /href="https:\/\/technest\.co\.uk\/trade\/apply"/)
-  const none = await renderEmail("trade-application-rejected", { first_name: null, company_name: "X" })
+  const none = await renderEmail("trade-application-rejected", { first_name: null })
   assert.doesNotMatch(none.text, /Reason:/)
 })
 

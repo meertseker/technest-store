@@ -37,6 +37,31 @@ test("the shop copy of payment failed is flagged for staff", async () => {
   assert.match(e.text, /Don't ship/)
 })
 
+// Click & Collect is paid for at the counter, when staff press "Collected": nothing is being sent.
+test("payment failed for Click & Collect talks about collecting, not sending", async () => {
+  const data = { ...fixtures["payment-failed"], fulfilment: "collection" as const }
+  const e = await renderEmail("payment-failed", data)
+  assert.equal(e.subject, "We couldn't take payment for order #1042")
+  assert.match(e.text, /£14\.47/)
+  assert.match(e.text, /Click & Collect order #1042/)
+  assert.match(e.text, /couldn't hand it over/)
+  assert.doesNotMatch(e.text, /haven't sent/)
+  assert.match(e.text, /at the counter/)
+  assert.match(e.text, /07775 669000/)
+  assert.match(e.text, /never ask for card details/)
+
+  const shop = await renderEmail("payment-failed", { ...data, for_shop: true })
+  assert.match(shop.subject, /FAILED: order #1042 · £14\.47/)
+  assert.match(shop.text, /Click & Collect/)
+  assert.match(shop.text, /Don't hand this order over/)
+  assert.doesNotMatch(shop.text, /ship/)
+})
+
+test("payment failed for delivery keeps its wording when the fulfilment type is given", async () => {
+  const e = await renderEmail("payment-failed", { ...fixtures["payment-failed"], fulfilment: "delivery" })
+  assert.match(e.text, /haven't sent it yet/)
+})
+
 test("today's hours use London time: Sunday is 11am–5pm", () => {
   // 2026-10-04 is a Sunday; 23:30 UTC on Saturday the 3rd is already Sunday 00:30 in London (BST).
   assert.equal(todaysHours(new Date("2026-10-03T23:30:00Z")), "Today (Sunday): 11am–5pm")

@@ -10,7 +10,7 @@ export function Email(d: TradeApplicationEmailData) {
   return (
     <Layout preview={subject(d)}>
       <Greeting first_name={d.first_name} />
-      <Text style={styles.p}>{`Thanks for applying for a Tech Nest trade account for ${d.company_name}.`}</Text>
+      <Text style={styles.p}>Thanks for applying for a Tech Nest trade account.</Text>
       <Text style={styles.p}>
         {`We check every application by hand, usually within 1–2 working days, and we'll email you as soon as it's decided. Questions? Call ${BRAND.phone}.`}
       </Text>

@@ -41,9 +41,26 @@ describe("trade application emails", () => {
     const resolved = await resolveEmail(container, "trade-application-received", "tapp_1", "customer")
     expect(resolved).toEqual({
       to: "jane@account.test",
-      data: { first_name: "Jane", company_name: "Acme Phones Ltd", reason: null },
+      data: { first_name: "Jane", reason: null },
     })
   })
+
+  // The account's address is not verified and the applicant types the company name.
+  it.each(["trade-application-received", "trade-application-approved", "trade-application-rejected"])(
+    "%s: nothing the applicant typed about the company reaches the account's address",
+    async (template) => {
+      const status = template.split("-").pop() === "received" ? "pending" : template.split("-").pop()
+      const { container } = containerWith({
+        trade_application: [
+          { ...application, status, company_name: "Your account is locked, sign in at evil.example/login" },
+        ],
+        customer: [customer],
+      })
+      const resolved = await resolveEmail(container, template, "tapp_1", "customer")
+      expect(resolved?.to).toBe("jane@account.test")
+      expect(JSON.stringify(resolved?.data)).not.toMatch(/evil|locked|company/)
+    }
+  )
 
   it("gives the shop the typed contact details and an admin link", async () => {
     const { container } = containerWith({ trade_application: [application] })

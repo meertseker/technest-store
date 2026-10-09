@@ -74,4 +74,6 @@ export type PaymentFailedData = OrderRef & {
   total_pence: number
   /** The shop's copy is worded for staff. */
   for_shop?: boolean
+  /** Delivery orders are charged after ordering; Click & Collect at the counter. Default delivery. */
+  fulfilment?: "delivery" | "collection"
 }

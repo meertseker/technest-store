@@ -68,9 +68,10 @@ export function tradeApplicationCustomer(status?: TradeStatus) {
     })
     const customer = customers[0]
     if (!customer?.email) return null
+    // Nothing the applicant typed (company name) goes to the account's address:
+    // it is not verified, so it could be anyone's, and the text could be anything.
     const data: TradeApplicationEmailData = {
       first_name: safeFirstName(customer.first_name),
-      company_name: str(app.company_name),
       // Written by staff for the customer (contract: "shown to the customer").
       reason: app.status === "rejected" ? str(app.reason) || null : null,
     }

@@ -1,7 +1,7 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import { todaysHours, type CollectionData, type PaymentFailedData } from "@technest/emails"
-import { safeFirstName, shopNotifyEmail, storefrontUrl, toPence } from "./order-email-data"
+import { isPickupOrder, safeFirstName, shopNotifyEmail, storefrontUrl, toPence } from "./order-email-data"
 import type { EmailRecipient, ResolvedEmail } from "./sources"
 import { collectionDeadline } from "../click-collect/deadline"
 
@@ -24,6 +24,7 @@ const ORDER_FIELDS = [
   "items.product_title",
   "items.variant_title",
   "items.quantity",
+  "shipping_methods.shipping_option_id",
 ]
 
 async function loadOrder(container: MedusaContainer, orderId: string): Promise<Row | undefined> {
@@ -96,7 +97,17 @@ export async function paymentFailed(
 ): Promise<ResolvedEmail | null> {
   const o = await loadOrder(container, orderId)
   if (!o) return null
-  const data: PaymentFailedData = { ...ref(o), total_pence: toPence(o.total), for_shop: recipient === "shop" }
+  // Delivery is charged after ordering, Click & Collect at the counter: the words differ.
+  const pickup = await isPickupOrder(
+    container,
+    (o.shipping_methods ?? []).map((m: Row | null) => m?.shipping_option_id)
+  )
+  const data: PaymentFailedData = {
+    ...ref(o),
+    total_pence: toPence(o.total),
+    for_shop: recipient === "shop",
+    fulfilment: pickup ? "collection" : "delivery",
+  }
   const to = recipient === "shop" ? shopNotifyEmail() : o.email
   return to ? { to, data: data as unknown as Record<string, unknown> } : null
 }

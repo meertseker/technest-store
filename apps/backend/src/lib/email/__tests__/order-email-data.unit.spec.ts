@@ -69,6 +69,13 @@ describe("toOrderEmailData", () => {
     "www.evil.example",
     "admin@evil.example",
     "x".repeat(41),
+    // Free text that is not a name: a phone number, a sentence, punctuation.
+    "Call 07700 900123 now",
+    "Your account has been locked",
+    "Winner! Claim your prize",
+    "Sam, your refund is ready",
+    "Sam (urgent)",
+    "A".repeat(31),
   ])("drops a first name that could carry a link or message: %j", (name) => {
     const d = toOrderEmailData(
       { ...base, customer: { first_name: name }, item_total: 1, total: 1, items: [] },
@@ -77,11 +84,14 @@ describe("toOrderEmailData", () => {
     expect(d.first_name).toBeNull()
   })
 
-  it("keeps a normal first name", () => {
-    const d = toOrderEmailData(
-      { ...base, customer: { first_name: "Mary-Jane O'Neil" }, item_total: 1, total: 1, items: [] },
-      false
-    )
-    expect(d.first_name).toBe("Mary-Jane O'Neil")
-  })
+  it.each(["Sam", "Mary-Jane O'Neil", "José", "Anne Marie", "Zoë", "Nguyễn Văn An", "D’Arcy", "  Sam  "])(
+    "keeps a normal first name: %j",
+    (name) => {
+      const d = toOrderEmailData(
+        { ...base, customer: { first_name: name }, item_total: 1, total: 1, items: [] },
+        false
+      )
+      expect(d.first_name).toBe(name.trim())
+    }
+  )
 })

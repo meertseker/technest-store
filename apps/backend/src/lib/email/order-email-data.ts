@@ -88,14 +88,15 @@ type OrderRow = {
 
 /**
  * Guests type their own name, and it appears in the greeting of a genuine
- * Tech Nest email. Drop anything that could smuggle in a link, address or
- * message (security review), falling back to "Hi there".
+ * Tech Nest email that can go to an unverified address. Keep only what a
+ * name looks like (letters, spaces, hyphens, apostrophes, at most three words
+ * and 30 characters), so no link, number or sentence can be smuggled in.
+ * Anything else falls back to "Hi there".
  */
 export function safeFirstName(name?: string | null): string | null {
   const n = name?.trim()
-  if (!n || n.length > 40) return null
-  // Slashes, @, colons, angle brackets, backslashes, "www." or ".tld"-like text.
-  if (/[/@:<>\\]|www\.|\.[a-z]{2,}/i.test(n)) return null
+  if (!n || n.length > 30) return null
+  if (!/^[\p{L}\p{M}'\u2019-]+(?: [\p{L}\p{M}'\u2019-]+){0,2}$/u.test(n)) return null
   return n
 }
 

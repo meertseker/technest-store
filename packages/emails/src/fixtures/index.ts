@@ -71,11 +71,10 @@ export const fixtures: Record<TemplateId, Record<string, unknown>> = {
   "ready-for-collection": collection,
   "collection-reminder": collection,
   "payment-failed": { display_id: 1042, first_name: "Sam", order_url: order.order_url, total_pence: 1447 },
-  "trade-application-received": { first_name: "Jane", company_name: "Acme Phones Ltd" },
-  "trade-application-approved": { first_name: "Jane", company_name: "Acme Phones Ltd" },
+  "trade-application-received": { first_name: "Jane" },
+  "trade-application-approved": { first_name: "Jane" },
   "trade-application-rejected": {
     first_name: "Jane",
-    company_name: "Acme Phones Ltd",
     reason: "We couldn't verify the VAT number. Please check it and apply again.",
   },
   "shop-trade-application": {

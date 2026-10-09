@@ -1,7 +1,11 @@
 /** Payloads for trade, repair and stock emails (docs/contracts/emails.md, trade.md, repairs.md). */
+/**
+ * Customer copies deliberately carry nothing the applicant typed (no company
+ * name): the account's address is not verified, so typed text would let anyone
+ * put their own message in a genuine Tech Nest email to any address.
+ */
 export type TradeApplicationEmailData = {
   first_name?: string | null
-  company_name: string
   /** Shown to the customer on rejection, as written by staff. */
   reason?: string | null
 }

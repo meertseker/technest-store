@@ -10,7 +10,7 @@ export function Email(d: TradeApplicationEmailData) {
   return (
     <Layout preview={subject(d)}>
       <Greeting first_name={d.first_name} />
-      <Text style={{ ...styles.p, fontWeight: 700 }}>{`Good news: ${d.company_name} now has a trade account.`}</Text>
+      <Text style={{ ...styles.p, fontWeight: 700 }}>Good news: your business now has a Tech Nest trade account.</Text>
       <Text style={styles.p}>
         Sign in to see trade prices (shown ex VAT) and quantity discounts on every product.
       </Text>

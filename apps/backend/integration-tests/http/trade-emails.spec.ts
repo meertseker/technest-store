@@ -86,7 +86,8 @@ medusaIntegrationTestRunner({
 
         const [receipt] = await tradeMail(email, 1)
         expect(receipt.Subject).toBe("We've received your trade account application")
-        expect(await textOf(receipt.ID)).toContain(company)
+        // Nothing the applicant typed reaches the (unverified) account address.
+        expect(await textOf(receipt.ID)).not.toContain(company)
 
         const alertSubject = `New trade application: ${company}`
         const [alert] = await mailWithSubject(process.env.SHOP_NOTIFY_EMAIL!, alertSubject)

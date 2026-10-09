@@ -69,9 +69,27 @@ medusaIntegrationTestRunner({
 
         const [customer] = await mailTo(email, 1, { ignore: ORDER_CONFIRMED })
         expect(customer.Subject).toBe(`We couldn't take payment for order #${order.display_id}`)
+        expect(await textOf(customer.ID)).toContain("haven't sent it yet")
         const [shop] = await mailTo(process.env.SHOP_NOTIFY_EMAIL!, 1, { ignore: /^New order / })
         expect(shop.Subject).toMatch(new RegExp(`^Payment capture FAILED: order #${order.display_id}`))
         expect(await textOf(shop.ID)).toContain("Don't ship")
+      })
+
+      it("words a failed Click & Collect capture for the counter, not for shipping", async () => {
+        const email = `e2-payfail-cc-${RUN}@example.com`
+        const order = await placeStoreOrder(api, getContainer(), { email, shipping: "click-collect" })
+        await emit(paymentFailedEmail, "technest.payment.capture_failed", order.id)
+
+        const [customer] = await mailTo(email, 1, { ignore: ORDER_CONFIRMED })
+        const text = await textOf(customer.ID)
+        expect(text).toContain(`Click & Collect order #${order.display_id}`)
+        expect(text).toContain("couldn't hand it over")
+        expect(text).not.toContain("haven't sent")
+        const shop = (await mailTo(process.env.SHOP_NOTIFY_EMAIL!, 1, { ignore: /^New order / })).find((m) =>
+          m.Subject.includes(`order #${order.display_id}`)
+        )!
+        expect(shop).toBeDefined()
+        expect(await textOf(shop.ID)).toContain("Don't hand this order over")
       })
     })
   },
