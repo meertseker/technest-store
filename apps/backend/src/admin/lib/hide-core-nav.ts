@@ -8,9 +8,15 @@
 export const CORE_NAV_PATHS = [
   "/orders",
   "/products",
+  "/collections",
+  "/categories",
+  "/product-options",
   "/inventory",
+  "/reservations",
   "/customers",
+  "/customer-groups",
   "/promotions",
+  "/campaigns",
   "/price-lists",
   "/settings",
 ] as const
@@ -25,16 +31,20 @@ export function coreNavSelectors(basePath: string): string[] {
 
 export function hideCoreNavCss(basePath: string): string {
   // The sidebar is an <aside> (its main list in a <nav>, Settings below it);
-  // the phone menu is a dialog. Hide the list item around the link where there
-  // is one, else the link. Never unscoped: a breadcrumb to Orders must stay.
+  // the phone menu is a dialog. Medusa renders each entry as
+  //   <div> <div><a href=…/> </div> [fold-out button + sub-entries, phones only] </div>
+  // (dashboard NavItem: the link is hidden below `lg` when the entry has children and a
+  // button takes its place), so hide that wrapper, the list item around a nested link,
+  // and the link itself. Never unscoped: a breadcrumb to Orders must stay.
   const scopes = ["nav", "aside", '[role="dialog"]']
   const rules = coreNavSelectors(basePath).flatMap((s) =>
-    scopes.flatMap((scope) => [`${scope} li:has(> ${s})`, `${scope} ${s}`])
+    scopes.flatMap((scope) => [
+      `${scope} div:has(> div > ${s})`,
+      `${scope} li:has(> div > ${s})`,
+      `${scope} li:has(> ${s})`,
+      `${scope} ${s}`,
+    ])
   )
-  // The layout editor (header "Customize layout") rearranges Medusa's pages; the owner
-  // never needs it, and its API needs Medusa's own settings module, which this project's
-  // "settings" module currently shadows (TEAM_CHAT 2026-10-03, to E1).
-  rules.push('button[aria-label="Customize layout"]')
   return `${rules.join(",\n")} {\n  display: none !important;\n}\n`
 }
 

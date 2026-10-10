@@ -5,9 +5,15 @@ describe("hide-core-nav", () => {
     expect(CORE_NAV_PATHS).toEqual([
       "/orders",
       "/products",
+      "/collections",
+      "/categories",
+      "/product-options",
       "/inventory",
+      "/reservations",
       "/customers",
+      "/customer-groups",
       "/promotions",
+      "/campaigns",
       "/price-lists",
       "/settings",
     ])
@@ -30,8 +36,24 @@ describe("hide-core-nav", () => {
     expect(css).toContain('[role="dialog"] a[href="/app/products"]')
     // Scoped only: a breadcrumb or in-page link to Orders must stay visible.
     expect(css).not.toMatch(/^a\[href/m)
-    expect(css).toContain('button[aria-label="Customize layout"]')
     expect(css).toContain("display: none !important")
     expect(css).not.toContain("/app/today")
+  })
+
+  it("hides the whole menu item, not just its link, so the phone menu's fold-out button goes too", () => {
+    // Below the desktop width Medusa renders an entry with children (Products, Inventory,
+    // Customers, Promotions) as a fold-out button next to the link, both inside one wrapper;
+    // the link alone would leave the button and its sub-entries showing.
+    const css = hideCoreNavCss("/app")
+    expect(css).toContain('nav div:has(> div > a[href="/app/products"])')
+    expect(css).toContain('[role="dialog"] div:has(> div > a[href="/app/customers"])')
+    expect(css).toContain('aside li:has(> div > a[href="/app/inventory"])')
+    // The sub-entries themselves are hidden as well, for when a native page has them open.
+    expect(css).toContain('nav a[href="/app/collections"]')
+    expect(css).toContain('nav a[href="/app/customer-groups"]')
+  })
+
+  it("no longer hides the layout editor button: our settings module no longer shadows Medusa's", () => {
+    expect(hideCoreNavCss("/app")).not.toContain("Customize layout")
   })
 })
