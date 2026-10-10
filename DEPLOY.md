@@ -312,6 +312,7 @@ karşılaştırıldı (2026-09-30). "Zorunlu" = boşsa compose başlamaz ya da �
 | `ANTHROPIC_API_KEY` | Hayır | https://console.anthropic.com → API Keys. Boşsa Hızlı Ekle yapay zekâ önerisi olmadan çalışır. Yalnızca sunucuda; tarayıcıya gitmez, loglanmaz. Console'da aylık harcama sınırı koyun |
 | `QUICK_ADD_AI_LIMIT_PER_HOUR` | Hayır | admin kullanıcısı başına saatte fotoğraf analizi, varsayılan `60` |
 | `QUICK_ADD_AI_TIMEOUT_MS` | Hayır | deneme başına Claude zaman aşımı, varsayılan `60000` (compose geçirir) |
+| `QUICK_ADD_AI_DEADLINE_MS` | Hayır | tek bir yeniden deneme dahil tüm analiz çağrısı için üst sınır, varsayılan `90000`; Cloudflare'in ~120 s kesmesinin altında kalmalı (compose geçirir) |
 
 **Güvenlik ve izleme**
 

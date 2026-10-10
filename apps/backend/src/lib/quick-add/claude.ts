@@ -16,7 +16,18 @@ import {
 export const QUICK_ADD_MODEL = "claude-opus-5-5"
 /** Re-runs a safety-classifier refusal on Anthropic's recommended fallback model. */
 const FALLBACK_BETA = "server-side-fallback-2026-07-01"
+/** Per attempt (QUICK_ADD_AI_TIMEOUT_MS). */
 const DEFAULT_TIMEOUT_MS = 60_000
+/**
+ * For the whole call, retries included (QUICK_ADD_AI_DEADLINE_MS). The analyse
+ * request is synchronous and the proxy in front of the shop cuts a request off
+ * at about two minutes, so everything (download, resize, Claude) must finish
+ * inside that. 90 s leaves room for the rest of the request.
+ */
+const DEFAULT_DEADLINE_MS = 90_000
+/** A second attempt is only started when at least this much of the deadline is left. */
+const MIN_ATTEMPT_MS = 10_000
+const RETRY_PAUSE_MS = 500
 
 export type AnalyzeFailureCode =
   | "ai_unavailable"
@@ -32,20 +43,45 @@ export function aiConfigured(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY?.trim())
 }
 
-function timeoutMs() {
-  const n = Number(process.env.QUICK_ADD_AI_TIMEOUT_MS)
-  return Number.isFinite(n) && n > 0 ? n : DEFAULT_TIMEOUT_MS
+function positiveMs(name: string, fallback: number) {
+  const n = Number(process.env[name])
+  return Number.isFinite(n) && n > 0 ? n : fallback
 }
+const timeoutMs = () => positiveMs("QUICK_ADD_AI_TIMEOUT_MS", DEFAULT_TIMEOUT_MS)
+const deadlineMs = () => positiveMs("QUICK_ADD_AI_DEADLINE_MS", DEFAULT_DEADLINE_MS)
 
-/** A client per call: cheap, and picks up env changes (tests point ANTHROPIC_BASE_URL at a stub). */
-function client() {
+/**
+ * A client per call: cheap, and picks up env changes (tests point ANTHROPIC_BASE_URL at a stub).
+ * Retries are ours (see analyzeProductPhoto): the SDK would retry a timed-out attempt
+ * with a fresh timeout, and two attempts in a row would overrun the request.
+ */
+function client(attemptTimeoutMs: number) {
   return new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY!.trim(),
-    timeout: timeoutMs(),
-    maxRetries: 1,
+    timeout: attemptTimeoutMs,
+    maxRetries: 0,
     // Never let the SDK log requests: they carry the photo and headers.
     logLevel: "off",
   })
+}
+
+/**
+ * Worth one more try: a dropped connection or a server-side error (5xx, which
+ * includes "overloaded", and a rate limit). Never a timeout: that attempt already
+ * used its share of the deadline. Never a rejected key or a bad request.
+ */
+function retryable(e: unknown): boolean {
+  if (e instanceof Anthropic.APIConnectionTimeoutError || e instanceof Anthropic.APIUserAbortError) {
+    return false
+  }
+  if (e instanceof Anthropic.APIConnectionError) {
+    return true
+  }
+  if (e instanceof Anthropic.APIError) {
+    const status = e.status ?? 0
+    return status === 408 || status === 409 || status === 429 || status >= 500
+  }
+  return false
 }
 
 const fail = (code: AnalyzeFailureCode, message: string): AnalyzeResult => ({
@@ -54,11 +90,18 @@ const fail = (code: AnalyzeFailureCode, message: string): AnalyzeResult => ({
   message,
 })
 
-/** Asks Claude for a listing draft of the product in the photo. Never throws. */
-export async function analyzeProductPhoto(input: {
+type AnalyzeInput = {
   image: { media_type: "image/jpeg" | "image/png" | "image/webp"; data: string }
   catalogue: QuickAddCatalogue
-}): Promise<AnalyzeResult> {
+}
+
+/**
+ * Asks Claude for a listing draft of the product in the photo. Never throws.
+ * At most two attempts, and the whole call ends by the deadline: each attempt's
+ * timeout is capped at the time left, and the abort signal also covers reading
+ * the answer (the SDK's timeout only covers waiting for the headers).
+ */
+export async function analyzeProductPhoto(input: AnalyzeInput): Promise<AnalyzeResult> {
   if (!aiConfigured()) {
     return fail(
       "ai_unavailable",
@@ -66,8 +109,33 @@ export async function analyzeProductPhoto(input: {
     )
   }
 
+  const deadline = Date.now() + deadlineMs()
+  for (let attempt = 1; ; attempt++) {
+    const remaining = deadline - Date.now()
+    if (remaining <= 0) {
+      return fail("ai_timeout", "The AI took too long to answer. Try again or fill in the details yourself.")
+    }
+    const result = await attemptOnce(input, Math.min(timeoutMs(), remaining))
+    if (result.ok) {
+      return result.value
+    }
+    if (attempt === 2 || !retryable(result.error)) {
+      return mapError(result.error)
+    }
+    if (deadline - Date.now() - RETRY_PAUSE_MS < MIN_ATTEMPT_MS) {
+      return mapError(result.error)
+    }
+    await new Promise((resolve) => setTimeout(resolve, RETRY_PAUSE_MS))
+  }
+}
+
+async function attemptOnce(
+  input: AnalyzeInput,
+  attemptTimeoutMs: number
+): Promise<{ ok: true; value: AnalyzeResult } | { ok: false; error: unknown }> {
   try {
-    const response = await client().beta.messages.parse({
+    const response = await client(attemptTimeoutMs).beta.messages.parse(
+      {
       model: QUICK_ADD_MODEL,
       max_tokens: 16000,
       betas: [FALLBACK_BETA],
@@ -96,26 +164,31 @@ export async function analyzeProductPhoto(input: {
           ],
         },
       ],
-    })
+      },
+      { signal: AbortSignal.timeout(attemptTimeoutMs) }
+    )
 
     if (response.stop_reason === "refusal") {
-      return fail(
-        "ai_refused",
-        "Claude declined to describe this photo. Fill in the details yourself."
-      )
+      return {
+        ok: true,
+        value: fail("ai_refused", "Claude declined to describe this photo. Fill in the details yourself."),
+      }
     }
     if (response.stop_reason === "max_tokens" || !response.parsed_output) {
-      return fail("ai_bad_response", "The AI answer was incomplete. Try again or fill in the details yourself.")
+      return {
+        ok: true,
+        value: fail("ai_bad_response", "The AI answer was incomplete. Try again or fill in the details yourself."),
+      }
     }
-    return { ok: true, draft: response.parsed_output, model: response.model }
+    return { ok: true, value: { ok: true, draft: response.parsed_output, model: response.model } }
   } catch (e) {
-    return mapError(e)
+    return { ok: false, error: e }
   }
 }
 
 /** Typed SDK errors, most specific first. Messages are ours: nothing from the request is echoed. */
 export function mapError(e: unknown): AnalyzeResult {
-  if (e instanceof Anthropic.APIConnectionTimeoutError) {
+  if (e instanceof Anthropic.APIConnectionTimeoutError || e instanceof Anthropic.APIUserAbortError) {
     return fail("ai_timeout", "The AI took too long to answer. Try again or fill in the details yourself.")
   }
   if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) {

@@ -93,7 +93,7 @@ Errors:
 | 429 | `too_many_requests` | per-admin-user limit (`QUICK_ADD_AI_LIMIT_PER_HOUR`, default 60/hour); `Retry-After` header |
 | 502 | `ai_bad_response` | the answer was incomplete or didn't match the schema, or Claude couldn't read the image |
 | 503 | `ai_unavailable` | no `ANTHROPIC_API_KEY`, key rejected, Anthropic busy/unreachable/5xx |
-| 504 | `ai_timeout` | no answer within `QUICK_ADD_AI_TIMEOUT_MS` (default 60 s), after 1 retry |
+| 504 | `ai_timeout` | no answer within `QUICK_ADD_AI_TIMEOUT_MS` (default 60 s) or the call hit `QUICK_ADD_AI_DEADLINE_MS` (default 90 s). A timed-out attempt is not retried; a dropped connection or a 5xx is retried once if the deadline allows |
 
 On any AI error the UI keeps the form and lets staff type the details.
 
@@ -181,3 +181,4 @@ details widget (`product-photo`) offers Process/Approve for that original later.
 | `ANTHROPIC_API_KEY` | empty | Claude API key. Empty = Quick Add without AI suggestions. |
 | `QUICK_ADD_AI_LIMIT_PER_HOUR` | 60 | photo analyses per admin user per hour (in-memory, per server process). |
 | `QUICK_ADD_AI_TIMEOUT_MS` | 60000 | timeout per Claude attempt. |
+| `QUICK_ADD_AI_DEADLINE_MS` | 90000 | upper bound for the whole analyse call, retry included (the request runs synchronously behind a proxy that cuts off at about 120 s). |
