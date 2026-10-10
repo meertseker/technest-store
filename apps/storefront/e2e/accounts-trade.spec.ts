@@ -20,10 +20,14 @@ async function shot(page: Page, info: TestInfo, name: string) {
 
 /**
  * axe without the Next.js dev-mode indicator (a fixed button that only exists
- * in `next dev` and can overlap footer links on short pages)
+ * in `next dev` and can overlap footer links on short pages), and from the top
+ * of the page: axe's target-size rule counts whatever lies under the sticky
+ * header at the current scroll position as "partially obscured", which
+ * depends on where the previous step left the page, not on the page itself.
  */
 async function expectNoAxeViolations(page: Page) {
   await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" })
+  await page.evaluate(() => window.scrollTo(0, 0))
   const { violations } = await new AxeBuilder({ page }).withTags(WCAG).analyze()
   expect(
     violations.flatMap((v) => v.nodes.map((n) => `${v.id}: ${n.html.slice(0, 120)} | ${n.failureSummary?.slice(0, 200)}`))

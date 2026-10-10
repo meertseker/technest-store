@@ -206,21 +206,32 @@ test.describe("payment step: Stripe test mode", () => {
   // Stripe's test challenge sits in nested frames whose names and depth change between
   // Stripe.js releases, so look for its button in every frame
   async function pressChallenge(page: Page, name: "Complete" | "Fail") {
+    // the challenge frames come and go while this runs: a frame gone by the time it is read counts as empty
+    const count = (b: ReturnType<Page["getByRole"]>) => b.count().catch(() => 0)
+    const find = () => page.frames().map((f) => f.getByRole("button", { name, exact: true }))
+    await expect.poll(async () => (await Promise.all(find().map(count))).some(Boolean), { timeout: 60_000 }).toBe(true)
+    // a click on the test page right after it appears is sometimes lost: press until it goes
     await expect
       .poll(
         async () => {
-          for (const frame of page.frames()) {
-            const button = frame.getByRole("button", { name, exact: true })
-            if (await button.count()) {
-              await button.first().click()
-              return true
-            }
-          }
+          const buttons = (await Promise.all(find().map(async (b) => ((await count(b)) ? b.first() : null)))).filter(Boolean)
+          if (!buttons.length) return true
+          await buttons[0]!.click({ timeout: 5_000 }).catch(() => {})
+          await page.waitForTimeout(1_500)
           return false
         },
-        { timeout: 60_000 }
+        { timeout: 60_000, intervals: [500] }
       )
       .toBe(true)
+  }
+
+  // At 1280 px the button sits well below the fold. Playwright's own scroll before a click
+  // has left it just outside the viewport on a production build (the click then hit nothing),
+  // so scroll it to the middle first.
+  async function placeOrder(page: Page) {
+    const button = page.getByTestId("place-order")
+    await button.evaluate((el) => el.scrollIntoView({ block: "center" }))
+    await button.click()
   }
 
   async function toPayment(page: Page, tag: string, delivery: boolean) {
@@ -238,7 +249,7 @@ test.describe("payment step: Stripe test mode", () => {
     await expectNoAxeViolations(page, '[data-testid="payment-step"]')
     await shot(page, "stripe")
     await fillCard(page, "4242424242424242")
-    await page.getByTestId("place-order").click()
+    await placeOrder(page)
     await expect(page.getByTestId("payment-status")).toHaveText(/Payment authorised, placing your order|Confirming/)
     await page.waitForURL(/\/order\/.+\/confirmed/, { timeout: 90_000 })
   })
@@ -246,7 +257,7 @@ test.describe("payment step: Stripe test mode", () => {
   test("declined card: error summary, no order", async ({ page }) => {
     await toPayment(page, "stripe-decline", false)
     await fillCard(page, "4000000000000002")
-    await page.getByTestId("place-order").click()
+    await placeOrder(page)
     const summary = page.getByTestId("error-summary")
     await expect(summary).toBeFocused({ timeout: 30_000 })
     await expect(summary).toContainText(/declined/i)
@@ -257,7 +268,7 @@ test.describe("payment step: Stripe test mode", () => {
   test("3DS card: challenge completed in Stripe's frame, order placed", async ({ page }) => {
     await toPayment(page, "stripe-3ds", true)
     await fillCard(page, "4000002500003155")
-    await page.getByTestId("place-order").click()
+    await placeOrder(page)
     await pressChallenge(page, "Complete")
     await page.waitForURL(/\/order\/.+\/confirmed/, { timeout: 90_000 })
   })
@@ -265,7 +276,7 @@ test.describe("payment step: Stripe test mode", () => {
   test("3DS card: failed challenge shows the error summary, no order", async ({ page }) => {
     await toPayment(page, "stripe-3ds-fail", false)
     await fillCard(page, "4000002500003155")
-    await page.getByTestId("place-order").click()
+    await placeOrder(page)
     await pressChallenge(page, "Fail")
     const summary = page.getByTestId("error-summary")
     await expect(summary).toBeFocused({ timeout: 30_000 })
@@ -278,7 +289,7 @@ test.describe("payment step: Stripe test mode", () => {
     await toPayment(page, "stripe-collect", false)
     await expect(page.getByTestId("collect-payment-note")).toBeVisible()
     await fillCard(page, "4242424242424242")
-    await page.getByTestId("place-order").click()
+    await placeOrder(page)
     await page.waitForURL(/\/order\/.+\/confirmed/, { timeout: 90_000 })
   })
 })
