@@ -9,7 +9,9 @@ import {
   type DeliveryListResponse,
   type DeliveryOrder,
   type DeliveryStatus,
+  paymentBadge,
   type ShippedResponse,
+  shipBlocker,
 } from "../../lib/delivery"
 import { errorMessage, formatDateTime, formatPence, plural, timeAgo } from "../../lib/format"
 import { ConfirmDialog, FilterChips, PageLoading, Pager, TAP } from "../shop-ui"
@@ -66,7 +68,10 @@ export function DeliveryOrderCard({ order }: { order: DeliveryOrder }) {
   })
 
   const titleId = `delivery-order-${order.id}`
+  const blockerId = `delivery-blocker-${order.id}`
   const place = deliveryPlace(order)
+  const badge = paymentBadge(order)
+  const blocker = order.status === "to_pack" ? shipBlocker(order) : null
 
   return (
     <li
@@ -114,10 +119,24 @@ export function DeliveryOrderCard({ order }: { order: DeliveryOrder }) {
         </Text>
       </div>
 
-      {order.status === "shipped" && order.shipped_at && (
-        <Badge color="green" className="self-start">
-          Shipped {formatDateTime(order.shipped_at)} ({timeAgo(order.shipped_at)})
-        </Badge>
+      {(badge || order.partly_shipped || (order.status === "shipped" && order.shipped_at)) && (
+        <div className="flex flex-wrap gap-2">
+          {badge && (
+            <Badge color={badge.color} size="large">
+              {badge.label}
+            </Badge>
+          )}
+          {order.partly_shipped && (
+            <Badge color="blue" size="large">
+              Part of this order has left
+            </Badge>
+          )}
+          {order.status === "shipped" && order.shipped_at && (
+            <Badge color="green" size="large">
+              Shipped {formatDateTime(order.shipped_at)} ({timeAgo(order.shipped_at)})
+            </Badge>
+          )}
+        </div>
       )}
 
       {error && (
@@ -128,16 +147,24 @@ export function DeliveryOrderCard({ order }: { order: DeliveryOrder }) {
       )}
 
       {order.status === "to_pack" && (
-        <Button
-          type="button"
-          size="large"
-          className={clx(TAP, "w-full")}
-          onClick={() => setConfirming(true)}
-          isLoading={markShipped.isPending}
-          disabled={markShipped.isPending}
-        >
-          Packed & shipped
-        </Button>
+        <div className="flex flex-col gap-2">
+          {blocker && (
+            <Text size="large" id={blockerId} className="text-ui-fg-error">
+              {blocker}
+            </Text>
+          )}
+          <Button
+            type="button"
+            size="large"
+            className={clx(TAP, "w-full")}
+            onClick={() => setConfirming(true)}
+            isLoading={markShipped.isPending}
+            disabled={markShipped.isPending || !!blocker}
+            aria-describedby={blocker ? blockerId : undefined}
+          >
+            Packed & shipped
+          </Button>
+        </div>
       )}
 
       <Text size="large" className="text-ui-fg-subtle">

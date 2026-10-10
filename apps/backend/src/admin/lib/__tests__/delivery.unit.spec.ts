@@ -1,4 +1,4 @@
-import { deliveryPlace, deliverySummary } from "../delivery"
+import { deliveryPlace, deliverySummary, paymentBadge, shipBlocker } from "../delivery"
 
 describe("deliverySummary", () => {
   it("lists quantity × title, with the variant in brackets when there is one", () => {
@@ -22,5 +22,28 @@ describe("deliveryPlace", () => {
     expect(deliveryPlace({ postcode: "SE16 1AA", city: "London" })).toBe("SE16 1AA, London")
     expect(deliveryPlace({ postcode: "SE16 1AA", city: null })).toBe("SE16 1AA")
     expect(deliveryPlace({ postcode: null, city: null })).toBeNull()
+  })
+})
+
+describe("paymentBadge", () => {
+  it("warns in words, not colour alone, when the payment was not taken or was refunded", () => {
+    expect(paymentBadge({ payment_status: "not_taken" })).toEqual({ label: "Payment not taken", color: "red" })
+    expect(paymentBadge({ payment_status: "refunded" })).toEqual({ label: "Refunded", color: "grey" })
+  })
+
+  it("shows nothing for a paid order", () => {
+    expect(paymentBadge({ payment_status: "paid" })).toBeNull()
+  })
+})
+
+describe("shipBlocker", () => {
+  it("says why Packed & shipped is off before anyone presses it", () => {
+    expect(shipBlocker({ payment_status: "not_taken" })).toMatch(/payment hasn't been taken/i)
+    expect(shipBlocker({ payment_status: "not_taken" })).toMatch(/open the order/i)
+    expect(shipBlocker({ payment_status: "refunded" })).toMatch(/refunded in full/i)
+  })
+
+  it("lets a paid order be shipped", () => {
+    expect(shipBlocker({ payment_status: "paid" })).toBeNull()
   })
 })
