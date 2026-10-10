@@ -252,25 +252,26 @@ medusaIntegrationTestRunner({
 
     it("keeps an old unpacked order on the list however many newer orders there are", async () => {
       const { order: forgotten } = await deliveryOrder()
-      // More newer orders than one read of the order table returns.
-      for (let batch = 0; batch < 21; batch++) {
-        await Promise.all(
-          Array.from({ length: 10 }, () =>
-            createOrderWorkflow(getContainer()).run({
-              input: {
-                region_id: regionId,
-                email: "later@example.com",
-                currency_code: "gbp",
-                items: [{ title: "Cable", quantity: 1, unit_price: 1, is_tax_inclusive: true }],
-                shipping_methods: [
-                  { name: "Shipping", amount: 0, shipping_option_id: options["click-collect"], is_tax_inclusive: true },
-                ],
-              },
-            })
-          )
+      // More newer orders than one read of the order table returns. The first one
+      // alone, so the guest customer exists before ten are created at once.
+      const later = (n: number) =>
+        Array.from({ length: n }, () =>
+          createOrderWorkflow(getContainer()).run({
+            input: {
+              region_id: regionId,
+              email: "later@example.com",
+              currency_code: "gbp",
+              items: [{ title: "Cable", quantity: 1, unit_price: 1, is_tax_inclusive: true }],
+              shipping_methods: [
+                { name: "Shipping", amount: 0, shipping_option_id: options["click-collect"], is_tax_inclusive: true },
+              ],
+            },
+          })
         )
+      await Promise.all(later(1))
+      for (let batch = 0; batch < 21; batch++) {
+        await Promise.all(later(10))
       }
-
       const { data } = await list("to_pack")
       expect(data.orders[0].id).toBe(forgotten.id)
       expect(data.count).toBe(1)

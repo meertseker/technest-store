@@ -214,10 +214,11 @@ medusaIntegrationTestRunner({
         expect(unknown.status).toBe(400)
         expect(unknown.data.message).toMatch(/Unknown file_id/)
 
-        const text = await upload(Buffer.from("hello, not an image"), "notes.jpg", "image/jpeg")
-        const notImage = await analyze({ file_id: text.id })
-        expect(notImage.status).toBe(400)
-        expect(notImage.data.message).toMatch(/not a supported image/)
+        // a file that is not an image is refused at upload now, so it never gets a file id
+        const form = new FormData()
+        form.append("files", new Blob([new Uint8Array(Buffer.from("hello, not an image"))], { type: "image/jpeg" }), "notes.jpg")
+        const text = await api.post("/admin/uploads", form, admin).catch((e: any) => e.response)
+        expect(text.status).toBe(400)
         expect(stub.requests).toHaveLength(0)
       })
 

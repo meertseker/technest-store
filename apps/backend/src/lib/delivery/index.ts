@@ -26,6 +26,9 @@ export const DELIVERY_SCAN_FIELDS = [
   "created_at",
   "items.id",
   "items.quantity",
+  // the quantity itself lives on the order's item detail; `items.quantity` comes back
+  // empty when the detail is part of the same read
+  "items.detail.quantity",
   "items.detail.fulfilled_quantity",
   "shipping_methods.shipping_option_id",
   "fulfillments.id",
@@ -52,6 +55,7 @@ export const DELIVERY_ORDER_FIELDS = [
   "items.variant_title",
   "items.quantity",
   "items.thumbnail",
+  "items.detail.quantity",
   "items.detail.fulfilled_quantity",
   "shipping_methods.shipping_option_id",
   "fulfillments.id",
@@ -86,7 +90,7 @@ export type DeliveryOrderRow = {
     variant_title?: string | null
     quantity: unknown
     thumbnail?: string | null
-    detail?: { fulfilled_quantity?: unknown } | null
+    detail?: { quantity?: unknown; fulfilled_quantity?: unknown } | null
   } | null)[] | null
   shipping_methods?: ({ shipping_option_id?: string | null } | null)[] | null
   fulfillments?: ({
@@ -220,7 +224,7 @@ export function unfulfilledItems(order: Pick<DeliveryOrderRow, "items">) {
     .filter((i): i is NonNullable<typeof i> => !!i)
     .map((i) => ({
       id: i.id,
-      quantity: Number(i.quantity) - Number(i.detail?.fulfilled_quantity ?? 0),
+      quantity: Number(i.detail?.quantity ?? i.quantity) - Number(i.detail?.fulfilled_quantity ?? 0),
     }))
     .filter((i) => i.quantity > 0)
 }

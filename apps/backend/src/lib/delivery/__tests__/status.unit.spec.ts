@@ -43,6 +43,16 @@ describe("deliveryStatusOf", () => {
     ).toBe("to_pack")
   })
 
+  it("stays to pack when half an item's quantity has shipped and the row carries the quantity on its detail only", () => {
+    // what the order query returns: no `items.quantity` next to `items.detail`
+    expect(
+      deliveryStatusOf({
+        items: [{ id: "a", title: "a", quantity: undefined, detail: { quantity: 2, fulfilled_quantity: 1 } }],
+        fulfillments: [fulfilment("f1", "shipped")],
+      })
+    ).toBe("to_pack")
+  })
+
   it("stays to pack when items were fulfilled but the parcel was never marked shipped", () => {
     expect(
       deliveryStatusOf({ items: [item("a", 2, 2)], fulfillments: [fulfilment("f1", "packed")] })

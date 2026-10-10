@@ -31,6 +31,19 @@ describe("sentryErrorHandler", () => {
     expect(res.statusCode).toBe(404)
   })
 
+  it("keeps our own words on a 409, where Medusa would send its generic sentence", () => {
+    setSentryCaptureForTests(null)
+    const res = fakeRes()
+    sentryErrorHandler(
+      new MedusaError(MedusaError.Types.CONFLICT, "The stock for this product is now 2, not 3. Reload and try again."),
+      req,
+      res,
+      () => {}
+    )
+    expect(res.statusCode).toBe(409)
+    expect(res.body).toEqual({ type: "conflict", message: "The stock for this product is now 2, not 3. Reload and try again." })
+  })
+
   it("is a no-op for reporting when Sentry is off", () => {
     setSentryCaptureForTests(null)
     const res = fakeRes()
