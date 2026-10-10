@@ -17,10 +17,12 @@ import { Link, useParams } from "react-router-dom"
 import { ConfirmDialog, DetailRow, PageLoading, TAP } from "../../../components/shop-ui"
 import { sdk } from "../../../lib/client"
 import { errorMessage, formatDateTime } from "../../../lib/format"
+import { REVOKE_REASON_MAX, revokeTradeApplication, tradeActions } from "../../../lib/trade"
 import type { TradeApplication } from "../../../lib/types"
 import { BUSINESS_TYPE_LABELS, TRADE_STATUS_COLORS, TRADE_STATUS_LABELS } from "../../../components/orders/trade-shared"
 
-// One trade application, with Approve / Reject (docs/contracts/trade.md).
+// One trade application: Approve / Reject while waiting, Close trade account once
+// approved (docs/contracts/trade.md).
 // The shop's "new trade application" email links here: /app/trade-applications/:id
 
 const REASON_MAX = 1000
@@ -34,6 +36,8 @@ const TradeApplicationPage = () => {
   const [rejecting, setRejecting] = useState(false)
   const [reason, setReason] = useState("")
   const [reasonError, setReasonError] = useState<string | null>(null)
+  const [closing, setClosing] = useState(false)
+  const [closeReason, setCloseReason] = useState("")
   const key = ["trade-applications", "detail", id]
 
   const { data, isLoading, isError, error } = useQuery({
@@ -72,6 +76,16 @@ const TradeApplicationPage = () => {
     },
   })
 
+  const revoke = useMutation({
+    mutationFn: (text: string) => revokeTradeApplication(sdk.client.fetch, id!, text),
+    onSuccess: (res) => {
+      onDone(res)
+      setClosing(false)
+      setCloseReason("")
+      toast.success(`Trade account for ${res.trade_application.company_name} closed.`)
+    },
+  })
+
   const submitReject = () => {
     const text = reason.trim()
     if (!text) {
@@ -94,7 +108,8 @@ const TradeApplicationPage = () => {
   }
 
   const app = data.trade_application
-  const busy = approve.isPending || reject.isPending
+  const busy = approve.isPending || reject.isPending || revoke.isPending
+  const actions = tradeActions(app.status)
 
   return (
     <Container className="divide-y p-0">
@@ -108,7 +123,7 @@ const TradeApplicationPage = () => {
         </div>
         <Text size="large" className="text-ui-fg-subtle">
           Applied {formatDateTime(app.created_at)}
-          {app.status !== "pending" && ` · Decided ${formatDateTime(app.updated_at)}`}
+          {app.status !== "pending" && ` · ${app.status === "revoked" ? "Closed" : "Decided"} ${formatDateTime(app.updated_at)}`}
         </Text>
       </div>
 
@@ -145,12 +160,12 @@ const TradeApplicationPage = () => {
             Open customer
           </Link>
         </DetailRow>
-        {app.status === "rejected" && (
-          <DetailRow label="Reason given">{app.reason ?? "-"}</DetailRow>
+        {(app.status === "rejected" || app.status === "revoked") && (
+          <DetailRow label="Reason given">{app.reason ?? "None given"}</DetailRow>
         )}
       </dl>
 
-      {app.status === "pending" ? (
+      {actions.includes("approve") ? (
         <div className="flex flex-col gap-3 px-4 py-4 md:px-6">
           {approve.isError && (
             <Alert variant="error" role="alert">
@@ -187,15 +202,95 @@ const TradeApplicationPage = () => {
             </Button>
           </div>
         </div>
+      ) : actions.includes("revoke") ? (
+        <div className="flex flex-col gap-3 px-4 py-4 md:px-6">
+          <Alert variant="success">Approved. This customer sees trade prices when logged in.</Alert>
+          <Text size="large" className="text-ui-fg-subtle">
+            Closing the account takes trade prices away straight away; the customer is emailed and
+            can apply again later.
+          </Text>
+          <Button
+            type="button"
+            size="large"
+            variant="secondary"
+            className={`${TAP} w-full sm:w-auto`}
+            onClick={() => {
+              revoke.reset()
+              setClosing(true)
+            }}
+            disabled={busy}
+          >
+            Close trade account
+          </Button>
+        </div>
       ) : (
         <div className="px-4 py-4 md:px-6">
-          <Alert variant={app.status === "approved" ? "success" : "info"}>
-            {app.status === "approved"
-              ? "Approved. This customer sees trade prices when logged in."
+          <Alert variant="info">
+            {app.status === "revoked"
+              ? "Trade account closed. The customer pays retail prices and can apply again."
               : "Rejected. The customer can send a new application."}
           </Alert>
         </div>
       )}
+
+      <Drawer open={closing} onOpenChange={(o) => !busy && setClosing(o)}>
+        <Drawer.Content>
+          <form
+            className="flex h-full flex-col overflow-hidden"
+            onSubmit={(e) => {
+              e.preventDefault()
+              revoke.mutate(closeReason)
+            }}
+          >
+            <Drawer.Header>
+              <Drawer.Title>Close the trade account for {app.company_name}?</Drawer.Title>
+            </Drawer.Header>
+            <Drawer.Body className="flex flex-1 flex-col gap-y-3 overflow-auto p-4">
+              {revoke.isError && (
+                <Alert variant="error" role="alert">
+                  {errorMessage(revoke.error)}
+                </Alert>
+              )}
+              <Text size="large">
+                They go back to retail prices as soon as you confirm, and get an email saying the
+                account is closed and that they can apply again. Baskets they already have are
+                priced at retail too.
+              </Text>
+              <Label htmlFor="close-reason" size="base" weight="plus">
+                Reason (optional)
+              </Label>
+              <Text size="large" id="close-reason-hint" className="text-ui-fg-subtle">
+                Goes in the email if you write one, so keep it polite, e.g. "The business has
+                closed" or "No trade orders in the last year".
+              </Text>
+              <Textarea
+                id="close-reason"
+                rows={4}
+                className="text-base"
+                maxLength={REVOKE_REASON_MAX}
+                value={closeReason}
+                aria-describedby="close-reason-hint"
+                onChange={(e) => setCloseReason(e.target.value)}
+              />
+              <Text size="small" className="text-ui-fg-muted">
+                {closeReason.length}/{REVOKE_REASON_MAX}
+              </Text>
+            </Drawer.Body>
+            <Drawer.Footer>
+              <div className="flex w-full items-center justify-end gap-x-2">
+                <Drawer.Close asChild>
+                  <Button type="button" variant="secondary" className={TAP} disabled={busy}>
+                    Keep it open
+                  </Button>
+                </Drawer.Close>
+                <Button type="submit" variant="danger" className={TAP} isLoading={revoke.isPending}>
+                  Close account and email
+                </Button>
+              </div>
+            </Drawer.Footer>
+          </form>
+        </Drawer.Content>
+      </Drawer>
 
       <ConfirmDialog
         open={confirmApprove}

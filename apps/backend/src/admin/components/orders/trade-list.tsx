@@ -14,11 +14,12 @@ import { BUSINESS_TYPE_LABELS, TRADE_STATUS_COLORS, TRADE_STATUS_LABELS } from "
 
 const PAGE_SIZE = 20
 type Filter = TradeApplicationStatus | "all"
-const FILTERS: Filter[] = ["pending", "approved", "rejected", "all"]
+const FILTERS: Filter[] = ["pending", "approved", "rejected", "revoked", "all"]
 const FILTER_LABELS: Record<Filter, string> = {
   pending: "Waiting",
   approved: "Approved",
   rejected: "Rejected",
+  revoked: "Closed",
   all: "All",
 }
 
@@ -129,7 +130,7 @@ const FullTradeList = () => {
         <Heading level="h2">Trade applications</Heading>
         <Text size="large" className="text-ui-fg-subtle">
           Businesses asking for trade prices. Approving one gives the customer trade prices when
-          they are logged in.
+          they are logged in; closing an approved account takes them away again.
         </Text>
         <FilterChips<Filter>
           label="Show applications"

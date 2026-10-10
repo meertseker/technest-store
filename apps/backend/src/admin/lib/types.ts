@@ -68,7 +68,7 @@ export type DeviceInput = {
 }
 
 // docs/contracts/trade.md
-export type TradeApplicationStatus = "pending" | "approved" | "rejected"
+export type TradeApplicationStatus = "pending" | "approved" | "rejected" | "revoked"
 export type BusinessType = "sole_trader" | "partnership" | "limited_company" | "other"
 
 export type TradeApplication = {
@@ -80,6 +80,7 @@ export type TradeApplication = {
   business_type: BusinessType
   contact: { name: string; phone: string; email: string }
   status: TradeApplicationStatus
+  /** Set on rejection, and on closing when one was given (shown to the customer). */
   reason: string | null
   created_at: string
   updated_at: string
