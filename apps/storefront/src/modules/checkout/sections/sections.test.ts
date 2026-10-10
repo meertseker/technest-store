@@ -1,9 +1,15 @@
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
+
+vi.mock("server-only", () => ({}))
+vi.mock("@lib/data/checkout-actions", () => ({ saveContact: vi.fn(), saveDelivery: vi.fn() }))
 import ErrorSummary from "./error-summary"
 import StepSection from "./step-section"
 import TextField from "./text-field"
+import ContactForm from "./contact-form"
+import DeliveryForm from "./delivery-form"
+import { LIMITS } from "@lib/checkout/validate"
 
 describe("<StepSection>", () => {
   it("done: collapses to a summary with an Edit link", () => {
@@ -72,5 +78,35 @@ describe("<TextField>", () => {
     expect(html).toContain('aria-describedby="delivery-postal_code-hint delivery-postal_code-error"')
     expect(html).toContain('autoComplete="postal-code"')
     expect(html).toContain("h-12")
+  })
+})
+
+// The browser stops over-long input before the server has to refuse it
+describe("checkout inputs carry the validation limits", () => {
+  const attr = (html: string, name: string) =>
+    html.match(new RegExp(`<input[^>]*name="${name}"[^>]*>`))?.[0] ?? ""
+
+  it("contact: the email field", () => {
+    const html = renderToStaticMarkup(createElement(ContactForm, { email: "" }))
+    expect(attr(html, "email")).toContain(`maxLength="${LIMITS.email}"`)
+  })
+
+  it("delivery: names, address lines and phone", () => {
+    const html = renderToStaticMarkup(
+      createElement(DeliveryForm, {
+        choices: [
+          { id: "so_1", kind: "standard", amount: 3.49, amount_pence: 349, available: true, name: "Standard" },
+        ] as never,
+        addonOnly: false,
+        defaults: { option_id: "so_1", first_name: "", last_name: "", phone: "", address_1: "", address_2: "", city: "", postal_code: "" },
+        shopAddress: "Unit 2A",
+      })
+    )
+    expect(attr(html, "first_name")).toContain(`maxLength="${LIMITS.name}"`)
+    expect(attr(html, "last_name")).toContain(`maxLength="${LIMITS.name}"`)
+    expect(attr(html, "address_1")).toContain(`maxLength="${LIMITS.address}"`)
+    expect(attr(html, "address_2")).toContain(`maxLength="${LIMITS.address}"`)
+    expect(attr(html, "city")).toContain(`maxLength="${LIMITS.address}"`)
+    expect(attr(html, "phone")).toContain(`maxLength="${LIMITS.phone}"`)
   })
 })

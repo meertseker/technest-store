@@ -1,7 +1,7 @@
 "use client"
 
 import { useActionState } from "react"
-import { errorFor } from "@lib/checkout/validate"
+import { LIMITS, errorFor } from "@lib/checkout/validate"
 import { saveContact, type CheckoutFormState } from "@lib/data/checkout-actions"
 import ErrorSummary from "./error-summary"
 import SubmitButton from "./submit-button"
@@ -28,6 +28,7 @@ export default function ContactForm({ email }: { email: string }) {
         hint="We'll send your order confirmation here."
         autoComplete="email"
         spellCheck={false}
+        maxLength={LIMITS.email}
         defaultValue={state.values.email}
         error={errorFor(state.errors, "email")}
         required

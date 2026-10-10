@@ -4,7 +4,7 @@ import { AlertCircle, Store } from "lucide-react"
 import { useActionState, useState } from "react"
 import { formatGbp } from "@lib/basket/money"
 import { DELIVERY_LABEL, choiceDescription, type DeliveryChoice } from "@lib/basket/shipping-options"
-import { errorFor } from "@lib/checkout/validate"
+import { LIMITS, errorFor } from "@lib/checkout/validate"
 import { saveDelivery, type CheckoutFormState } from "@lib/data/checkout-actions"
 import { cn } from "@/lib/utils"
 import AddonNotice from "@modules/basket/components/addon-notice"
@@ -145,6 +145,7 @@ export default function DeliveryForm({
           <TextField
             id={fieldId("first_name")}
             name="first_name"
+            maxLength={LIMITS.name}
             label="First name"
             autoComplete="given-name"
             defaultValue={v.first_name}
@@ -154,6 +155,7 @@ export default function DeliveryForm({
           <TextField
             id={fieldId("last_name")}
             name="last_name"
+            maxLength={LIMITS.name}
             label="Last name"
             autoComplete="family-name"
             defaultValue={v.last_name}
@@ -166,6 +168,7 @@ export default function DeliveryForm({
             <TextField
               id={fieldId("address_1")}
               name="address_1"
+              maxLength={LIMITS.address}
               label="Address line 1"
               autoComplete="address-line1"
               defaultValue={v.address_1}
@@ -175,6 +178,7 @@ export default function DeliveryForm({
             <TextField
               id={fieldId("address_2")}
               name="address_2"
+              maxLength={LIMITS.address}
               label="Address line 2"
               optional
               autoComplete="address-line2"
@@ -184,6 +188,7 @@ export default function DeliveryForm({
               <TextField
                 id={fieldId("city")}
                 name="city"
+                maxLength={LIMITS.address}
                 label="Town or city"
                 autoComplete="address-level2"
                 defaultValue={v.city}
@@ -193,6 +198,7 @@ export default function DeliveryForm({
               <TextField
                 id={fieldId("postal_code")}
                 name="postal_code"
+                maxLength={10}
                 label="Postcode"
                 autoComplete="postal-code"
                 autoCapitalize="characters"
@@ -209,6 +215,7 @@ export default function DeliveryForm({
         <TextField
           id={fieldId("phone")}
           name="phone"
+          maxLength={LIMITS.phone}
           type="tel"
           label="Phone number"
           optional
