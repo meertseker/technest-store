@@ -84,3 +84,28 @@ export function stockInputToNumber(input: string): number | null {
   const n = Number(trimmed)
   return n > 100_000 ? null : n
 }
+
+export type PriceStockBody = { price_pence?: number; stock?: number; expected_stock?: number | null }
+
+/**
+ * The write for one row (docs/contracts/price-stock.md): only the values that
+ * changed, and with a new stock number the stock the page showed, so the server
+ * can refuse (409) when an order or a colleague moved it meanwhile.
+ */
+export function priceStockBody(
+  shown: Pick<VariantRow, "price_pence" | "stock">,
+  typed: { price_pence: number | null; stock: number | null }
+): PriceStockBody {
+  const body: PriceStockBody = {}
+  if (typed.price_pence !== null && typed.price_pence !== shown.price_pence) body.price_pence = typed.price_pence
+  if (typed.stock !== null && typed.stock !== shown.stock) {
+    body.stock = typed.stock
+    body.expected_stock = shown.stock
+  }
+  return body
+}
+
+/** The server's 409: the stock moved since the page loaded. Reload the row and type it again. */
+export function isStaleStockError(error: unknown): boolean {
+  return !!error && typeof error === "object" && (error as { status?: unknown }).status === 409
+}

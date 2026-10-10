@@ -1,4 +1,4 @@
-import { stockInputToNumber, variantRows } from "../price-stock"
+import { isStaleStockError, priceStockBody, stockInputToNumber, variantRows } from "../price-stock"
 
 describe("variantRows", () => {
   it("flattens products into one row per variant with the plain GBP price in pence", () => {
@@ -88,5 +88,36 @@ describe("stockInputToNumber", () => {
     expect(stockInputToNumber("1.5")).toBeNull()
     expect(stockInputToNumber("")).toBeNull()
     expect(stockInputToNumber("ten")).toBeNull()
+  })
+})
+
+describe("priceStockBody", () => {
+  const row = { price_pence: 499, stock: 3 }
+
+  it("sends only what changed, and the stock the page showed with the stock", () => {
+    expect(priceStockBody(row, { price_pence: 549, stock: 3 })).toEqual({ price_pence: 549 })
+    expect(priceStockBody(row, { price_pence: 499, stock: 7 })).toEqual({ stock: 7, expected_stock: 3 })
+    expect(priceStockBody(row, { price_pence: 549, stock: 7 })).toEqual({ price_pence: 549, stock: 7, expected_stock: 3 })
+  })
+
+  it("sends expected_stock null when the page showed no stock", () => {
+    expect(priceStockBody({ price_pence: null, stock: null }, { price_pence: null, stock: 2 })).toEqual({
+      stock: 2,
+      expected_stock: null,
+    })
+  })
+
+  it("sends nothing when nothing changed", () => {
+    expect(priceStockBody(row, { price_pence: 499, stock: 3 })).toEqual({})
+    expect(priceStockBody(row, { price_pence: null, stock: null })).toEqual({})
+  })
+})
+
+describe("isStaleStockError", () => {
+  it("recognises the server's 409 for stock that moved since the page loaded", () => {
+    expect(isStaleStockError(Object.assign(new Error("The stock for this product is now 2, not 3."), { status: 409 }))).toBe(true)
+    expect(isStaleStockError(Object.assign(new Error("Something else"), { status: 400 }))).toBe(false)
+    expect(isStaleStockError(new Error("no status"))).toBe(false)
+    expect(isStaleStockError(null)).toBe(false)
   })
 })

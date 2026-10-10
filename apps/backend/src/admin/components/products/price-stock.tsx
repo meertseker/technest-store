@@ -6,7 +6,9 @@ import { sdk } from "../../lib/client"
 import { errorMessage, plural } from "../../lib/format"
 import { penceToPoundsInput, poundsInputToPence } from "../../lib/pence"
 import {
+  isStaleStockError,
   PRICE_STOCK_FIELDS,
+  priceStockBody,
   type PriceStockResponse,
   type ProductForRows,
   stockInputToNumber,
@@ -54,10 +56,7 @@ function VariantRowCard({ row }: { row: VariantRow }) {
         `/admin/products/${row.product_id}/variants/${row.variant_id}/price-stock`,
         {
           method: "POST",
-          body: {
-            ...(priceChanged ? { price_pence: pricePence } : {}),
-            ...(stockChanged ? { stock: stockNumber } : {}),
-          },
+          body: priceStockBody(row, { price_pence: pricePence, stock: stockNumber }),
         }
       ),
     onMutate: () => setError(null),
@@ -66,7 +65,12 @@ function VariantRowCard({ row }: { row: VariantRow }) {
       toast.success(`${row.product_title}${row.variant_title ? ` (${row.variant_title})` : ""} saved`)
       queryClient.invalidateQueries({ queryKey: PRICE_STOCK_QUERY_KEY })
     },
-    onError: (e: unknown) => setError(errorMessage(e)),
+    onError: (e: unknown) => {
+      setError(errorMessage(e))
+      // The stock moved since the page loaded: nothing was written. Reload the row so the
+      // fields show the new number (the effect above puts it in the inputs) and ask again.
+      if (isStaleStockError(e)) queryClient.invalidateQueries({ queryKey: PRICE_STOCK_QUERY_KEY })
+    },
   })
 
   const priceId = `ps-price-${row.variant_id}`
