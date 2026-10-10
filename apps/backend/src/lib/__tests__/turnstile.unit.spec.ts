@@ -24,6 +24,49 @@ describe("createTurnstileVerifier", () => {
     expect(body.get("remoteip")).toBe("203.0.113.1")
   })
 
+  it("refuses a token solved for another widget (wrong action)", async () => {
+    const verify = createTurnstileVerifier({
+      secret: "s",
+      fetchImpl: respond({ success: true, action: "newsletter", hostname: "technest.co.uk" }),
+      expectedAction: "repair-booking",
+    })
+    await expect(verify("tok")).resolves.toBe(false)
+    const missing = createTurnstileVerifier({
+      secret: "s",
+      fetchImpl: respond({ success: true }),
+      expectedAction: "repair-booking",
+    })
+    await expect(missing("tok")).resolves.toBe(false)
+    const right = createTurnstileVerifier({
+      secret: "s",
+      fetchImpl: respond({ success: true, action: "repair-booking" }),
+      expectedAction: "repair-booking",
+    })
+    await expect(right("tok")).resolves.toBe(true)
+  })
+
+  it("checks the hostname only when one is expected, and accepts the shop's subdomains", async () => {
+    const solvedOn = (hostname: string | undefined) =>
+      createTurnstileVerifier({
+        secret: "s",
+        fetchImpl: respond({ success: true, action: "repair-booking", hostname }),
+        expectedAction: "repair-booking",
+        expectedHostname: "technest.co.uk",
+      })
+    await expect(solvedOn("technest.co.uk")("tok")).resolves.toBe(true)
+    await expect(solvedOn("www.technest.co.uk")("tok")).resolves.toBe(true)
+    await expect(solvedOn("evil.example")("tok")).resolves.toBe(false)
+    await expect(solvedOn("nottechnest.co.uk")("tok")).resolves.toBe(false)
+    await expect(solvedOn(undefined)("tok")).resolves.toBe(false)
+
+    const unchecked = createTurnstileVerifier({
+      secret: "s",
+      fetchImpl: respond({ success: true, action: "repair-booking", hostname: "localhost" }),
+      expectedAction: "repair-booking",
+    })
+    await expect(unchecked("tok")).resolves.toBe(true)
+  })
+
   it("fails closed", async () => {
     await expect(createTurnstileVerifier({ secret: "s", fetchImpl: respond({ success: false }) })("t")).resolves.toBe(false)
     await expect(createTurnstileVerifier({ secret: "s", fetchImpl: respond({}, false) })("t")).resolves.toBe(false)
@@ -65,6 +108,39 @@ describe("resolveTurnstileVerifier", () => {
     for (const nodeEnv of ["production", "staging", undefined]) {
       const verify = resolveTurnstileVerifier(container({ logger }), { secret: "", nodeEnv })
       await expect(verify("any-token")).resolves.toBe(false)
+    }
+  })
+
+  it("expects the repair-booking action, and the storefront host only in production", async () => {
+    const realFetch = global.fetch
+    const answer = { success: true, action: "repair-booking", hostname: "shop.example" }
+    global.fetch = jest.fn(async () => ({ ok: true, json: async () => answer })) as unknown as typeof fetch
+    try {
+      // Production with the storefront URL set: the host is checked.
+      const prod = resolveTurnstileVerifier(container(), {
+        secret: "s3cret",
+        nodeEnv: "production",
+        storefrontUrl: "https://technest.co.uk/",
+      })
+      await expect(prod("tok")).resolves.toBe(false)
+      answer.hostname = "technest.co.uk"
+      await expect(prod("tok")).resolves.toBe(true)
+      answer.action = "other"
+      await expect(prod("tok")).resolves.toBe(false)
+      answer.action = "repair-booking"
+
+      // Outside production, or without the URL, only the action is checked.
+      answer.hostname = "localhost"
+      const dev = resolveTurnstileVerifier(container(), {
+        secret: "s3cret",
+        nodeEnv: "development",
+        storefrontUrl: "https://technest.co.uk",
+      })
+      await expect(dev("tok")).resolves.toBe(true)
+      const unset = resolveTurnstileVerifier(container(), { secret: "s3cret", nodeEnv: "production" })
+      await expect(unset("tok")).resolves.toBe(true)
+    } finally {
+      global.fetch = realFetch
     }
   })
 
