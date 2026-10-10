@@ -64,7 +64,7 @@ function isInternal(address: string): boolean {
 }
 
 /** IPv4 as is; IPv6 by its /64 (one subscriber owns the whole /64). */
-function ipKey(address: string): string {
+export function ipKey(address: string): string {
   if (isIP(address) !== 6) {
     return address
   }

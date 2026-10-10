@@ -1,4 +1,54 @@
-import { SlidingWindowRateLimiter } from "../rate-limit"
+import { EventEmitter } from "events"
+import { rateLimit, SlidingWindowRateLimiter } from "../rate-limit"
+
+class FakeRes extends EventEmitter {
+  statusCode = 200
+  headers: Record<string, string> = {}
+  setHeader(name: string, value: string) {
+    this.headers[name] = value
+  }
+  status(code: number) {
+    this.statusCode = code
+    return this
+  }
+  json() {
+    return this
+  }
+}
+
+const requestFrom = (ip: string): any => ({
+  headers: { "cf-connecting-ip": ip },
+  socket: { remoteAddress: "172.18.0.5" },
+})
+
+describe("rateLimit middleware keys", () => {
+  const hits = (ips: string[]) => {
+    const limiter = new SlidingWindowRateLimiter({ limit: 2, windowMs: 60_000 })
+    const middleware = rateLimit(limiter, "test", "slow down")
+    return ips.map((ip) => {
+      const res = new FakeRes()
+      const next = jest.fn()
+      middleware(requestFrom(ip), res as any, next)
+      return next.mock.calls.length ? "allowed" : res.statusCode
+    })
+  }
+
+  it("counts an IPv6 client by its /64, so rotating inside it does not reset the limit", () => {
+    expect(
+      hits(["2001:db8:abcd:12::1", "2001:db8:abcd:12:ffff::2", "2001:0db8:abcd:0012:1:2:3:4"])
+    ).toEqual(["allowed", "allowed", 429])
+  })
+
+  it("keeps different /64s and IPv4 addresses apart", () => {
+    expect(hits(["2001:db8:abcd:12::1", "2001:db8:abcd:13::1", "203.0.113.9", "203.0.113.10"])).toEqual([
+      "allowed",
+      "allowed",
+      "allowed",
+      "allowed",
+    ])
+    expect(hits(["203.0.113.9", "203.0.113.9", "203.0.113.9"])).toEqual(["allowed", "allowed", 429])
+  })
+})
 
 describe("SlidingWindowRateLimiter", () => {
   it("allows `limit` hits per window per key, then reports retry-after", () => {

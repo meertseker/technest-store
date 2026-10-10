@@ -3,6 +3,7 @@ import type {
   MedusaRequest,
   MedusaResponse,
 } from "@medusajs/framework/http"
+import { ipKey } from "./auth-throttle"
 
 type Options = {
   limit: number
@@ -74,10 +75,14 @@ export function clientIp(req: MedusaRequest): string {
   return value?.trim() || req.ip || req.socket?.remoteAddress || "unknown"
 }
 
-/** Express-style middleware that answers 429 once `limiter` refuses the client IP. */
+/**
+ * Express-style middleware that answers 429 once `limiter` refuses the client.
+ * Clients are counted per IPv4 address and per IPv6 /64 (the block one
+ * subscriber owns, so rotating addresses inside it shares one bucket).
+ */
 export function rateLimit(limiter: SlidingWindowRateLimiter, prefix: string, message: string) {
   return (req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) => {
-    const { allowed, retryAfterSeconds } = limiter.hit(`${prefix}:${clientIp(req)}`)
+    const { allowed, retryAfterSeconds } = limiter.hit(`${prefix}:${ipKey(clientIp(req))}`)
     if (!allowed) {
       res.setHeader("Retry-After", String(retryAfterSeconds))
       res.status(429).json({ type: "too_many_requests", message })
