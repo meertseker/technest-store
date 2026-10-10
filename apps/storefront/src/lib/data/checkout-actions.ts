@@ -137,10 +137,13 @@ export async function saveDelivery(
   const billing_address: HttpTypes.StoreAddAddress =
     input.kind === "collect" ? { ...person, country_code: STORE_COUNTRY } : shipping_address
 
+  // The method first: it is the call the backend can refuse (a basket rule, an
+  // option that no longer applies). Refused, nothing else has changed; the
+  // address write that follows is a plain save and keeps a still-valid method.
   let updated: HttpTypes.StoreCart
   try {
-    updated = await updateCart({ shipping_address, billing_address })
     await setShippingMethod({ cartId: cart.id, shippingMethodId: choice!.id })
+    updated = await updateCart({ shipping_address, billing_address })
   } catch (e) {
     await reportUnexpected(e, "checkout.delivery")
     return fail([{ field: "option", message: SERVICE_ERROR }])
