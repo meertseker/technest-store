@@ -19,11 +19,15 @@ import { adminRepairMiddlewares } from './admin/repair-bookings/middlewares'
 import { adminTradeMiddlewares } from './admin/trade-applications/middlewares'
 import { storeRepairMiddlewares } from './store/repair-bookings/middlewares'
 import { storeTradeMiddlewares } from './store/trade-applications/middlewares'
+import { authThrottleMiddlewares } from '../lib/auth-throttle'
 
 export default defineMiddlewares({
   // E4: Medusa's default error handler + report 5xx to Sentry (no-op without SENTRY_DSN).
   errorHandler: sentryErrorHandler,
   routes: [
+    // Sign-in, registration, password reset and trade applications are counted per
+    // visitor IP and per email; over the limit the answer is 429 (lib/auth-throttle.ts).
+    ...authThrottleMiddlewares,
     {
       // E2 / ADR 0002: payment session data is server-side only.
       method: ['POST'],
