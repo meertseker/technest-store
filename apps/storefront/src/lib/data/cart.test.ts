@@ -155,6 +155,11 @@ describe("placeOrder", () => {
     expect(setCookie).toHaveBeenCalledWith("_medusa_cart_id", "", expect.objectContaining({ maxAge: -1 }))
   })
 
+  it("remembers the new order so the confirmation page can show it in full", async () => {
+    await placeOrder("cart_old")
+    expect(setCookie).toHaveBeenCalledWith("_technest_order", "order_1", expect.objectContaining({ httpOnly: true }))
+  })
+
   it("keeps the cookie when a different basket was completed", async () => {
     await placeOrder("cart_someone_elses")
     expect(setCookie).not.toHaveBeenCalledWith("_medusa_cart_id", "", expect.anything())

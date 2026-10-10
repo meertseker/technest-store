@@ -11,7 +11,7 @@ vi.mock("next/headers", () => ({
   }),
 }))
 
-import { getAuthHeaders, setAuthToken } from "./cookies"
+import { getAuthHeaders, getRecentOrderId, setAuthToken, setRecentOrderId } from "./cookies"
 
 const b64url = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url")
 const jwt = (payload: Record<string, unknown>) => `${b64url({ alg: "HS256" })}.${b64url(payload)}.sig`
@@ -47,5 +47,23 @@ describe("getAuthHeaders", () => {
 
   it("is empty for a guest", async () => {
     await expect(getAuthHeaders()).resolves.toEqual({})
+  })
+})
+
+// The confirmation page shows a guest their order only while this cookie
+// names it: a link opened later, by someone else, gets the reduced view.
+describe("the recent-order cookie", () => {
+  it("names the order for a day, hidden from scripts, and survives the return from a bank page", async () => {
+    await setRecentOrderId("order_1")
+    const [name, value, options] = setCookie.mock.calls[0]
+    expect(name).toBe("_technest_order")
+    expect(value).toBe("order_1")
+    expect(options).toMatchObject({ maxAge: 60 * 60 * 24, httpOnly: true, sameSite: "lax" })
+  })
+
+  it("is read back, and is undefined for a visitor who has not just ordered", async () => {
+    await expect(getRecentOrderId()).resolves.toBeUndefined()
+    jar._technest_order = "order_1"
+    await expect(getRecentOrderId()).resolves.toBe("order_1")
   })
 })

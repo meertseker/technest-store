@@ -1,4 +1,5 @@
 import Image from "next/image"
+import Link from "next/link"
 import { CalendarCheck, Clock, MapPin, Truck } from "lucide-react"
 import { HttpTypes } from "@medusajs/types"
 import { buttonVariants } from "@/components/ui/button"
@@ -25,10 +26,13 @@ export function todaysHours(now: Date) {
 export default function OrderConfirmedTemplate({
   order,
   isGuest,
+  ownerLink = false,
   now = new Date(),
 }: {
   order: HttpTypes.StoreOrder
   isGuest: boolean
+  /** the signed-in owner: link to the order in their account */
+  ownerLink?: boolean
   now?: Date
 }) {
   const kind = orderDeliveryKind(order)
@@ -131,6 +135,14 @@ export default function OrderConfirmedTemplate({
           </h2>
           <SummaryBody items={order.items ?? undefined} totals={order} deliveryChosen />
         </section>
+
+        {ownerLink && (
+          <p>
+            <Link href={`/account/orders/${encodeURIComponent(order.id)}`} className="font-semibold underline underline-offset-4">
+              See this order in your account
+            </Link>
+          </p>
+        )}
 
         {isGuest && order.email && (
           <CreateAccountOffer

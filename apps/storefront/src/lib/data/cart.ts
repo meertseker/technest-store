@@ -13,6 +13,7 @@ import {
   getCartId,
   removeCartId,
   setCartId,
+  setRecentOrderId,
 } from "./cookies"
 import { getRegion } from "./regions"
 import { getLocale } from "./locale"
@@ -314,6 +315,8 @@ export async function placeOrder(cartId?: string) {
     // Forget the basket cookie only if it is the basket that became this order
     // (the payment return can complete a basket that is not the visitor's).
     if ((await getCartId()) === id) await removeCartId()
+    // The confirmation page shows a guest their order in full only with this
+    await setRecentOrderId(cartRes.order.id)
     redirect(`/order/${cartRes?.order.id}/confirmed`)
   }
 

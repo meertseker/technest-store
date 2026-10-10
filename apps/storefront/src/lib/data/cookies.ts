@@ -128,3 +128,24 @@ export const removeCartId = async () => {
     maxAge: -1,
   })
 }
+
+/**
+ * The order the visitor has just placed. The confirmation page shows an order
+ * in full only to its owner or to the browser that placed it; this cookie is
+ * the proof for a guest. One day is long enough to re-open the tab or come
+ * back from the bank's page; after that the page shows only the order number.
+ */
+export const setRecentOrderId = async (orderId: string) => {
+  const cookies = await nextCookies()
+  cookies.set("_technest_order", orderId, {
+    maxAge: 60 * 60 * 24,
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  })
+}
+
+export const getRecentOrderId = async () => {
+  const cookies = await nextCookies()
+  return cookies.get("_technest_order")?.value
+}
