@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("@lib/util/get-locale-header", () => ({ getLocaleHeader: async () => ({ "x-medusa-locale": null }) }))
+const visitor = { ip: null as string | null }
+vi.mock("next/headers", () => ({ headers: async () => new Headers(visitor.ip ? { "cf-connecting-ip": visitor.ip } : {}) }))
 
 import { FETCH_TIMEOUT_MS, sdk } from "./config"
 
@@ -75,5 +77,27 @@ describe("backend calls give up instead of hanging", () => {
     fetchStub.mockImplementation(ok)
     await expect(sdk.client.fetch("/store/regions", { method: "GET" })).resolves.toEqual({ ok: true })
     expect((fetchStub.mock.calls[0][1] as RequestInit).signal).toBeInstanceOf(AbortSignal)
+  })
+})
+
+describe("the visitor's address reaches the backend", () => {
+  const sentHeaders = () => new Headers((fetchStub.mock.calls[0][1] as RequestInit).headers)
+
+  afterEach(() => {
+    visitor.ip = null
+  })
+
+  it("forwards CF-Connecting-IP from the visitor's request, so sign-in limits count per visitor", async () => {
+    fetchStub.mockImplementation(ok)
+    visitor.ip = "203.0.113.9"
+    await sdk.client.fetch("/auth/customer/emailpass", { method: "POST", body: { email: "a@b.c", password: "x" } })
+    expect(sentHeaders().get("cf-connecting-ip")).toBe("203.0.113.9")
+  })
+
+  it("sends no address header when the request carries none or an invalid one", async () => {
+    fetchStub.mockImplementation(ok)
+    visitor.ip = "not an address"
+    await sdk.client.fetch("/store/regions")
+    expect(sentHeaders().get("cf-connecting-ip")).toBeNull()
   })
 })

@@ -28,6 +28,23 @@ function deadline(method: string | undefined): AbortSignal | undefined {
   return AbortSignal.timeout(isRead ? FETCH_TIMEOUT_MS.read : FETCH_TIMEOUT_MS.write)
 }
 
+/**
+ * The visitor's address, for the backend's sign-in, registration, reset and
+ * trade-application limits (and Turnstile). The storefront server makes the
+ * call, so without this every visitor would share one limit. In production
+ * Caddy sets CF-Connecting-IP on the request to the storefront. Server only.
+ */
+async function visitorIpHeader(): Promise<Record<string, string>> {
+  if (typeof window !== "undefined") return {}
+  try {
+    const { headers } = await import("next/headers")
+    const ip = (await headers()).get("cf-connecting-ip")?.trim()
+    return ip && /^[0-9a-fA-F:.]{3,45}$/.test(ip) ? { "cf-connecting-ip": ip } : {}
+  } catch {
+    return {}
+  }
+}
+
 const originalFetch = sdk.client.fetch.bind(sdk.client)
 
 sdk.client.fetch = async <T>(
@@ -43,6 +60,7 @@ sdk.client.fetch = async <T>(
 
   const newHeaders = {
     ...localeHeader,
+    ...(await visitorIpHeader()),
     ...headers,
   }
   init = {
