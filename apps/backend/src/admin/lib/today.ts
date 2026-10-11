@@ -93,7 +93,7 @@ const SPECS: Spec[] = [
     noun: ["draft product to publish", "draft products to publish"],
     name: "Draft products to publish",
     none: "No draft products",
-    todo: "Not on the website yet. Check them, then publish.",
+    todo: "Not on the website yet. Check the price and stock here, then open each one to publish it.",
     idle: "Products you add wait here until you publish them.",
     to: "/shop-products?tab=stock&drafts=1",
     cta: "Open drafts",

@@ -23,6 +23,10 @@ describe("todayTasks", () => {
     expect(byKey.repairs_new.title).toBe("No repairs to call back")
     expect(byKey.repairs_new.tone).toBe("clear")
     expect(byKey.drafts.title).toBe("4 draft products to publish")
+    // The Price & stock tab shows drafts but can't publish; the product page does.
+    expect(byKey.drafts.detail).toBe(
+      "Not on the website yet. Check the price and stock here, then open each one to publish it."
+    )
     expect(byKey.to_pack.title).toBe("1 delivery order to pack")
   })
 
