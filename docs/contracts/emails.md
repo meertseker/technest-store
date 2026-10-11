@@ -8,6 +8,7 @@ Every email goes through the Medusa Notification module (`channel: "email"`, pro
 - **Idempotency:** every email is sent at most once per (template, entity id, recipient): the `send-email` workflow checks for an earlier successful notification under a lock before sending (`src/lib/email/send-email-once.ts`). Failed SMTP attempts retry every 60 s, up to 5 times.
 - **Workflow inputs are IDs only** (`{ template, recipient: "customer" | "shop", resource_id, resource_type, trigger_type, ids? }`, where `ids` are extra entity ids such as the variants of a low-stock digest): the workflow engine persists inputs, so no addresses, order contents or tokens go in. Each attempt loads fresh data from the id (`src/lib/email/sources.ts`). Password reset is the exception: it bypasses the workflow so the token is never stored.
 - **Payloads:** event payloads carry IDs only. Subscribers load the data with `query.graph`. Nobody else needs to send anything beyond the payloads below.
+- **What is stored and for how long:** each attempt is rendered in the send step and stored with the recipient address, template, resource id, trigger and status only (`data` is `{ recipient, ids? }`; the rendered content is not stored). The daily `notification-retention` job hard-deletes attempts older than `NOTIFICATION_RETENTION_DAYS` (default 90, minimum 7).
 
 ## Event → template → recipient
 

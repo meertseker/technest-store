@@ -64,6 +64,8 @@ x-backend-env: &backend-env
   MAIL_REPLY_TO: ${MAIL_REPLY_TO:-hello@technest.co.uk}
   SHOP_NOTIFY_EMAIL: ${SHOP_NOTIFY_EMAIL:-hello@technest.co.uk}
   STOREFRONT_URL: https://${SHOP_DOMAIN:-technest.co.uk}
+  # Stored email attempts (and the addresses in them) are deleted after this many days.
+  NOTIFICATION_RETENTION_DAYS: ${NOTIFICATION_RETENTION_DAYS:-90}
 
 services:
   caddy:
