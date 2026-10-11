@@ -2,8 +2,8 @@
 
 - **Length:** about 5 minutes
 - **You need:** your phone, logged in to admin.technest.co.uk; two **test** trade applications (sent from the website's trade form with two test customer accounts) and one **test** repair booking (sent from the website's repair form with your own phone number).
-- **Where:** menu → **Trade applications** (`/app/trade-applications`) and **Repair bookings** (`/app/repair-bookings`).
-- **Status:** checked against the finished admin code on 2026-09-30. Steps marked ⚠ use Medusa's own screens.
+- **Where:** menu → **Orders** → **Trade** tab (`/app/shop-orders?tab=trade`) and **Repairs** tab (`/app/shop-orders?tab=repairs`); the old addresses still land there.
+- **Status:** checked against the admin code on 2026-10-11 (menu: Today, Orders, Products, Shop settings, each with tabs). Steps marked ⚠ use Medusa's own screens.
 
 ---
 
@@ -11,9 +11,9 @@
 
 ### Scene 1 (0:00-0:30) The list
 
-**Tap:** menu → **Trade applications**.
+**Tap:** menu → **Orders** → **Trade**.
 
-**You'll see:** "Businesses asking for trade prices…", and the buttons **Waiting**, **Approved**, **Rejected**, **All**. **Waiting** is open, oldest first.
+**You'll see:** "Businesses asking for trade prices…", and the buttons **Waiting**, **Approved**, **Rejected**, **Closed**, **All**. **Waiting** is open, oldest first.
 
 **Say:** "Businesses, like other repair shops, apply for a trade account on the website. I also get an email for each one. Once I approve them, they see trade prices, ex VAT, when they're logged in."
 
@@ -45,7 +45,7 @@
 
 ### Scene 5 (2:30-3:00) The list
 
-**Tap:** menu → **Repair bookings**.
+**Tap:** menu → **Orders** → **Repairs**.
 
 **You'll see:** "Repair requests from the website. Call the customer back, then mark it booked in." and the buttons **To call back**, **Booked in**, **Done**, **All**. **To call back** is open, longest-waiting first. The list refreshes every minute.
 
@@ -75,8 +75,8 @@
 |---|---|
 | Reject won't go through | The reason is empty. Write one. |
 | Approve or Reject is refused | Someone already approved or rejected it. Reload the page. |
-| Approved the wrong business | There is no undo button. Remove the customer from the **Trade** customer group (menu → **Customers** → the customer → groups) ⚠, then tell the lead. |
-| An approved trade customer sees no trade prices | Trade prices exist only for products that have them in the **Trade** price list (menu → **Pricing**) ⚠. Trade prices there are entered **VAT included, in pounds**; the website shows them ex VAT. [LEAD?] who enters them |
+| Approved the wrong business | Open the application → **Close trade account** (script 11). The customer goes back to retail prices and is emailed. |
+| An approved trade customer sees no trade prices | Trade prices exist only for products that have them in the **Trade** price list (Medusa's **Price lists** page: type `/app/price-lists` in the address bar) ⚠. Trade prices there are entered **VAT included, in pounds**; the website shows them ex VAT. [LEAD?] who enters them |
 | Tap-to-call does nothing on a laptop | Use your phone, or type the number. |
 | A customer says nobody called | Look in **To call back**. Move everyone you called to **Booked in**. |
 | No repair bookings arrive at all | The website form checks for robots (Cloudflare Turnstile). If it's not set up on the server, every booking is refused. Tell the lead. |

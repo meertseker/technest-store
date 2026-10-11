@@ -2,23 +2,23 @@
 
 - **Length:** about 5 minutes
 - **You need:** your phone, logged in to admin.technest.co.uk; one real accessory in its packet (a charger is best, so you can show the safety mark); a plain, light surface; good light. You can delete the test product afterwards.
-- **Where:** menu → **Quick add** (address `/app/quick-add`).
-- **Status:** checked against the finished admin code on 2026-09-30. Steps marked ⚠ use Medusa's own product page: check them once on the live admin before recording.
+- **Where:** menu → **Products** → **Add** tab (address `/app/shop-products?tab=add`; the old `/app/quick-add` address still lands there).
+- **Status:** checked against the admin code on 2026-10-11 (menu: Today, Orders, Products, Shop settings, each with tabs). Steps marked ⚠ use Medusa's own product page: check them once on the live admin before recording.
 - **Goal:** photo to saved draft in about a minute, then publish from the product page.
 
 ---
 
 ### Scene 1 (0:00-0:30) What Quick add does
 
-**Tap:** the menu button (top left), then **Quick add**.
+**Tap:** the menu button (top left), then **Products**. The **Add** tab is open.
 
-**You'll see:** the title "Quick add", a big **Take photo** button, **Choose a photo**, and **Add without a photo**.
+**You'll see:** "Add a product", two big cards, **Take a photo** and **Type it in**, and a button **Choose a photo from the phone instead**.
 
 **Say:** "This is Quick add. I take one photo of a product. The system reads the photo and suggests the title, category, the phones it fits and the safety mark. I check everything, type the price, and save it as a draft. Nothing goes on the website until I publish it."
 
 ### Scene 2 (0:30-1:00) Take the photo
 
-**Tap:** **Take photo**. The camera opens. Put the product on the plain surface, label facing you, and take the photo.
+**Tap:** **Take a photo**. The camera opens. Put the product on the plain surface, label facing you, and take the photo.
 
 **You'll see:** your photo at the top, and a blue box: "Reading the photo… this takes up to half a minute. You can start typing meanwhile."
 

@@ -2,16 +2,16 @@
 
 - **Süre:** yaklaşık 3 dakika
 - **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefon veya bilgisayar; etkisini göstermek için ikinci bir sekmede açık site. Sonunda her değeri eski haline getirin.
-- **Nerede:** menü → **"Settings"** (Ayarlar, menünün en altında) → **"Shop settings"** (adres `/app/settings/technest`).
-- **Durum:** 2026-09-30'da bitmiş panel koduyla karşılaştırıldı. ⚠ "Shop settings"in Medusa ayar menüsündeki yeri (genelde "Extensions" başlığı altında) Medusa'nın kendi ekranıdır: bir kez bakın.
+- **Nerede:** menü → **"Shop settings"** (Mağaza ayarları) → **"Delivery & Klarna"** (Kargo ve Klarna) sekmesi (adres `/app/shop-settings?tab=thresholds`; eski `/app/settings/technest` adresi de buraya açılır).
+- **Durum:** 2026-10-11'de panel koduyla karşılaştırıldı (menü: Today, Orders, Products, Shop settings; her birinde sekmeler). Shop settings artık Medusa'nın Settings menüsünün içinde değil, bizim dört menü sayfamızdan biri.
 
 ---
 
 ### Sahne 1 (0:00-0:30) Bu sayfada ne var
 
-**Dokunun:** menü → **"Settings"** → **"Shop settings"**. ⚠
+**Dokunun:** menü → **"Shop settings"**. **"Delivery & Klarna"** sekmesi açık gelir.
 
-**Göreceğiniz:** "Shop settings", "Free delivery and Klarna thresholds. Amounts include VAT." (ücretsiz kargo ve Klarna sınırları, tutarlar KDV dahil), bir **"Edit"** ("Düzenle") düğmesi ve iki satır:
+**Göreceğiniz:** "Delivery & Klarna" başlığı, "The basket amounts for free delivery and for Klarna. Amounts include VAT." (ücretsiz kargo ve Klarna için sepet tutarları, KDV dahil), bir **"Edit"** ("Düzenle") düğmesi ve iki satır:
 - **"Free Standard delivery from"** (standart kargo şu tutardan itibaren ücretsiz) £20.00
 - **"Klarna from"** (Klarna şu tutardan itibaren) £30.00
 

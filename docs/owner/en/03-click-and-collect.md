@@ -2,14 +2,14 @@
 
 - **Length:** about 5 minutes
 - **You need:** your phone, logged in to admin.technest.co.uk; a **test** Click & Collect order (place one on the website with a test card before recording, choosing Click & Collect at checkout). Never use a real customer's order.
-- **Where:** menu → **Click & Collect** (address `/app/click-collect`).
-- **Status:** checked against the finished admin code on 2026-09-30.
+- **Where:** menu → **Orders** → **Collect** tab (address `/app/shop-orders?tab=collect`; the old `/app/click-collect` address still lands there).
+- **Status:** checked against the admin code on 2026-10-11 (menu: Today, Orders, Products, Shop settings, each with tabs).
 
 ---
 
 ### Scene 1 (0:00-0:30) What the board is for
 
-**Tap:** menu → **Click & Collect**.
+**Tap:** menu → **Orders**. The **Collect** tab is open.
 
 **You'll see:** "Updates every minute. Last updated …", a **Refresh** button, and three buttons on a phone: **To pick**, **Ready**, **Collected**, each with a number. (On a laptop the three are side by side.)
 

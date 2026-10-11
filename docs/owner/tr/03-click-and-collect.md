@@ -2,14 +2,14 @@
 
 - **Süre:** yaklaşık 5 dakika
 - **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefonunuz; bir **deneme** Click & Collect siparişi (kayıttan önce sitede test kartıyla, ödeme adımında Click & Collect seçerek verin). Gerçek müşteri siparişini asla kullanmayın.
-- **Nerede:** menü → **"Click & Collect"** (adres `/app/click-collect`).
-- **Durum:** 2026-09-30'da bitmiş panel koduyla karşılaştırıldı.
+- **Nerede:** menü → **"Orders"** (Siparişler) → **"Collect"** sekmesi (adres `/app/shop-orders?tab=collect`; eski `/app/click-collect` adresi de buraya açılır).
+- **Durum:** 2026-10-11'de panel koduyla karşılaştırıldı (menü: Today, Orders, Products, Shop settings; her birinde sekmeler).
 
 ---
 
 ### Sahne 1 (0:00-0:30) Pano ne işe yarar
 
-**Dokunun:** menü → **"Click & Collect"**.
+**Dokunun:** menü → **"Orders"**. **"Collect"** sekmesi açık gelir.
 
 **Göreceğiniz:** "Updates every minute. Last updated …" (her dakika yenilenir, son güncelleme …), bir **"Refresh"** ("Yenile") düğmesi ve telefonda üç düğme: **"To pick"** (hazırlanacak), **"Ready"** (hazır), **"Collected"** (teslim edildi); her birinin yanında sayı. (Bilgisayarda üçü yan yana durur.)
 

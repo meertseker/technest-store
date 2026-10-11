@@ -2,8 +2,8 @@
 
 - **Süre:** yaklaşık 5 dakika
 - **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefon veya bilgisayar; bir deneme ürünü (ör. telefon kılıfı); ekleyip sonra sileceğiniz uydurma bir deneme cihazı.
-- **Nerede:** menü → **"Devices"** (Cihazlar, adres `/app/devices`) ve her ürün sayfasındaki **"Fits these devices"** kutusu.
-- **Durum:** 2026-09-30'da bitmiş panel koduyla karşılaştırıldı.
+- **Nerede:** menü → **"Shop settings"** (Mağaza ayarları) → **"Devices"** (Cihazlar) sekmesi (adres `/app/shop-settings?tab=devices`; eski `/app/devices` adresi de buraya açılır) ve her ürün sayfasındaki **"Fits these devices"** kutusu.
+- **Durum:** 2026-10-11'de panel koduyla karşılaştırıldı (menü: Today, Orders, Products, Shop settings; her birinde sekmeler).
 
 ---
 
@@ -15,7 +15,7 @@
 
 ### Sahne 2 (0:30-1:15) Devices sayfası
 
-**Dokunun:** menü → **"Devices"**.
+**Dokunun:** menü → **"Shop settings"** → **"Devices"**.
 
 **Göreceğiniz:** "Devices" başlığı ve **"Add device"** ("Cihaz ekle") düğmesi, bir **"Search"** (arama) kutusu ("Model, web address name or model number"; model, web adı ya da model numarası), ve **"All"** (hepsi), **"Phone"** (telefon), **"Tablet"**, **"Games console"** (oyun konsolu), **"Laptop"** düğmeleri. Her satırda model (ör. "iPhone 16 Pro"), altında "Apple · iPhone 16 · 2024" ve diğer adlar için "Also: 16 pro, A3102".
 

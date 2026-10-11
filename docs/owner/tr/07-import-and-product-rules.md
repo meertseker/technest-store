@@ -2,8 +2,8 @@
 
 - **Süre:** yaklaşık 5 dakika
 - **Gerekenler:** admin.technest.co.uk'a giriş yapılmış bir bilgisayar (tablo büyük ekranda daha kolay); Excel, Numbers veya Google E-Tablolar.
-- **Nerede:** menü → **"Import products"** (Ürünleri içe aktar, adres `/app/import`).
-- **Durum:** 2026-09-30'da bitmiş panel koduyla karşılaştırıldı. ⚠ işaretli adımlar Medusa'nın kendi ekranlarıdır.
+- **Nerede:** menü → **"Products"** (Ürünler) → **"Import"** (İçe aktar) sekmesi (adres `/app/shop-products?tab=import`; eski `/app/import` adresi de buraya açılır).
+- **Durum:** 2026-10-11'de panel koduyla karşılaştırıldı (menü: Today, Orders, Products, Shop settings; her birinde sekmeler). ⚠ işaretli adımlar Medusa'nın kendi ekranlarıdır.
 
 Bu senaryo her ürünün uyduğu kuralları da anlatır: şarj ürünlerinde güvenlik işareti, vape'in asla
 satılmaması, £1'lık ek ürünler (add-on), "3 al 2 öde" kampanyası ve yeniden sipariş seviyeleri.
@@ -12,7 +12,7 @@ satılmaması, £1'lık ek ürünler (add-on), "3 al 2 öde" kampanyası ve yeni
 
 ### Sahne 1 (0:00-0:40) Şablonu indirin
 
-**Dokunun:** menü → **"Import products"** → **"Download template"** ("Şablonu indir").
+**Dokunun:** menü → **"Products"** → **"Import"** → **"Download template"** ("Şablonu indir").
 
 **Göreceğiniz:** başlık satırı ve üç örnek içeren `tech-nest-import-template.csv` dosyası: bir kılıf, bir USB-C kablo ve £1'lık bir telefon yüzüğü.
 

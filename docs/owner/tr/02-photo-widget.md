@@ -2,14 +2,14 @@
 
 - **Süre:** yaklaşık 4 dakika
 - **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefon veya bilgisayar; bir deneme ürünü; fotoğrafını çekebilmek için ürünün kendisi.
-- **Nerede:** menü → **"Products"** (Ürünler) → bir ürün → **"Product photo"** kutusu. (Kutunun sayfadaki yeri panelin düzen editöründen değiştirilebilir; biraz yukarıda ya da aşağıda olabilir.)
-- **Durum:** 2026-09-30'da bitmiş panel koduyla karşılaştırıldı. ⚠ işaretli adımlar Medusa'nın kendi ekranlarıdır.
+- **Nerede:** menü → **"Products"** (Ürünler) → sağ üstteki **"All products"** (tüm ürünler; Medusa'nın ürün listesi) → bir ürün → **"Product photo"** kutusu. (Kutunun sayfadaki yeri panelin düzen editöründen değiştirilebilir; biraz yukarıda ya da aşağıda olabilir.)
+- **Durum:** 2026-10-11'de panel koduyla karşılaştırıldı (menü: Today, Orders, Products, Shop settings; her birinde sekmeler). ⚠ işaretli adımlar Medusa'nın kendi ekranlarıdır.
 
 ---
 
 ### Sahne 1 (0:00-0:30) Kutu ne işe yarar
 
-**Dokunun:** **"Products"**, deneme ürününü açın, **"Product photo"** kutusuna inin.
+**Dokunun:** **"Products"** → **"All products"**, deneme ürününü açın, **"Product photo"** kutusuna inin.
 
 **Göreceğiniz:** iki kare: **"Original (always kept)"** (orijinal, her zaman saklanır) ve **"White background (only the background changes)"** (beyaz arka plan, sadece arka plan değişir). Sağ üstte bir etiket: **"No photo"** (fotoğraf yok), **"Not processed"** (işlenmedi), **"Waiting for approval"** (onay bekliyor) veya **"Approved"** (onaylandı).
 

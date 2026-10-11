@@ -2,16 +2,16 @@
 
 - **Length:** about 3 minutes
 - **You need:** your phone or laptop, logged in to admin.technest.co.uk; the website open in a second tab to show the effect. Put every value back as it was at the end.
-- **Where:** menu → **Settings** (at the bottom of the menu) → **Shop settings** (address `/app/settings/technest`).
-- **Status:** checked against the finished admin code on 2026-09-30. ⚠ The place of "Shop settings" in Medusa's settings menu (usually under "Extensions") is Medusa's own screen: check it once.
+- **Where:** menu → **Shop settings** → **Delivery & Klarna** tab (address `/app/shop-settings?tab=thresholds`; the old `/app/settings/technest` address still lands there).
+- **Status:** checked against the admin code on 2026-10-11 (menu: Today, Orders, Products, Shop settings, each with tabs). Shop settings is one of our four menu pages now, not inside Medusa's Settings menu.
 
 ---
 
 ### Scene 1 (0:00-0:30) What is on this page
 
-**Tap:** menu → **Settings** → **Shop settings**. ⚠
+**Tap:** menu → **Shop settings**. The **Delivery & Klarna** tab is open.
 
-**You'll see:** "Shop settings", "Free delivery and Klarna thresholds. Amounts include VAT.", an **Edit** button, and two rows:
+**You'll see:** "Delivery & Klarna", "The basket amounts for free delivery and for Klarna. Amounts include VAT.", an **Edit** button, and two rows:
 - **Free Standard delivery from** £20.00
 - **Klarna from** £30.00
 

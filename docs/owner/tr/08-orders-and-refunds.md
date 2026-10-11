@@ -2,8 +2,8 @@
 
 - **Süre:** yaklaşık 4 dakika
 - **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefon veya bilgisayar; kayıttan önce test kartıyla verilmiş bir **deneme** kargolu sipariş.
-- **Nerede:** menü → **"Orders"** (Siparişler) → bir sipariş (Medusa'nın kendi sipariş sayfası).
-- **Durum:** ⚠ bu senaryo bizim değil, Medusa'nın kendi sipariş sayfasını kullanır. Kurallar (karttan paranın ne zaman çekildiği, iadenin nereden yapıldığı) 2026-09-30'da kodla karşılaştırıldı; düğme adlarına canlı panelde bir kez bakılmalı.
+- **Nerede:** menü → **"Orders"** (Siparişler) → **"Delivery"** sekmesi → karttaki **"open the order"** (siparişi aç); herhangi bir sipariş için sağ üstteki **"All orders"** (tüm siparişler). Sipariş sayfasının kendisi Medusa'nındır.
+- **Durum:** gezinme 2026-10-11'de panel koduyla karşılaştırıldı. ⚠ 3. sahneden itibaren bizim değil, Medusa'nın kendi sipariş sayfası kullanılır: kurallar (karttan paranın ne zaman çekildiği, iadenin nereden yapıldığı) kodla karşılaştırıldı; oradaki düğme adları Medusa'nındır, biraz farklı olabilir.
 
 ---
 
@@ -11,13 +11,13 @@
 
 **Göreceğiniz:** hello@technest.co.uk'a "New order #1043 · Delivery · £24.98" konulu bir e-posta. (Click & Collect siparişlerinin konusunda "CLICK & COLLECT" yazar; onlar panoya düşer, senaryo 3.)
 
-**Dokunun:** menü → **"Orders"** → #1043'ü açın.
+**Dokunun:** menü → **"Orders"** → **"Delivery"**. Sipariş bir kartta; **"open the order"**a dokunun (ya da sağ üstte **"All orders"**, sonra #1043).
 
 **Söyleyin:** "Kargolu siparişlerde para, sipariş verilir verilmez kendiliğinden karttan çekilir. Ödeme için hiçbir şeye basmıyorum."
 
-### Sahne 2 (0:40-1:45) Paketleyin ve kargoya verin ⚠
+### Sahne 2 (0:40-1:45) Paketleyin ve kargoya verin
 
-**Dokunun:** ürünler bölümünde **"Fulfill items"** (ürünleri hazırla) → konum "Tech Nest – Southwark Park Rd" → oluşturun. Paketi hazırlayın. Sonra oluşan gönderide **"Mark as shipped"** (kargoya verildi işaretle), varsa takip numarasını ekleyip kaydedin. ⚠
+**Dokunun:** **"Orders"** → **"Delivery"**e dönün: paketi hazırlayın, kargocuya verin, karttaki **"Packed & shipped"**e basın ve varsa takip numarasını yazın (senaryo 9). Sipariş sayfasındaki Medusa düğmeleri (**"Fulfill items"**, **"Mark as shipped"**) hâlâ çalışır ama kısa yol karttır; kart, parası alınmamış siparişi göndermeyi reddeder.
 
 **Söyleyin:** "Kargoya verildi olarak işaretleyince müşteriye 'siparişiniz yolda' e-postası gider."
 

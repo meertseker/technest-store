@@ -2,8 +2,8 @@
 
 - **Süre:** yaklaşık 5 dakika
 - **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefonunuz; iki **deneme** trade başvurusu (sitedeki trade formundan iki deneme müşteri hesabıyla gönderin) ve bir **deneme** tamir randevusu (sitedeki tamir formundan kendi telefon numaranızla gönderin).
-- **Nerede:** menü → **"Trade applications"** (`/app/trade-applications`) ve **"Repair bookings"** (`/app/repair-bookings`).
-- **Durum:** 2026-09-30'da bitmiş panel koduyla karşılaştırıldı. ⚠ işaretli adımlar Medusa'nın kendi ekranlarıdır.
+- **Nerede:** menü → **"Orders"** (Siparişler) → **"Trade"** sekmesi (`/app/shop-orders?tab=trade`) ve **"Repairs"** (Tamirler) sekmesi (`/app/shop-orders?tab=repairs`); eski adresler de buraya açılır.
+- **Durum:** 2026-10-11'de panel koduyla karşılaştırıldı (menü: Today, Orders, Products, Shop settings; her birinde sekmeler). ⚠ işaretli adımlar Medusa'nın kendi ekranlarıdır.
 
 ---
 
@@ -11,9 +11,9 @@
 
 ### Sahne 1 (0:00-0:30) Liste
 
-**Dokunun:** menü → **"Trade applications"**.
+**Dokunun:** menü → **"Orders"** → **"Trade"**.
 
-**Göreceğiniz:** "Businesses asking for trade prices…" (toptan fiyat isteyen işletmeler) açıklaması ve **"Waiting"** (bekleyen), **"Approved"** (onaylanan), **"Rejected"** (reddedilen), **"All"** (hepsi) düğmeleri. **"Waiting"** açık, en eskisi üstte.
+**Göreceğiniz:** "Businesses asking for trade prices…" (toptan fiyat isteyen işletmeler) açıklaması ve **"Waiting"** (bekleyen), **"Approved"** (onaylanan), **"Rejected"** (reddedilen), **"Closed"** (kapatılan), **"All"** (hepsi) düğmeleri. **"Waiting"** açık, en eskisi üstte.
 
 **Söyleyin:** "Başka tamirciler gibi işletmeler sitede trade hesabı için başvuruyor. Her biri için bana e-posta da geliyor. Onayladığımda, giriş yaptıklarında KDV hariç toptan fiyatları görüyorlar."
 
@@ -47,7 +47,7 @@
 
 ### Sahne 5 (2:30-3:00) Liste
 
-**Dokunun:** menü → **"Repair bookings"**.
+**Dokunun:** menü → **"Orders"** → **"Repairs"**.
 
 **Göreceğiniz:** "Repair requests from the website. Call the customer back, then mark it booked in." (siteden gelen tamir talepleri; müşteriyi geri arayın, sonra randevu verildi işaretleyin) ve **"To call back"** (geri aranacak), **"Booked in"** (randevu verildi), **"Done"** (bitti), **"All"** düğmeleri. **"To call back"** açık, en uzun bekleyen üstte. Liste her dakika yenilenir.
 
@@ -77,8 +77,8 @@
 |---|---|
 | Reddetme gitmiyor | Gerekçe boş. Bir gerekçe yazın. |
 | Onay ya da ret reddedildi | Başka biri zaten onayladı ya da reddetti. Sayfayı yenileyin. |
-| Yanlış işletmeyi onayladınız | Geri alma düğmesi yok. Müşteriyi **"Trade"** müşteri grubundan çıkarın (menü → **"Customers"** → müşteri → gruplar) ⚠, sonra lead'e haber verin. |
-| Onaylı trade müşterisi toptan fiyat görmüyor | Toptan fiyat sadece **"Trade"** fiyat listesinde fiyatı olan ürünlerde var (menü → **"Pricing"**) ⚠. Oraya fiyatlar **sterlin ve KDV dahil** girilir; site KDV hariç gösterir. [LEAD?] bu fiyatları kim girecek |
+| Yanlış işletmeyi onayladınız | Başvuruyu açın → **"Close trade account"** (senaryo 11). Müşteri perakende fiyata döner ve e-posta alır. |
+| Onaylı trade müşterisi toptan fiyat görmüyor | Toptan fiyat sadece **"Trade"** fiyat listesinde fiyatı olan ürünlerde var (Medusa'nın **"Price lists"** sayfası: adres çubuğuna `/app/price-lists` yazın) ⚠. Oraya fiyatlar **sterlin ve KDV dahil** girilir; site KDV hariç gösterir. [LEAD?] bu fiyatları kim girecek |
 | Bilgisayarda numaraya dokununca arama başlamıyor | Telefonunuzu kullanın ya da numarayı elle çevirin. |
 | Müşteri "kimse aramadı" diyor | **"To call back"**e bakın. Aradığınız herkesi **"Booked in"**e taşıyın. |
 | Hiç tamir randevusu gelmiyor | Sitedeki form robot kontrolü (Cloudflare Turnstile) yapar. Sunucuda kurulu değilse her randevu reddedilir. Lead'e haber verin. |

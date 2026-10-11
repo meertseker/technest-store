@@ -2,14 +2,14 @@
 
 - **Length:** about 4 minutes
 - **You need:** your phone or laptop, logged in to admin.technest.co.uk; a test product; the product in front of you so you can photograph it.
-- **Where:** menu → **Products** → open a product → the **Product photo** box. (Its place on the page can be moved in the admin's layout editor, so it may be lower or higher.)
-- **Status:** checked against the finished admin code on 2026-09-30. Steps marked ⚠ use Medusa's own screens.
+- **Where:** menu → **Products** → **All products** (top right: Medusa's product list) → open a product → the **Product photo** box. (Its place on the page can be moved in the admin's layout editor, so it may be lower or higher.)
+- **Status:** checked against the admin code on 2026-10-11 (menu: Today, Orders, Products, Shop settings, each with tabs). Steps marked ⚠ use Medusa's own screens.
 
 ---
 
 ### Scene 1 (0:00-0:30) What the box is for
 
-**Tap:** **Products**, open the test product, scroll to **Product photo**.
+**Tap:** **Products** → **All products**, open the test product, scroll to **Product photo**.
 
 **You'll see:** two squares: **Original (always kept)** and **White background (only the background changes)**, and a badge top right: **No photo**, **Not processed**, **Waiting for approval** or **Approved**.
 

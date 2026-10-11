@@ -2,8 +2,8 @@
 
 - **Length:** about 5 minutes
 - **You need:** a laptop (a spreadsheet is easier on a big screen), logged in to admin.technest.co.uk; Excel, Numbers or Google Sheets.
-- **Where:** menu → **Import products** (address `/app/import`).
-- **Status:** checked against the finished admin code on 2026-09-30. Steps marked ⚠ use Medusa's own screens.
+- **Where:** menu → **Products** → **Import** tab (address `/app/shop-products?tab=import`; the old `/app/import` address still lands there).
+- **Status:** checked against the admin code on 2026-10-11 (menu: Today, Orders, Products, Shop settings, each with tabs). Steps marked ⚠ use Medusa's own screens.
 
 This script also covers the rules every product follows: chargers need a safety mark, vapes are never
 sold, £1 add-on items, the "3 for £2" offer and reorder levels.
@@ -12,7 +12,7 @@ sold, £1 add-on items, the "3 for £2" offer and reorder levels.
 
 ### Scene 1 (0:00-0:40) Download the template
 
-**Tap:** menu → **Import products** → **Download template**.
+**Tap:** menu → **Products** → **Import** → **Download template**.
 
 **You'll see:** a file `tech-nest-import-template.csv` with a header row and three examples: a case, a USB-C cable and a £1 phone grip.
 

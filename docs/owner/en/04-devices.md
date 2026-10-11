@@ -2,8 +2,8 @@
 
 - **Length:** about 5 minutes
 - **You need:** your phone or laptop, logged in to admin.technest.co.uk; a test product (for example a phone case); a made-up test device to add and delete afterwards.
-- **Where:** menu → **Devices** (address `/app/devices`), and the **Fits these devices** box on each product page.
-- **Status:** checked against the finished admin code on 2026-09-30.
+- **Where:** menu → **Shop settings** → **Devices** tab (address `/app/shop-settings?tab=devices`; the old `/app/devices` address still lands there), and the **Fits these devices** box on each product page.
+- **Status:** checked against the admin code on 2026-10-11 (menu: Today, Orders, Products, Shop settings, each with tabs).
 
 ---
 
@@ -15,7 +15,7 @@
 
 ### Scene 2 (0:30-1:15) The Devices page
 
-**Tap:** menu → **Devices**.
+**Tap:** menu → **Shop settings** → **Devices**.
 
 **You'll see:** "Devices" with an **Add device** button, a **Search** box ("Model, web address name or model number"), and buttons **All**, **Phone**, **Tablet**, **Games console**, **Laptop**. Each row shows the model (for example "iPhone 16 Pro"), then "Apple · iPhone 16 · 2024", and "Also: 16 pro, A3102" for the other names.
 
@@ -69,7 +69,7 @@
 |---|---|
 | "A device with slug iphone-16-pro already exists" | That device is already there. Search for it first. |
 | "Use lowercase letters, numbers and dashes only…" | Leave **Web address name** empty; it's made for you. |
-| "No devices match. Add new ones under Devices." (in the product box) | The device isn't in the list yet. Add it on the Devices page first. |
+| "No devices match. Add new ones under Devices." (in the product box) | The device isn't in the list yet. Add it under **Shop settings** → **Devices** first. |
 | A customer can't find their phone | Add the words they typed (often a model number) to **Other names**. |
 | A product doesn't show for a phone | Check **Fits these devices** on the product, and that the product is published. |
 | Deleted a device by mistake | Add it again, then link it again on each product. Links don't come back by themselves. |

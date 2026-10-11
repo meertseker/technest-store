@@ -2,8 +2,8 @@
 
 - **Length:** about 4 minutes
 - **You need:** your phone or laptop, logged in to admin.technest.co.uk; a **test** delivery order placed with a test card before recording.
-- **Where:** menu → **Orders** → open an order (Medusa's own order page).
-- **Status:** ⚠ this script uses Medusa's own order page, which is not ours. The rules (who charges the card, where refunds are made) are checked against the code on 2026-09-30; the button names must be checked once on the live admin.
+- **Where:** menu → **Orders** → **Delivery** tab → **open the order** on a card; or **All orders** (top right) for any order. The order page itself is Medusa's own.
+- **Status:** navigation checked against the admin code on 2026-10-11. ⚠ Scenes 3 onwards use Medusa's own order page, which is not ours: the rules (who charges the card, where refunds are made) are checked against the code; the button names there are Medusa's and may differ slightly.
 
 ---
 
@@ -11,13 +11,13 @@
 
 **You'll see:** an email "New order #1043 · Delivery · £24.98" at hello@technest.co.uk. (Click & Collect orders say "CLICK & COLLECT" in the subject: those go on the board, script 3.)
 
-**Tap:** menu → **Orders** → open #1043.
+**Tap:** menu → **Orders** → **Delivery**. The order is on a card; tap **open the order** (or **All orders** at the top right, then #1043).
 
 **Say:** "For delivery orders the card is charged by itself, right after the order is placed. I don't press anything for the payment."
 
-### Scene 2 (0:40-1:45) Pack and ship ⚠
+### Scene 2 (0:40-1:45) Pack and ship
 
-**Tap:** in the items section, **Fulfill items** → location "Tech Nest – Southwark Park Rd" → create. Pack the parcel. Then on the new fulfilment, **Mark as shipped**, add the tracking number if you have one, and save. ⚠
+**Tap:** back on **Orders** → **Delivery**: pack the parcel, hand it to the carrier, press **Packed & shipped** on the card and type the tracking number if you have one (script 9). Medusa's **Fulfill items** and **Mark as shipped** on the order page still work, but the card is the quick way and refuses an order whose payment was not taken.
 
 **Say:** "When I mark it as shipped, the customer gets the 'your order is on its way' email."
 

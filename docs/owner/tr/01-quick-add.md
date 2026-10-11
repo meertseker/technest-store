@@ -2,23 +2,23 @@
 
 - **Süre:** yaklaşık 5 dakika
 - **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefonunuz; paketinde gerçek bir aksesuar (üzerindeki güvenlik işaretini gösterebilmek için en iyisi bir şarj aleti); düz, açık renkli bir zemin; iyi ışık. Deneme ürününü sonra silebilirsiniz.
-- **Nerede:** menü → **"Quick add"** (adres `/app/quick-add`).
-- **Durum:** 2026-09-30'da bitmiş panel koduyla karşılaştırıldı. ⚠ işaretli adımlar Medusa'nın kendi ürün sayfasını kullanır: kayıttan önce canlı panelde bir kez bakın.
+- **Nerede:** menü → **"Products"** (Ürünler) → **"Add"** (Ekle) sekmesi (adres `/app/shop-products?tab=add`; eski `/app/quick-add` adresi de buraya açılır).
+- **Durum:** 2026-10-11'de panel koduyla karşılaştırıldı (menü: Today, Orders, Products, Shop settings; her birinde sekmeler). ⚠ işaretli adımlar Medusa'nın kendi ürün sayfasını kullanır: kayıttan önce canlı panelde bir kez bakın.
 - **Hedef:** fotoğraftan taslak ürüne yaklaşık bir dakika, sonra ürün sayfasından yayınlamak.
 
 ---
 
 ### Sahne 1 (0:00-0:30) Quick add ne yapar
 
-**Dokunun:** sol üstteki menü düğmesi, sonra **"Quick add"**.
+**Dokunun:** sol üstteki menü düğmesi, sonra **"Products"**. **"Add"** sekmesi açık gelir.
 
-**Göreceğiniz:** "Quick add" başlığı, büyük bir **"Take photo"** ("Fotoğraf çek") düğmesi, **"Choose a photo"** ("Fotoğraf seç") ve **"Add without a photo"** ("Fotoğrafsız ekle").
+**Göreceğiniz:** "Add a product" (ürün ekle) başlığı, iki büyük kart: **"Take a photo"** ("Fotoğraf çek") ve **"Type it in"** ("Elle yaz"), altında **"Choose a photo from the phone instead"** ("Telefondan fotoğraf seç") düğmesi.
 
 **Söyleyin:** "Burası Quick add. Ürünün tek bir fotoğrafını çekiyorum. Sistem fotoğrafı okuyup başlığı, kategoriyi, uyduğu telefonları ve güvenlik işaretini öneriyor. Ben hepsini kontrol ediyorum, fiyatı yazıyorum ve taslak olarak kaydediyorum. Ben yayınlamadıkça sitede hiçbir şey görünmez."
 
 ### Sahne 2 (0:30-1:00) Fotoğrafı çekin
 
-**Dokunun:** **"Take photo"**. Kamera açılır. Ürünü düz zemine, etiketi size bakacak şekilde koyun ve çekin.
+**Dokunun:** **"Take a photo"**. Kamera açılır. Ürünü düz zemine, etiketi size bakacak şekilde koyun ve çekin.
 
 **Göreceğiniz:** üstte fotoğrafınız ve mavi bir kutu: "Reading the photo… this takes up to half a minute. You can start typing meanwhile." (Fotoğraf okunuyor, yarım dakika kadar sürer; bu arada yazmaya başlayabilirsiniz.)
 

@@ -13,19 +13,22 @@ A Turkish copy of every file is in [`tr/`](./tr/README.md).
 | File | What it is | Menu |
 |---|---|---|
 | (no script) | **Today**, the page the admin opens on: what needs doing now (orders to pick, repairs to call back, trade applications, draft products) and shortcuts to the pages below | Today |
-| [en/01-quick-add.md](./en/01-quick-add.md) | A product from a phone photo, with AI suggestions, saved as a draft | Quick add |
-| [en/02-photo-widget.md](./en/02-photo-widget.md) | The "Product photo" box: Process, Approve, Discard | Products → a product |
-| [en/03-click-and-collect.md](./en/03-click-and-collect.md) | The board: To pick, Mark ready, Collected (takes payment); day-3 reminder, day-7 cancel | Click & Collect |
-| [en/04-devices.md](./en/04-devices.md) | The Devices page, and "Fits these devices" on a product | Devices |
-| [en/05-settings.md](./en/05-settings.md) | Free Standard delivery and Klarna amounts | Settings → Shop settings |
-| [en/06-trade-and-repairs.md](./en/06-trade-and-repairs.md) | Trade applications and repair bookings | Trade applications, Repair bookings |
-| [en/07-import-and-product-rules.md](./en/07-import-and-product-rules.md) | CSV import; safety marks, vapes, £1 add-ons, 3 for £2, reorder levels | Import products |
-| [en/08-orders-and-refunds.md](./en/08-orders-and-refunds.md) | Delivery orders, cancelling, refunds (admin only, never Stripe) | Orders |
+| [en/01-quick-add.md](./en/01-quick-add.md) | A product from a phone photo, with AI suggestions, saved as a draft | Products → Add |
+| [en/02-photo-widget.md](./en/02-photo-widget.md) | The "Product photo" box: Process, Approve, Discard | Products → All products → a product |
+| [en/03-click-and-collect.md](./en/03-click-and-collect.md) | The board: To pick, Mark ready, Collected (takes payment); day-3 reminder, day-7 cancel | Orders → Collect |
+| [en/04-devices.md](./en/04-devices.md) | The Devices page, and "Fits these devices" on a product | Shop settings → Devices |
+| [en/05-settings.md](./en/05-settings.md) | Free Standard delivery and Klarna amounts | Shop settings → Delivery & Klarna |
+| [en/06-trade-and-repairs.md](./en/06-trade-and-repairs.md) | Trade applications and repair bookings | Orders → Trade, Orders → Repairs |
+| [en/07-import-and-product-rules.md](./en/07-import-and-product-rules.md) | CSV import; safety marks, vapes, £1 add-ons, 3 for £2, reorder levels | Products → Import |
+| [en/08-orders-and-refunds.md](./en/08-orders-and-refunds.md) | Cancelling and refunds on the order page (admin only, never Stripe) | Orders → All orders |
+| [en/09-packed-and-shipped.md](./en/09-packed-and-shipped.md) | Delivery orders: the payment badge, Packed & shipped, tracking number | Orders → Delivery |
+| [en/10-price-and-stock.md](./en/10-price-and-stock.md) | Change a price or a stock count; the "stock is now …" message | Products → Price & stock |
+| [en/11-closing-a-trade-account.md](./en/11-closing-a-trade-account.md) | Close an approved trade account, with an optional reason | Orders → Trade → Approved |
 | [en/first-week-routine.md](./en/first-week-routine.md) | One page: your daily routine, and a checklist for the first week | |
 
 ## How to use the scripts
 
-Files 01 to 08 are **screen-recording scripts**. Each one makes a video of 3 to 5 minutes.
+Files 01 to 11 are **screen-recording scripts**. Each one makes a video of 3 to 5 minutes.
 
 1. Open the admin on the device you will use every day (usually your phone).
 2. Start a screen recording.
@@ -39,7 +42,7 @@ You can also just read a script as a how-to guide.
 ## Checked against the code, and what is still open
 
 All scripts were checked against the finished admin pages on 2026-09-30 (button names, messages, order
-of steps). Two kinds of marks are left:
+of steps), and their navigation again on 2026-10-11, when the menu became four pages with tabs. Two kinds of marks are left:
 
 - **⚠** : the step uses one of Medusa's own screens (Orders, Products edit, Promotions, Customers, Pricing,
   the Settings menu). Before recording, the lead opens that screen once and checks the button name.
