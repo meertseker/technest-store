@@ -740,8 +740,10 @@ aynı SMTP sağlayıcısı (`smtp`), yalnızca adres Resend'e bakıyor (`docker-
    adında ve `resend._domainkey` adında). Hepsini Cloudflare → **DNS → Records**'a **aynen** girin
    (TXT/MX kayıtları proxy'lenmez). Kök alan adındaki (`@`) MX kayıtları Email Routing'e aittir (11.4);
    Resend'inkiler alt alan adında olduğu için çakışmaz.
-3. Ayrıca bir DMARC kaydı ekleyin: TXT, ad `_dmarc`, değer `v=DMARC1; p=none;`
-   (2-4 hafta sorunsuz gönderimden sonra `p=quarantine` yapılabilir).
+3. Ayrıca bir DMARC kaydı ekleyin: TXT, ad `_dmarc`, değer `v=DMARC1; p=none; rua=mailto:dmarc@technest.co.uk;`
+   (`dmarc@` adresini 11.4'teki Email Routing ile sahibin kutusuna yönlendirin: alıcı sunucular SPF/DKIM
+   hizalama raporlarını buraya gönderir, sahte gönderimler böyle fark edilir. 2-4 hafta sorunsuz gönderimden
+   sonra `p=quarantine` yapılabilir).
 4. Resend'de **Verify** → durum "Verified" olmalı (birkaç dakika sürebilir).
 5. **API Keys → Create API Key**: ad `technest-production`, izin **Sending access**, alan adı
    `technest.co.uk`. Anahtar (`re_…`) yalnızca bir kez gösterilir. Staging için ayrı bir anahtar açın.
@@ -789,6 +791,10 @@ gönderen olarak `hello@technest.co.uk` seçilebilir. Bunu yapmazsanız sahibi k
 2. https://www.mail-tester.com → verdiği adrese mağazadan bir e-posta gönderin (ör. o adresle bir
    müşteri hesabı açıp parola sıfırlama isteyin) → puan **9/10 veya üzeri** olmalı.
 3. Gelen posta: kendi adresinizden `hello@technest.co.uk`'ya yazın → sahibin kutusuna düşmeli.
+4. Dükkan uyarıları: staging'de bir tamir talebi ya da trade başvurusu gönderin → `SHOP_NOTIFY_EMAIL`
+   adresine giden uyarı (Cloudflare Email Routing üzerinden) sahibin kutusuna **gelen kutusunda** düşmeli,
+   spam'de değil; "Show original"da SPF/DKIM/DMARC PASS olmalı. Spam'e düşerse Gmail'de "Not spam" + filtre
+   (gönderen `orders@technest.co.uk` → asla spam'e gitmesin) ekleyin.
 4. Resend → **Emails**: gönderilen her e-posta ve durumu (delivered / bounced) burada görünür.
 
 Sorun giderme:
