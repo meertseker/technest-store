@@ -42,7 +42,7 @@ export const fixtures: Record<TemplateId, Record<string, unknown>> = {
   "order-confirmation": order,
   "shop-new-order": collectionOrder,
   "password-reset": {
-    reset_url: "https://technest.co.uk/account/reset-password?token=example&email=sam%40example.com",
+    reset_url: "https://technest.co.uk/account/reset-password?token=example",
     actor: "customer",
   },
   "order-dispatched": {

@@ -42,6 +42,16 @@ export function adminUrl(env: NodeJS.ProcessEnv = process.env): string {
 }
 
 /**
+ * The storefront reset page works from the token alone (it posts the new
+ * password with the token; the address is inside the token). So the link
+ * carries only the token: the address would otherwise sit in the proxy's
+ * access log next to it.
+ */
+export function customerResetUrl(token: string): string {
+  return `${storefrontUrl()}/account/reset-password?token=${encodeURIComponent(token)}`
+}
+
+/**
  * Medusa accepts any actor_type in /auth/{actor}/emailpass/reset-password, so
  * only send when the login really belongs to a customer or staff account.
  */
@@ -79,11 +89,10 @@ async function passwordResetEmail({
       return
     }
 
-    const token = encodeURIComponent(data.token)
     const resetUrl =
       actor.audience === "customer"
-        ? `${storefrontUrl()}/account/reset-password?token=${token}&email=${encodeURIComponent(data.entity_id)}`
-        : `${adminUrl()}/reset-password?token=${token}`
+        ? customerResetUrl(data.token)
+        : `${adminUrl()}/reset-password?token=${encodeURIComponent(data.token)}`
     const content = await renderEmail("password-reset", { reset_url: resetUrl, actor: actor.audience })
 
     const deps = {

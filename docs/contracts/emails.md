@@ -67,7 +67,7 @@ The email uses only `variant_id` (workflow inputs are IDs only) and reloads the 
 
 ## Storefront links (agreed with E3, 2026-09-29)
 - Order: `/order/{id}/confirmed`; account order: `/account/orders/{id}`
-- Customer password reset: `/account/reset-password?token=…&email=…`; staff reset uses Medusa admin's own page
+- Customer password reset: `/account/reset-password?token=…` (token only; the page works without the address, which stays out of proxy logs); staff reset uses Medusa admin's own page
 - Trade status: `/account/trade`; trade application form: `/trade/apply`
 - The checkout CSP lives in `apps/storefront/checkout-csp.js` (E2), exporting `{ checkoutCsp: string }`
 
