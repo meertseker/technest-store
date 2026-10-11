@@ -131,8 +131,7 @@ export async function updateCart(data: HttpTypes.StoreUpdateCart) {
   return sdk.store.cart
     .update(cartId, data, {}, headers)
     .then(async ({ cart }: { cart: HttpTypes.StoreCart }) => {
-      const cartCacheTag = await getCacheTag("carts")
-      revalidateTag(cartCacheTag)
+      await basketChanged(cartId)
 
       const fulfillmentCacheTag = await getCacheTag("fulfillment")
       revalidateTag(fulfillmentCacheTag)
@@ -140,6 +139,17 @@ export async function updateCart(data: HttpTypes.StoreUpdateCart) {
       return cart
     })
     .catch(medusaError)
+}
+
+/**
+ * After every change to the basket: the page re-renders with the new basket,
+ * and the cookie is renewed so an active basket does not vanish seven days
+ * after it was first created.
+ */
+async function basketChanged(cartId: string) {
+  await setCartId(cartId)
+  const cartCacheTag = await getCacheTag("carts")
+  revalidateTag(cartCacheTag)
 }
 
 export async function addToCart({
@@ -176,8 +186,7 @@ export async function addToCart({
       headers
     )
     .then(async () => {
-      const cartCacheTag = await getCacheTag("carts")
-      revalidateTag(cartCacheTag)
+      await basketChanged(cart.id)
 
       const fulfillmentCacheTag = await getCacheTag("fulfillment")
       revalidateTag(fulfillmentCacheTag)
@@ -209,8 +218,7 @@ export async function updateLineItem({
   await sdk.store.cart
     .updateLineItem(cartId, lineId, { quantity }, {}, headers)
     .then(async () => {
-      const cartCacheTag = await getCacheTag("carts")
-      revalidateTag(cartCacheTag)
+      await basketChanged(cartId)
 
       const fulfillmentCacheTag = await getCacheTag("fulfillment")
       revalidateTag(fulfillmentCacheTag)
@@ -236,8 +244,7 @@ export async function deleteLineItem(lineId: string) {
   await sdk.store.cart
     .deleteLineItem(cartId, lineId, {}, headers)
     .then(async () => {
-      const cartCacheTag = await getCacheTag("carts")
-      revalidateTag(cartCacheTag)
+      await basketChanged(cartId)
 
       const fulfillmentCacheTag = await getCacheTag("fulfillment")
       revalidateTag(fulfillmentCacheTag)
@@ -259,8 +266,7 @@ export async function setShippingMethod({
   return sdk.store.cart
     .addShippingMethod(cartId, { option_id: shippingMethodId }, {}, headers)
     .then(async () => {
-      const cartCacheTag = await getCacheTag("carts")
-      revalidateTag(cartCacheTag)
+      await basketChanged(cartId)
     })
     .catch(medusaError)
 }

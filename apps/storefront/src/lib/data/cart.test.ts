@@ -4,6 +4,8 @@ const fetchMock = vi.fn()
 const createCart = vi.fn()
 const createLineItem = vi.fn()
 const completeCart = vi.fn()
+const updateCartSdk = vi.fn()
+const updateLineItemSdk = vi.fn()
 const setCookie = vi.fn()
 const jar: Record<string, string> = {}
 
@@ -16,7 +18,8 @@ vi.mock("@lib/config", () => ({
         create: (...a: unknown[]) => createCart(...a),
         createLineItem: (...a: unknown[]) => createLineItem(...a),
         complete: (...a: unknown[]) => completeCart(...a),
-        update: vi.fn(),
+        update: (...a: unknown[]) => updateCartSdk(...a),
+        updateLineItem: (...a: unknown[]) => updateLineItemSdk(...a),
       },
     },
   },
@@ -37,7 +40,7 @@ vi.mock("@sentry/nextjs", () => ({ captureException: (...a: unknown[]) => captur
 /** What reaches monitoring: [error, where it was handled] */
 const reported = () => captureException.mock.calls.map(([error, hint]) => [error, hint?.tags?.handled_in])
 
-import { getOrSetCart, placeOrder, retrieveCart } from "./cart"
+import { getOrSetCart, placeOrder, retrieveCart, updateCart, updateLineItem } from "./cart"
 
 const httpError = (status: number) => Object.assign(new Error(`HTTP ${status}`), { status })
 const region = { regions: [{ id: "reg_1", countries: [{ iso_2: "gb" }] }] }
@@ -55,6 +58,8 @@ beforeEach(() => {
   fetchMock.mockReset()
   createCart.mockReset()
   createLineItem.mockReset()
+  updateCartSdk.mockReset()
+  updateLineItemSdk.mockReset()
   setCookie.mockReset()
   captureException.mockReset()
   vi.stubEnv("SENTRY_DSN", "https://key@example.invalid/1")
@@ -141,6 +146,31 @@ describe("getOrSetCart", () => {
     expect(createCart).not.toHaveBeenCalled()
     expect(setCookie).not.toHaveBeenCalled()
     expect(jar._medusa_cart_id).toBe("cart_old")
+  })
+})
+
+describe("a basket that is being used keeps its cookie alive", () => {
+  // The cookie used to run out seven days after the basket was created, however
+  // active it was; every change now renews it for another seven days.
+  const renewed = () =>
+    setCookie.mock.calls.filter(([name]) => name === "_medusa_cart_id").map(([, value, options]) => ({ value, options }))
+
+  it("changing a quantity", async () => {
+    updateLineItemSdk.mockResolvedValue({ cart: { id: "cart_old" } })
+    await updateLineItem({ lineId: "li_1", quantity: 2 })
+    expect(renewed()).toEqual([{ value: "cart_old", options: expect.objectContaining({ maxAge: 60 * 60 * 24 * 7, httpOnly: true }) }])
+  })
+
+  it("saving an address or email", async () => {
+    updateCartSdk.mockResolvedValue({ cart: { id: "cart_old" } })
+    await updateCart({ email: "sam@example.com" })
+    expect(renewed()).toHaveLength(1)
+  })
+
+  it("not when the backend refused the change", async () => {
+    updateLineItemSdk.mockRejectedValue(httpError(400))
+    await expect(updateLineItem({ lineId: "li_1", quantity: 99 })).rejects.toMatchObject({ status: 400 })
+    expect(renewed()).toEqual([])
   })
 })
 
