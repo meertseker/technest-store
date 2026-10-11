@@ -7,7 +7,9 @@ import {
   PHOTO_TOO_SMALL_MESSAGE,
   PRODUCT_TOO_SMALL_MESSAGE,
   prepareOriginal,
+  RENDER_MAX_SIDE,
   renderProductPhoto,
+  withPhotoLock,
 } from "../render"
 
 jest.setTimeout(60_000)
@@ -259,6 +261,82 @@ describe("photo render pipeline", () => {
     it("rejects a cut-out with no product in it", async () => {
       const empty = await sharp(photo).ensureAlpha(0).png().toBuffer()
       await expect(renderProductPhoto(photo, empty)).rejects.toThrow(NO_PRODUCT_FOUND_MESSAGE)
+    })
+  })
+
+  describe("memory: the product pixels are read from a photo of at most 4000 px", () => {
+    // A 27 MP phone photo (6000 x 4500) with a product that fills the frame.
+    const big = { left: 1500, top: 1200, width: 3600, height: 2400, colour: [180, 30, 40] as Rgb }
+    let bigPhoto: Buffer
+    let bigCutout: Buffer
+
+    beforeAll(async () => {
+      bigPhoto = await makePhoto({ width: 6000, height: 4500, product: big })
+      bigCutout = await makeCutout(await sharp(bigPhoto).resize(2000, 1500).jpeg().toBuffer(), {
+        left: 500,
+        top: 400,
+        width: 1200,
+        height: 800,
+      })
+    })
+
+    it("downscales a 6000 px original to 4000 px before extracting raw pixels, and still renders 2000 px", async () => {
+      expect(RENDER_MAX_SIDE).toBe(4000)
+      const out = await renderProductPhoto(bigPhoto, bigCutout)
+      expect(out.source).toEqual({ width: 4000, height: 3000 })
+      expect(out).toMatchObject({ width: OUTPUT_SIZE, height: OUTPUT_SIZE })
+      const [r, g, b] = await pixel(out.webp, 1000, 1000)
+      expect(Math.abs(r - 180)).toBeLessThanOrEqual(4)
+      expect(Math.abs(g - 30)).toBeLessThanOrEqual(4)
+      expect(Math.abs(b - 40)).toBeLessThanOrEqual(4)
+    })
+
+    it("reads a photo under 4000 px at its own size (never upscaled)", async () => {
+      const out = await renderProductPhoto(photo, cutout)
+      expect(out.source).toEqual({ width: 4000, height: 3000 })
+      const small = { left: 500, top: 300, width: 840, height: 420, colour: [30, 60, 170] as Rgb }
+      const smallPhoto = await makePhoto({ width: 1600, height: 1200, product: small })
+      const smallOut = await renderProductPhoto(smallPhoto, await makeCutout(smallPhoto, small))
+      expect(smallOut.source).toEqual({ width: 1600, height: 1200 })
+    })
+
+    it("judges 'product too small' on the original's pixels, not the downscaled copy", async () => {
+      // 700 px in a 6000 px photo is 467 px after downscaling: still accepted, as before.
+      const ok = { left: 2600, top: 1900, width: 700, height: 700, colour: [20, 20, 20] as Rgb }
+      const okPhoto = await makePhoto({ width: 6000, height: 4500, product: ok })
+      await expect(renderProductPhoto(okPhoto, await makeCutout(okPhoto, ok))).resolves.toMatchObject({
+        source: { width: 4000, height: 3000 },
+      })
+      // 500 px in the original is too small, as before.
+      const tiny = { left: 2700, top: 2000, width: 500, height: 500, colour: [20, 20, 20] as Rgb }
+      const tinyPhoto = await makePhoto({ width: 6000, height: 4500, product: tiny })
+      await expect(renderProductPhoto(tinyPhoto, await makeCutout(tinyPhoto, tiny))).rejects.toThrow(
+        PRODUCT_TOO_SMALL_MESSAGE
+      )
+    })
+  })
+
+  describe("withPhotoLock", () => {
+    it("runs two concurrent renders one after the other", async () => {
+      const spans: { start: number; end: number }[] = []
+      const timed = async () => {
+        const start = Date.now()
+        await renderProductPhoto(photo, cutout)
+        spans.push({ start, end: Date.now() })
+      }
+      await Promise.all([withPhotoLock(timed), withPhotoLock(timed)])
+      expect(spans).toHaveLength(2)
+      const [first, second] = spans
+      expect(second.start).toBeGreaterThanOrEqual(first.end)
+    })
+
+    it("lets the next job run when the previous one failed", async () => {
+      await expect(
+        withPhotoLock(async () => {
+          throw new Error("boom")
+        })
+      ).rejects.toThrow("boom")
+      await expect(withPhotoLock(async () => 42)).resolves.toBe(42)
     })
   })
 })

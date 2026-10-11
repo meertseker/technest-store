@@ -1,6 +1,6 @@
 import { Modules } from "@medusajs/framework/utils"
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
-import { prepareOriginal, renderProductPhoto } from "../../lib/photo/render"
+import { prepareOriginal, renderProductPhoto, withPhotoLock } from "../../lib/photo/render"
 import { PHOTO_MODULE, PhotoModel } from "../../modules/photo"
 import PhotoModuleService from "../../modules/photo/service"
 import { StoredPhoto } from "./store-original-photo"
@@ -41,15 +41,20 @@ export const createProcessedPhotoStep = createStep(
     const photo = container.resolve<PhotoModuleService>(PHOTO_MODULE)
 
     const original = await fileModule.getAsBuffer(input.original.id)
-    const prepared = await prepareOriginal(original)
 
-    let started = Date.now()
-    const cutout = await photo.removeBackground(prepared.workerInput, { model: input.model })
-    const removeMs = Date.now() - started
+    // One photo at a time per process: decode, provider call and render hold a lot of memory.
+    const { cutout, rendered, removeMs, renderMs } = await withPhotoLock(async () => {
+      const prepared = await prepareOriginal(original)
 
-    started = Date.now()
-    const rendered = await renderProductPhoto(original, cutout.png)
-    const renderMs = Date.now() - started
+      let started = Date.now()
+      const cutout = await photo.removeBackground(prepared.workerInput, { model: input.model })
+      const removeMs = Date.now() - started
+
+      started = Date.now()
+      const rendered = await renderProductPhoto(original, cutout.png)
+      const renderMs = Date.now() - started
+      return { cutout, rendered, removeMs, renderMs }
+    })
 
     const name = `${baseName(input.original.id)}-processed`
     const [webp, avif] = await fileModule.createFiles([

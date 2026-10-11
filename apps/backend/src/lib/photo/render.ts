@@ -18,6 +18,12 @@ export const MIN_PRODUCT_SIDE = 600
 export const MAX_INPUT_PIXELS = 50_000_000
 /** Canvas size when the product is large enough; smaller products get a smaller canvas (never upscaled). */
 export const OUTPUT_SIZE = 2000
+/**
+ * The product's pixels are read from a copy of the original no larger than this
+ * on its longer side. The output is 2000 px, so nothing is lost for a product that
+ * fills the frame, and a 48 MP photo costs about 36 MB of raw RGB instead of 144 MB.
+ */
+export const RENDER_MAX_SIDE = 4000
 export const PADDING = 0.08
 export const WORKER_MAX_SIDE = 2048
 
@@ -27,6 +33,18 @@ export const NO_PRODUCT_FOUND_MESSAGE =
 export const UNSUPPORTED_IMAGE_MESSAGE = "The file is not a supported image (use JPEG, PNG or WebP)"
 export const PRODUCT_TOO_SMALL_MESSAGE = "The product is too small in the photo, please retake closer"
 export const PHOTO_TOO_LARGE_MESSAGE = "Photo has too many pixels (at most 50 megapixels)"
+
+/**
+ * One photo at a time per process: a render holds a few hundred MB of raw
+ * pixels and its JS loops block the event loop, so concurrent uploads queue
+ * here instead of competing for memory. Module-level on purpose.
+ */
+let photoQueue: Promise<unknown> = Promise.resolve()
+export function withPhotoLock<T>(job: () => Promise<T>): Promise<T> {
+  const run = photoQueue.then(job)
+  photoQueue = run.catch(() => undefined)
+  return run
+}
 
 /** Alpha at or above this counts as product when finding the crop box. */
 const ALPHA_BOX_THRESHOLD = 24
@@ -201,6 +219,8 @@ export type RenderedPhoto = {
   height: number
   /** The correction that was applied (all gains 1 when colourCorrection is off). */
   correction: Correction
+  /** Size of the (EXIF-rotated, at most RENDER_MAX_SIDE) copy the product pixels were read from. */
+  source: { width: number; height: number }
 }
 
 const NO_CORRECTION: Correction = { gains: [1, 1, 1], white_balance: [1, 1, 1], exposure: 1 }
@@ -214,13 +234,19 @@ export async function renderProductPhoto(
   cutout: Buffer,
   options: RenderOptions = {}
 ): Promise<RenderedPhoto> {
+  const full = await orientedSize(original)
+  // Downscale (never enlarge) before the raw extraction: libvips does this on
+  // the decode path, so the full-size RGB buffer is never allocated.
   const { data: rgb, info } = await sharp(original, { limitInputPixels: MAX_INPUT_PIXELS })
     .rotate()
+    .resize({ width: RENDER_MAX_SIDE, height: RENDER_MAX_SIDE, fit: "inside", withoutEnlargement: true })
     .toColourspace("srgb")
     .removeAlpha()
     .raw({ depth: "uchar" })
     .toBuffer({ resolveWithObject: true })
   const { width, height } = info
+  // Original pixels per buffer pixel (1 for photos up to RENDER_MAX_SIDE).
+  const downscale = Math.max(full.width, full.height) / Math.max(width, height)
 
   let alpha: Buffer
   try {
@@ -238,7 +264,8 @@ export async function renderProductPhoto(
   if (!box || box.width * box.height < width * height * 0.002) {
     throw invalid(NO_PRODUCT_FOUND_MESSAGE)
   }
-  if (Math.max(box.width, box.height) < MIN_PRODUCT_SIDE) {
+  // Judged on the original's pixels, so the rule does not change with the downscale.
+  if (Math.max(box.width, box.height) * downscale < MIN_PRODUCT_SIDE) {
     throw invalid(PRODUCT_TOO_SMALL_MESSAGE)
   }
 
@@ -311,5 +338,5 @@ export async function renderProductPhoto(
     canvas().avif({ quality: 60, effort: 2 }).toBuffer(),
   ])
 
-  return { webp, avif, width: size, height: size, correction }
+  return { webp, avif, width: size, height: size, correction, source: { width, height } }
 }
