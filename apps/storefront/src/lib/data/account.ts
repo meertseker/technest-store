@@ -51,8 +51,9 @@ export async function retrieveAccountOrder(id: string): Promise<HttpTypes.StoreO
       {
         method: "GET",
         query: {
+          // no payment rows: their `data` carries the payer's details and nothing here shows them
           fields:
-            "*items,*items.variant,*items.product,*shipping_address,*billing_address,*shipping_methods,*payment_collections.payments,+customer_id",
+            "*items,*items.variant,*items.product,*shipping_address,*billing_address,*shipping_methods,+customer_id",
         },
         headers,
         cache: "no-store",

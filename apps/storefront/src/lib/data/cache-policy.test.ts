@@ -126,6 +126,26 @@ describe("shop-wide data expires", () => {
   })
 })
 
+describe("payer details are never asked for", () => {
+  // Medusa keeps the payer's name, email, phone and card last4 in payment and
+  // payment-session `data`; no page shows them, so no order read selects them.
+  const fieldsFor = (path: string) => String((initFor(path) as { query?: { fields?: string } }).query?.fields ?? "")
+
+  it("the confirmation page's order read", async () => {
+    const { retrieveOrder } = await import("./orders")
+    fetchMock.mockResolvedValue({ order: { id: "order_1" } })
+    await retrieveOrder("order_1")
+    expect(fieldsFor("/store/orders/order_1")).not.toMatch(/payment_collections|payments/)
+  })
+
+  it("the account's order read", async () => {
+    const { retrieveAccountOrder } = await import("./account")
+    fetchMock.mockResolvedValue({ order: { id: "order_2" } })
+    await retrieveAccountOrder("order_2")
+    expect(fieldsFor("/store/orders/order_2")).not.toMatch(/payment_collections|payments/)
+  })
+})
+
 describe("no backend read is cached without an expiry", () => {
   const SRC = join(__dirname, "..", "..")
   const files = (dir: string): string[] =>

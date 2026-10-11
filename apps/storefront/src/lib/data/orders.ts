@@ -14,8 +14,8 @@ export const retrieveOrder = async (id: string) => {
     .fetch<HttpTypes.StoreOrderResponse>(`/store/orders/${id}`, {
       method: "GET",
       query: {
-        fields:
-          "*payment_collections.payments,*items,*items.metadata,*items.variant,*items.product,+customer_id",
+        // no payment rows: their `data` carries the payer's details and nothing here shows them
+        fields: "*items,*items.metadata,*items.variant,*items.product,+customer_id",
       },
       headers,
       // an order's status changes in the admin: read fresh, never stored
