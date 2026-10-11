@@ -53,6 +53,8 @@ x-backend-env: &backend-env
   # Payments and email (E2)
   STRIPE_API_KEY: ${STRIPE_API_KEY:-}
   STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+  # Resend signs bounce/complaint webhooks with this (DEPLOY.md 11.2). Empty = the hook answers 503.
+  RESEND_WEBHOOK_SECRET: ${RESEND_WEBHOOK_SECRET:-}
   # Email goes out through Resend over SMTP (587 + STARTTLS). SMTP_PASS is the Resend API key;
   # the user name is literally "resend". Any SMTP provider works: override the four values in .env.
   SMTP_HOST: ${SMTP_HOST:-smtp.resend.com}

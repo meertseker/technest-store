@@ -747,6 +747,11 @@ aynı SMTP sağlayıcısı (`smtp`), yalnızca adres Resend'e bakıyor (`docker-
 4. Resend'de **Verify** → durum "Verified" olmalı (birkaç dakika sürebilir).
 5. **API Keys → Create API Key**: ad `technest-production`, izin **Sending access**, alan adı
    `technest.co.uk`. Anahtar (`re_…`) yalnızca bir kez gösterilir. Staging için ayrı bir anahtar açın.
+6. **Webhooks → Add Webhook**: URL `https://api.technest.co.uk/hooks/email/resend`, olaylar yalnızca
+   **email.bounced** ve **email.complained**. Resend'in gösterdiği imza anahtarını (`whsec_…`) `.env`'e
+   `RESEND_WEBHOOK_SECRET=` olarak yazın (11.3). Bu anahtar yokken uç nokta 503 döner ve Resend'in webhook
+   günlüğünde "failed" görünür; anahtar yanlışsa 400. Geri dönen (bounce) ya da spam işaretlenen her e-posta
+   Sentry'de bir uyarı olur (hangi sipariş/başvurunun e-postası olduğu etiketlerde; adres yazılmaz).
 
 ### 11.3 Sunucu ayarı
 
@@ -755,6 +760,7 @@ aynı SMTP sağlayıcısı (`smtp`), yalnızca adres Resend'e bakıyor (`docker-
 ```bash
 SMTP_PASS=re_...                      # Resend API key
 MAIL_FROM=Tech Nest <orders@technest.co.uk>
+RESEND_WEBHOOK_SECRET=whsec_...       # Resend webhook imza anahtarı (11.2 adım 6)
 ```
 
 `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` yazmanıza gerek yok: varsayılanlar `smtp.resend.com`, `587`,
@@ -795,7 +801,9 @@ gönderen olarak `hello@technest.co.uk` seçilebilir. Bunu yapmazsanız sahibi k
    adresine giden uyarı (Cloudflare Email Routing üzerinden) sahibin kutusuna **gelen kutusunda** düşmeli,
    spam'de değil; "Show original"da SPF/DKIM/DMARC PASS olmalı. Spam'e düşerse Gmail'de "Not spam" + filtre
    (gönderen `orders@technest.co.uk` → asla spam'e gitmesin) ekleyin.
-4. Resend → **Emails**: gönderilen her e-posta ve durumu (delivered / bounced) burada görünür.
+5. Webhook: Resend → Webhooks → eklediğiniz webhook → **Send test event** (`email.bounced`) → Sentry'de
+   "Resend: an email bounced" uyarısı görünmeli; Resend tarafında yanıt 200 olmalı.
+6. Resend → **Emails**: gönderilen her e-posta ve durumu (delivered / bounced) burada görünür.
 
 Sorun giderme:
 

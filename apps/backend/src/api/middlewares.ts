@@ -9,6 +9,7 @@ import { adminUploadMiddlewares } from './admin/uploads/middlewares'
 import { adminProductImportMiddlewares } from './admin/product-import/middlewares'
 import { adminTechnestSettingsMiddlewares } from './admin/technest-settings/middlewares'
 import { verifyStripeWebhookSignature } from './hooks/payment/verify-stripe-signature'
+import { verifyResendWebhookSignature } from './hooks/email/verify-resend-signature'
 import { adminQuickAddMiddlewares } from './admin/quick-add/middlewares'
 import { rejectClientPaymentData } from './store/payment-collections/reject-client-payment-data'
 import { storeCartMiddlewares } from './store/carts/middlewares'
@@ -41,6 +42,14 @@ export default defineMiddlewares({
       matcher: '/hooks/payment/stripe_stripe',
       bodyParser: { preserveRawBody: true },
       middlewares: [verifyStripeWebhookSignature],
+    },
+    {
+      // E2: Resend tells us here when an email bounced or was marked as spam. The
+      // signature is over the raw body (same reason as the Stripe hook above).
+      method: ['POST'],
+      matcher: '/hooks/email/resend',
+      bodyParser: { preserveRawBody: true },
+      middlewares: [verifyResendWebhookSignature],
     },
     // The product index declares filterable `status` and `sales_channel_ids`, so
     // the route narrows it to published products in the key's sales channels.
