@@ -121,6 +121,78 @@ describe("publishBlocker", () => {
     ).toBeNull()
   })
 
+  it("knows vape brands, nicotine products and shisha pens by name", () => {
+    for (const title of [
+      "Elf Bar 600 Blue Razz",
+      "ELFBAR BC5000",
+      "Nic Salt 20mg Mango",
+      "Nicotine pouches mint",
+      "Shisha pen 500 puffs",
+      "Puff Bar Plus",
+      "Geek Bar Pulse",
+      "Lost Mary BM600",
+      "Vuse ePod 2",
+      "IQOS Iluma holder",
+      "Crystal Bar 4000",
+      "HEETS Amber",
+    ]) {
+      expect(publishBlocker({ id: "p", title, status: "published" })).toContain("vape")
+    }
+    for (const title of ["Chocolate bar holder", "Bluetooth speaker", "Mary's phone stand", "Puffer jacket hook"]) {
+      expect(publishBlocker({ id: "p", title, status: "published" })).toBeNull()
+    }
+  })
+
+  it("reads the description too", () => {
+    expect(
+      publishBlocker({
+        id: "p",
+        title: "Pocket device 600",
+        status: "published",
+        description: "Rechargeable disposable with 2% nic salt e-liquid, 600 puffs.",
+      })
+    ).toContain("vape")
+    expect(
+      publishBlocker({
+        id: "p",
+        title: "Phone case",
+        status: "published",
+        description: "Slim case with raised edges for the camera.",
+      })
+    ).toBeNull()
+  })
+
+  it("only publishes variants whose stock is tracked and cannot be backordered", () => {
+    const tracked = { id: "v1", title: "Black", sku: "CASE-BLK", manage_inventory: true, allow_backorder: false }
+    expect(
+      publishBlocker({ id: "p", title: "Case", status: "published", variants: [tracked] })
+    ).toBeNull()
+
+    const untracked = publishBlocker({
+      id: "p",
+      title: "Case",
+      status: "published",
+      variants: [tracked, { ...tracked, id: "v2", title: "Blue", sku: "CASE-BLU", manage_inventory: false }],
+    })
+    expect(untracked).toContain("Blue")
+    expect(untracked).toMatch(/track/i)
+
+    const backorder = publishBlocker({
+      id: "p",
+      title: "Case",
+      status: "published",
+      variants: [{ ...tracked, allow_backorder: true }],
+    })
+    expect(backorder).toContain("Black")
+    expect(backorder).toMatch(/backorder/i)
+
+    // Drafts may hold anything; a product without variants has nothing to check.
+    expect(
+      publishBlocker({ id: "p", title: "Case", status: "draft", variants: [{ ...tracked, manage_inventory: false }] })
+    ).toBeNull()
+    expect(publishBlocker({ id: "p", title: "Case", status: "published", variants: [] })).toBeNull()
+  })
+
   it("puts the vape refusal first, even for a marked charger", () => {
     expect(
       publishBlocker({

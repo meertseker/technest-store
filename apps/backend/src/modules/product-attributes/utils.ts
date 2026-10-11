@@ -64,10 +64,13 @@ export const SAFETY_MARKED_CATEGORY_HANDLES = [
 /**
  * Vapes are never listed online (CLAUDE.md, domain rules). The attributes
  * model has no "vape" flag, so the guard reads the product's own words:
- * title, handle, tags and category handles/names. Handles are matched with
- * hyphens as spaces, so `e-liquid-10ml` reads "e liquid 10ml".
+ * title, handle, description, tags and category handles/names. Handles are
+ * matched with hyphens as spaces, so `e-liquid-10ml` reads "e liquid 10ml".
+ * Besides the generic words it knows the disposable brands and nicotine
+ * products a listing would otherwise slip through under.
  */
-const VAPE_PATTERN = /\b(vapes?|vaping|vaper?s?|e[- ]?cig(arette)?s?|e[- ]?liquids?|disposable pods?)\b/i
+const VAPE_PATTERN =
+  /\b(vapes?|vaping|vaper?s?|e[- ]?cig(arette)?s?|e[- ]?liquids?|disposable pods?|elf ?bars?|geek ?bars?|lost ?mary|puff ?bars?|crystal ?bars?|nic ?salts?|nic ?shots?|nicotine|shisha|vuse|iqos|heets|juul)\b/i
 
 export function looksLikeVape(words: (string | null | undefined)[]): boolean {
   return words.some((w) => Boolean(w) && VAPE_PATTERN.test(w!.replace(/-/g, " ")))
@@ -79,13 +82,23 @@ type CategoryRow = {
   parent_category?: CategoryRow | null
 } | null
 
+export type PublishCheckVariant = {
+  id?: string | null
+  title?: string | null
+  sku?: string | null
+  manage_inventory?: boolean | null
+  allow_backorder?: boolean | null
+} | null
+
 export type PublishCheckProduct = {
   id: string
   title?: string | null
   handle?: string | null
+  description?: string | null
   status?: string | null
   categories?: CategoryRow[] | null
   tags?: ({ value?: string | null } | null)[] | null
+  variants?: PublishCheckVariant[] | null
   product_attributes?: { safety_marking?: string | null; wattage?: number | null } | null
 }
 
@@ -137,6 +150,30 @@ export function safetyMarkingMessage(name: string) {
   return `"${name}" is a charger or power product, so it needs a safety marking (UKCA or CE) before it can be published. Set "Safety marking" in the product details, then publish.`
 }
 
+const variantName = (variant: NonNullable<PublishCheckVariant>) =>
+  [variant.title || variant.id || "variant", variant.sku ? `(${variant.sku})` : ""]
+    .filter(Boolean)
+    .join(" ")
+
+/**
+ * The shop sells tracked stock only: a published variant must manage
+ * inventory and must not allow backorders, or it could be oversold without
+ * limit. Returns the first offending variant's message, or null.
+ */
+export function untrackedStockMessage(product: PublishCheckProduct): string | null {
+  const name = product.title || product.handle || product.id
+  for (const variant of product.variants ?? []) {
+    if (!variant) continue
+    if (variant.manage_inventory === false) {
+      return `"${name}": variant ${variantName(variant)} does not track stock. Turn on "Manage inventory" for every variant before publishing.`
+    }
+    if (variant.allow_backorder === true) {
+      return `"${name}": variant ${variantName(variant)} allows backorders. Turn off "Allow backorders" for every variant before publishing.`
+    }
+  }
+  return null
+}
+
 /**
  * Why a product may not be published, or null when it may. Only published
  * products are checked; drafts can hold anything.
@@ -148,6 +185,7 @@ export function publishBlocker(product: PublishCheckProduct): string | null {
   const words = [
     product.title,
     product.handle,
+    product.description,
     ...(product.tags ?? []).map((t) => t?.value),
     ...(product.categories ?? []).flatMap((c) =>
       categoryChain(c).flatMap((cat) => [cat.handle, cat.name])
@@ -160,7 +198,7 @@ export function publishBlocker(product: PublishCheckProduct): string | null {
   if (needsSafetyMarking(product) && !hasSafetyMarking(product.product_attributes?.safety_marking)) {
     return safetyMarkingMessage(name)
   }
-  return null
+  return untrackedStockMessage(product)
 }
 
 /** Query fields `publishBlocker` needs. */
@@ -168,8 +206,14 @@ export const PUBLISH_CHECK_FIELDS = [
   "id",
   "title",
   "handle",
+  "description",
   "status",
   "tags.value",
+  "variants.id",
+  "variants.title",
+  "variants.sku",
+  "variants.manage_inventory",
+  "variants.allow_backorder",
   "categories.handle",
   "categories.name",
   "categories.parent_category.handle",
