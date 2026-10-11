@@ -183,7 +183,7 @@ export default function RepairBookingForm({
         }
       />
 
-      <Turnstile resetKey={serverState} error={e.security_check} />
+      <Turnstile action="repair-booking" resetKey={serverState} error={e.security_check} />
 
       <SubmitButton pendingText="Sending your request…">
         Send repair request

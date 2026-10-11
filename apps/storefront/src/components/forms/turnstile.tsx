@@ -20,6 +20,11 @@ export const SECURITY_CHECK = "security_check"
 export const TURNSTILE_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
 
 type Props = {
+  /**
+   * Names the form this widget protects (e.g. "repair-booking"). The backend
+   * checks it, so a token solved on another form with the same site key is refused.
+   */
+  action: string
   /** Change it (e.g. pass the latest server state) to get a fresh token: tokens are single use */
   resetKey?: unknown
   error?: string
@@ -31,7 +36,7 @@ type Props = {
  * rendered (the forms that need it). The widget adds a hidden
  * `cf-turnstile-response` input to the surrounding form.
  */
-export default function Turnstile({ resetKey, error }: Props) {
+export default function Turnstile({ action, resetKey, error }: Props) {
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
   const box = useRef<HTMLDivElement>(null)
   const widget = useRef<string | null>(null)
@@ -42,6 +47,7 @@ export default function Turnstile({ resetKey, error }: Props) {
     if (!box.current || typeof window.turnstile?.render !== "function" || widget.current || !siteKey) return
     widget.current = window.turnstile.render(box.current, {
       sitekey: siteKey,
+      action,
       theme: "light",
       size: "flexible",
       language: "en-GB",
@@ -51,7 +57,7 @@ export default function Turnstile({ resetKey, error }: Props) {
       "error-callback": () => setState("failed"),
     })
     setState("ready")
-  }, [siteKey])
+  }, [siteKey, action])
 
   useEffect(() => {
     render()

@@ -2,7 +2,7 @@ import Link from "next/link"
 import { buttonVariants } from "@/components/ui/button"
 import StatusBadge from "@/components/ui/status-badge"
 import { formatOrderDate } from "@/lib/account/orders"
-import { TRADE_STATUS_COPY } from "@/lib/trade/format"
+import { CAN_REAPPLY, TRADE_STATUS_COPY } from "@/lib/trade/format"
 import type { TradeApplication } from "@/lib/trade/types"
 import { BUSINESS_TYPES } from "@/lib/forms/validation"
 
@@ -36,7 +36,7 @@ export default function TradeStatus({
         {copy.title}
       </H>
       <p className="mt-2 max-w-[68ch]">{copy.body}</p>
-      {application.status === "rejected" && application.reason && (
+      {CAN_REAPPLY.has(application.status) && application.reason && (
         <div className="mt-4 rounded bg-surface p-4">
           <p className="font-semibold">Our reason</p>
           <p className="mt-1 whitespace-pre-line">{application.reason}</p>
@@ -72,7 +72,7 @@ export default function TradeStatus({
               Shop with trade prices
             </Link>
           )}
-          {application.status === "rejected" && (
+          {CAN_REAPPLY.has(application.status) && (
             <Link
               href="/trade/apply"
               className={buttonVariants({ className: "w-full sm:w-auto" })}

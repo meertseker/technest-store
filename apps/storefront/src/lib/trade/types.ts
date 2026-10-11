@@ -1,6 +1,7 @@
-/** Types from docs/contracts/trade.md v1 (E1). Money is integer pence. */
+/** Types from docs/contracts/trade.md v2 (E1). Money is integer pence. */
 
-export type TradeApplicationStatus = "pending" | "approved" | "rejected"
+/** `revoked`: the shop closed an approved account; the customer may apply again */
+export type TradeApplicationStatus = "pending" | "approved" | "rejected" | "revoked"
 
 export type TradeApplication = {
   id: string

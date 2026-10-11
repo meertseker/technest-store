@@ -65,4 +65,13 @@ export const TRADE_STATUS_COPY: Record<
     title: "We could not approve your application",
     body: "You can apply again with updated details, or call the shop to talk it through.",
   },
+  revoked: {
+    label: "Closed",
+    tone: "warning",
+    title: "Your trade account has been closed",
+    body: "You now see retail prices. If you think this is a mistake, call the shop. You can apply again at any time.",
+  },
 }
+
+/** Statuses after which the customer may send a new application */
+export const CAN_REAPPLY: ReadonlySet<TradeApplicationStatus> = new Set<TradeApplicationStatus>(["rejected", "revoked"])

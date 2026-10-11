@@ -8,6 +8,7 @@ import { retrieveCustomer } from "@lib/data/customer"
 import { getMyTradeApplication } from "@lib/data/trade"
 import TradeApplicationForm from "@modules/trade/components/trade-application-form"
 import TradeStatus from "@modules/trade/components/trade-status"
+import { CAN_REAPPLY } from "@lib/trade/format"
 
 export const metadata: Metadata = {
   title: "Apply for a trade account",
@@ -50,13 +51,13 @@ export default async function TradeApplyPage() {
         <p className="max-w-[560px] rounded bg-surface p-4">
           We could not check your trade account just now. Please try again soon, or call {siteConfig.phone.display}.
         </p>
-      ) : application && application.status !== "rejected" ? (
+      ) : application && !CAN_REAPPLY.has(application.status) ? (
         <div className="max-w-[720px]">
           <TradeStatus application={application} />
         </div>
       ) : (
         <>
-          {application?.status === "rejected" && (
+          {application && CAN_REAPPLY.has(application.status) && (
             <div className="max-w-[720px]">
               <h2 className={`${h2Class} sr-only`}>Your last application</h2>
               <TradeStatus application={application} headingLevel={3} showActions={false} />
