@@ -28,7 +28,7 @@ const lowStockRun = jest.fn()
 jest.mock("../../workflows/emit-low-stock-digest", () => ({ emitLowStockDigestWorkflow: () => ({ run: lowStockRun }) }))
 jest.mock("../../lib/low-stock", () => ({
   ...jest.requireActual("../../lib/low-stock"),
-  isLowStockHour: () => true,
+  isLowStockDue: () => true,
 }))
 
 import { setAlertSinkForTests, type Alert } from "../../lib/alerting"

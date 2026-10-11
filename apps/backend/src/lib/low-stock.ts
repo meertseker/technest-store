@@ -1,4 +1,5 @@
 import { DEFAULT_REORDER_LEVEL } from "../modules/product-attributes/utils"
+import { londonDay } from "./email/trade-sources"
 
 /**
  * Daily low-stock digest (docs/contracts/emails.md, row 16, and
@@ -32,16 +33,32 @@ export function defaultLowStockThreshold(env: NodeJS.ProcessEnv = process.env): 
   return Number.isInteger(n) && n >= 0 ? n : DEFAULT_REORDER_LEVEL
 }
 
-/** True in the 08:00-08:59 hour, London time (BST and GMT alike). */
-export function isLowStockHour(now: Date = new Date()): boolean {
-  const hour = Number(
+const londonHour = (now: Date) =>
+  Number(
     new Intl.DateTimeFormat("en-GB", {
       hour: "numeric",
       hourCycle: "h23",
       timeZone: "Europe/London",
     }).format(now)
   )
-  return hour === LOW_STOCK_HOUR_LONDON
+
+/** True in the 08:00-08:59 hour, London time (BST and GMT alike). */
+export function isLowStockHour(now: Date = new Date()): boolean {
+  return londonHour(now) === LOW_STOCK_HOUR_LONDON
+}
+
+/** What the job remembers between hourly runs (in memory: a restart simply checks again). */
+export type LowStockRunState = { lastRunDay?: string }
+
+/**
+ * The digest is due on the first run at or after 08:00 London on a day this
+ * process has not yet run it. Acting only inside the 08:00 hour meant a
+ * worker that was down then (a deploy, a restart) sent no digest that day.
+ * E2's email sends at most one digest per London day whatever the hour, so
+ * a second run after a restart is harmless.
+ */
+export function isLowStockDue(now: Date, state: LowStockRunState): boolean {
+  return londonHour(now) >= LOW_STOCK_HOUR_LONDON && state.lastRunDay !== londonDay(now)
 }
 
 export type LowStockVariantRow = {
