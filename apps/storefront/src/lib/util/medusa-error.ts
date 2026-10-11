@@ -1,38 +1,34 @@
-type MedusaError = {
-  response?: {
-    data: { message?: string } | string
-    status: number
-    headers: unknown
-  }
-  request?: unknown
-  /** Set by the Medusa JS SDK's FetchError, which has no `response`. */
-  status?: number
-  message?: string
-  config?: { url: string; baseURL: string }
+/**
+ * Normalises a failed backend call into one Error for the callers of `lib/data`.
+ *
+ * The Medusa JS SDK throws a `FetchError`: `message` is the backend's own text
+ * (written for shoppers where it is a refusal), `status` the HTTP status and
+ * `statusText` the reason phrase. Network failures arrive as a plain
+ * `TypeError`. The thrown error keeps the message (capitalised, with a full
+ * stop) and the status, so callers can tell refusals (4xx) from failures.
+ */
+type FetchErrorLike = {
+  message?: unknown
+  status?: unknown
+  statusText?: unknown
 }
 
+const FALLBACK = "The request failed"
+
 export default function medusaError(error: unknown): never {
-  const err = error as MedusaError
-  if (err.response) {
-    const u = new URL(err.config?.url ?? "", err.config?.baseURL ?? "")
-    console.error("Resource:", u.toString())
-    console.error("Response data:", err.response.data)
-    console.error("Status code:", err.response.status)
-    console.error("Headers:", err.response.headers)
+  const err = (typeof error === "object" && error !== null ? error : {}) as FetchErrorLike
+  const text = typeof error === "string" ? error : firstString(err.message, err.statusText) ?? FALLBACK
+  const status = typeof err.status === "number" ? err.status : undefined
 
-    const data = err.response.data
-    const message =
-      typeof data === "object" && data !== null
-        ? data.message || String(data)
-        : data
+  throw Object.assign(new Error(sentence(text)), { status })
+}
 
-    throw new Error(message.charAt(0).toUpperCase() + message.slice(1) + ".")
-  } else if (err.request) {
-    throw new Error("No response received: " + String(err.request))
-  } else {
-    // Keep the HTTP status so callers can tell refusals apart.
-    throw Object.assign(new Error("Error setting up the request: " + err.message), {
-      status: err.status,
-    })
-  }
+function firstString(...values: unknown[]): string | undefined {
+  return values.find((v): v is string => typeof v === "string" && v.trim().length > 0)?.trim()
+}
+
+function sentence(text: string): string {
+  const t = text.trim()
+  const capitalised = t.charAt(0).toUpperCase() + t.slice(1)
+  return /[.!?]$/.test(capitalised) ? capitalised : `${capitalised}.`
 }
