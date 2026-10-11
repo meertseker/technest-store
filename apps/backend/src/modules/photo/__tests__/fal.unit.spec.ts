@@ -1,5 +1,5 @@
 import sharp from "sharp"
-import { FAL_BIREFNET_URL, FalProvider } from "../providers/fal"
+import { FAL_BIREFNET_URL, FalProvider, MAX_RESULT_BYTES } from "../providers/fal"
 
 const KEY = "fal-test-key"
 
@@ -153,6 +153,96 @@ describe("FalProvider", () => {
     await expect(run({ image: { url: dataUri(await rgba(100, 50)) } })).resolves.toMatchObject({
       model: "birefnet-general",
     })
+  })
+
+  describe("one retry inside the deadline", () => {
+    const answer = () => json({ image: { url: dataUri(cutout) } })
+
+    it.each([502, 503, 504])("retries once after an HTTP %i and then uses the answer", async (status) => {
+      let n = 0
+      const { fn, calls } = fakeFetch(() => (++n === 1 ? json({ detail: "cold start" }, status) : answer()))
+      const out = await new FalProvider({ apiKey: KEY, fetch: fn, retryPauseMs: 1 }).removeBackground(photo)
+      expect(out.png.equals(cutout)).toBe(true)
+      expect(calls).toHaveLength(2)
+      // Same deadline for both attempts, not a fresh one.
+      expect(calls[1].init?.signal).toBe(calls[0].init?.signal)
+    })
+
+    it("retries once after a dropped connection", async () => {
+      let n = 0
+      const { fn, calls } = fakeFetch(() => {
+        if (++n === 1) throw new TypeError("fetch failed")
+        return answer()
+      })
+      await expect(
+        new FalProvider({ apiKey: KEY, fetch: fn, retryPauseMs: 1 }).removeBackground(photo)
+      ).resolves.toMatchObject({ model: "birefnet-general" })
+      expect(calls).toHaveLength(2)
+    })
+
+    it("gives up after the second failure", async () => {
+      const { fn, calls } = fakeFetch(() => json({ detail: "still cold" }, 503))
+      await expect(
+        new FalProvider({ apiKey: KEY, fetch: fn, retryPauseMs: 1 }).removeBackground(photo)
+      ).rejects.toThrow("The photo service failed (HTTP 503): still cold")
+      expect(calls).toHaveLength(2)
+    })
+
+    it("does not retry a timeout, a 500, a 422, a 429 or a refused account", async () => {
+      const once = async (res: () => Response) => {
+        const { fn, calls } = fakeFetch(res)
+        await new FalProvider({ apiKey: KEY, fetch: fn, retryPauseMs: 1 }).removeBackground(photo).catch(() => {})
+        return calls.length
+      }
+      expect(
+        await once(() => {
+          const e = new Error("timeout")
+          e.name = "TimeoutError"
+          throw e
+        })
+      ).toBe(1)
+      expect(await once(() => json({ detail: "boom" }, 500))).toBe(1)
+      expect(await once(() => json({ detail: "bad enum" }, 422))).toBe(1)
+      expect(await once(() => json({ detail: "slow down" }, 429))).toBe(1)
+      expect(await once(() => json({ detail: "no" }, 401))).toBe(1)
+    })
+
+    it("does not retry once the deadline has passed", async () => {
+      const { fn, calls } = fakeFetch(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 60))
+        return json({ detail: "late" }, 503)
+      })
+      await expect(
+        new FalProvider({ apiKey: KEY, fetch: fn, timeoutMs: 30, retryPauseMs: 1 }).removeBackground(photo)
+      ).rejects.toThrow(/timed out|HTTP 503/)
+      expect(calls).toHaveLength(1)
+    })
+  })
+
+  it("refuses an inline answer over the size cap without decoding it", async () => {
+    expect(MAX_RESULT_BYTES).toBe(25 * 1024 * 1024)
+    const tooBig = "data:image/png;base64," + "A".repeat(Math.ceil((MAX_RESULT_BYTES * 4) / 3) + 4)
+    const { fn } = fakeFetch(() => json({ image: { url: tooBig } }))
+    const from = jest.spyOn(Buffer, "from")
+    try {
+      await expect(new FalProvider({ apiKey: KEY, fetch: fn }).removeBackground(photo)).rejects.toThrow(
+        "The photo service returned an image that is too large"
+      )
+      expect(from.mock.calls.some(([v]) => typeof v === "string" && v.length > 1_000_000)).toBe(false)
+    } finally {
+      from.mockRestore()
+    }
+  })
+
+  it("refuses a download whose declared size is over the cap before reading it", async () => {
+    const { fn } = fakeFetch((url) =>
+      url === FAL_BIREFNET_URL
+        ? json({ image: { url: "https://v3.fal.media/files/out.png" } })
+        : new Response("x", { status: 200, headers: { "content-length": String(MAX_RESULT_BYTES + 1) } })
+    )
+    await expect(new FalProvider({ apiKey: KEY, fetch: fn }).removeBackground(photo)).rejects.toThrow(
+      "too large"
+    )
   })
 
   it("reports an unreachable and a timed-out service", async () => {

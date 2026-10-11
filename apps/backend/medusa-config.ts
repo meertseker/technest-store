@@ -171,12 +171,14 @@ module.exports = defineConfig({
     { resolve: "./src/modules/repair" },
     // Photos (E4): FAL_KEY = background removal on fal.ai (production). PHOTO_WORKER_URL = our own
     // photo-worker instead (local use, tests; PHOTO_MODEL picks its model). Neither = processing disabled.
+    // PHOTO_TIMEOUT_MS = deadline per photo for the provider call (default: fal 90 s, worker 120 s).
     {
       resolve: "./src/modules/photo",
       options: {
         falKey: process.env.FAL_KEY,
         workerUrl: process.env.PHOTO_WORKER_URL,
         defaultModel: process.env.PHOTO_MODEL,
+        timeoutMs: process.env.PHOTO_TIMEOUT_MS,
       },
     },
     { resolve: "./src/modules/settings" },

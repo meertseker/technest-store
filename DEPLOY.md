@@ -310,6 +310,7 @@ karşılaştırıldı (2026-09-30). "Zorunlu" = boşsa compose başlamaz ya da �
 |---|---|---|
 | `FAL_KEY` | Fotoğraf için evet | https://fal.ai/dashboard/keys → **Add key**. Arka plan silme fal.ai'de çalışır. Boşsa mağaza çalışır ama fotoğraf işleme kapalıdır (admin nedenini gösterir, orijinal fotoğraf saklanır). Yalnızca sunucuda; tarayıcıya gitmez, loglanmaz. fal hesabına bakiye yükleyin; bakiye biterse fotoğraf işleme durur |
 | `ANTHROPIC_API_KEY` | Hayır | https://console.anthropic.com → API Keys. Boşsa Hızlı Ekle yapay zekâ önerisi olmadan çalışır. Yalnızca sunucuda; tarayıcıya gitmez, loglanmaz. Console'da aylık harcama sınırı koyun |
+| `PHOTO_TIMEOUT_MS` | Hayır | fotoğraf başına fal çağrısı için üst sınır (bir yeniden deneme dahil), varsayılan `90000`; Cloudflare'in ~120 s kesmesinin altında kalmalı (compose geçirir) |
 | `QUICK_ADD_AI_LIMIT_PER_HOUR` | Hayır | admin kullanıcısı başına saatte fotoğraf analizi, varsayılan `60` |
 | `QUICK_ADD_AI_TIMEOUT_MS` | Hayır | deneme başına Claude zaman aşımı, varsayılan `60000` (compose geçirir) |
 | `QUICK_ADD_AI_DEADLINE_MS` | Hayır | tek bir yeniden deneme dahil tüm analiz çağrısı için üst sınır, varsayılan `90000`; Cloudflare'in ~120 s kesmesinin altında kalmalı (compose geçirir) |

@@ -15,7 +15,13 @@ export type PhotoModuleOptions = {
   workerUrl?: string
   /** PHOTO_MODEL, photo-worker only. Unset or empty: birefnet-general. isnet-general-use is the lighter fallback. */
   defaultModel?: PhotoModel | string
-  timeoutMs?: number
+  /** PHOTO_TIMEOUT_MS: deadline per photo for the provider call. Unset or not a positive number: the provider's default. */
+  timeoutMs?: number | string
+}
+
+function timeoutOption(value: number | string | undefined): number | undefined {
+  const n = Number(value)
+  return Number.isFinite(n) && n > 0 ? n : undefined
 }
 
 export type PhotoStatus = {
@@ -27,9 +33,10 @@ export type PhotoStatus = {
 
 export function createProvider(options: PhotoModuleOptions = {}): BackgroundRemovalProvider {
   const url = options.workerUrl?.trim()
+  const timeoutMs = timeoutOption(options.timeoutMs)
   if (!url) {
     const falKey = options.falKey?.trim()
-    return falKey ? new FalProvider({ apiKey: falKey, timeoutMs: options.timeoutMs }) : new DisabledProvider()
+    return falKey ? new FalProvider({ apiKey: falKey, timeoutMs }) : new DisabledProvider()
   }
   const model = options.defaultModel?.trim() || undefined
   if (model && !PHOTO_MODELS.includes(model as PhotoModel)) {
@@ -41,7 +48,7 @@ export function createProvider(options: PhotoModuleOptions = {}): BackgroundRemo
   return new RembgHttpProvider({
     url,
     defaultModel: model as PhotoModel | undefined,
-    timeoutMs: options.timeoutMs,
+    timeoutMs,
   })
 }
 

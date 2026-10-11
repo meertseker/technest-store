@@ -40,6 +40,7 @@ x-backend-env: &backend-env
   # Photos (E4): background removal runs on fal.ai (hosted BiRefNet), server-side only.
   # Empty = photo processing is switched off; the rest of the shop works.
   FAL_KEY: ${FAL_KEY:-}
+  PHOTO_TIMEOUT_MS: ${PHOTO_TIMEOUT_MS:-90000}
   # Quick Add (E4): Claude vision suggestions, server-side only (never sent to the browser or logged).
   # Empty = Quick Add without AI suggestions. Optional per-admin limit (default 60 analyses/hour).
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}

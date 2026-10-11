@@ -30,6 +30,16 @@ describe("createProvider", () => {
     expect(createProvider({ falKey: "key", defaultModel: "u2net" }).id).toBe("fal")
   })
 
+  it("reads PHOTO_TIMEOUT_MS as given by the environment (a string), default 90 s for fal", () => {
+    expect(createProvider({ falKey: "key" }).timeoutMs).toBe(90_000)
+    expect(createProvider({ falKey: "key", timeoutMs: "120000" }).timeoutMs).toBe(120_000)
+    expect(createProvider({ falKey: "key", timeoutMs: 45_000 }).timeoutMs).toBe(45_000)
+    // Nonsense falls back to the default instead of switching photos off.
+    expect(createProvider({ falKey: "key", timeoutMs: "soon" }).timeoutMs).toBe(90_000)
+    expect(createProvider({ falKey: "key", timeoutMs: "0" }).timeoutMs).toBe(90_000)
+    expect(createProvider({ workerUrl: "http://w", timeoutMs: "30000" }).timeoutMs).toBe(30_000)
+  })
+
   it("prefers our own photo-worker when PHOTO_WORKER_URL is set as well", () => {
     expect(createProvider({ falKey: "key", workerUrl: "http://w" }).id).toBe("rembg-http")
   })

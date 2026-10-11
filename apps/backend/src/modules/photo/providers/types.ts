@@ -27,6 +27,8 @@ export type RemoveBackgroundResult = {
 export interface BackgroundRemovalProvider {
   readonly id: string
   readonly defaultModel: PhotoModel | null
+  /** Per-image deadline, when the provider has one. */
+  readonly timeoutMs?: number
   status(): Promise<ProviderStatus>
   removeBackground(image: Buffer, options?: { model?: PhotoModel }): Promise<RemoveBackgroundResult>
 }

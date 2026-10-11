@@ -12,15 +12,25 @@ const FAL_RESOLUTION = "1024x1024"
 export type FalProviderOptions = {
   /** FAL_KEY. Sent only to fal.run, never logged or put in an error. */
   apiKey: string
-  /** Per-image timeout, upload and inference together. Default 90 s: the admin gives up at 120 s. */
+  /**
+   * Per-image deadline (PHOTO_TIMEOUT_MS): upload, inference, the one retry and the
+   * download together. Default 90 s: the admin request is cut off at about 120 s.
+   */
   timeoutMs?: number
+  /** Pause before the one retry. */
+  retryPauseMs?: number
   endpoint?: string
   fetch?: typeof fetch
 }
 
+export const DEFAULT_FAL_TIMEOUT_MS = 90_000
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
-/** A 2048 px RGBA PNG stays well under this; anything larger is not our cut-out. */
-const MAX_RESULT_BYTES = 60 * 1024 * 1024
+/** A 2048 px RGBA PNG is a few MB; anything over this is not our cut-out and is not read. */
+export const MAX_RESULT_BYTES = 25 * 1024 * 1024
+/** The same cap on the base64 text of an inline answer (4 characters per 3 bytes). */
+const MAX_RESULT_BASE64_CHARS = Math.ceil((MAX_RESULT_BYTES * 4) / 3)
+/** Answers worth one more try: a gateway in front of a cold or busy model. */
+const RETRY_STATUSES = new Set([502, 503, 504])
 
 function failed(message: string) {
   return new MedusaError(MedusaError.Types.UNEXPECTED_STATE, message)
@@ -51,15 +61,17 @@ function errorDetail(body: unknown): string {
 export class FalProvider implements BackgroundRemovalProvider {
   readonly id = "fal"
   readonly defaultModel = FAL_PHOTO_MODEL
+  readonly timeoutMs: number
   private readonly apiKey: string
   private readonly endpoint: string
-  private readonly timeoutMs: number
+  private readonly retryPauseMs: number
   private readonly fetchImpl: typeof fetch
 
   constructor(options: FalProviderOptions) {
     this.apiKey = options.apiKey
     this.endpoint = options.endpoint ?? FAL_BIREFNET_URL
-    this.timeoutMs = options.timeoutMs ?? 90_000
+    this.timeoutMs = options.timeoutMs ?? DEFAULT_FAL_TIMEOUT_MS
+    this.retryPauseMs = options.retryPauseMs ?? 1_000
     this.fetchImpl = options.fetch ?? fetch
   }
 
@@ -117,17 +129,57 @@ export class FalProvider implements BackgroundRemovalProvider {
     return { png, model }
   }
 
+  /**
+   * One POST, and one more after a dropped connection or a 502/503/504 (a cold
+   * start behind fal's gateway), as long as the deadline has not passed. A timeout
+   * is never retried: the deadline is for the whole photo.
+   */
   private async request(signal: AbortSignal, body: Record<string, unknown>): Promise<unknown> {
-    let res: Response
-    try {
-      res = await this.fetchImpl(this.endpoint, {
-        method: "POST",
-        headers: { Authorization: `Key ${this.apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-        signal,
-      })
-    } catch (e) {
-      throw this.networkError(e)
+    const payload = JSON.stringify(body)
+    for (let attempt = 1; ; attempt++) {
+      const last = attempt === 2
+      let res: Response
+      try {
+        res = await this.fetchImpl(this.endpoint, {
+          method: "POST",
+          headers: { Authorization: `Key ${this.apiKey}`, "Content-Type": "application/json" },
+          body: payload,
+          signal,
+        })
+      } catch (e) {
+        if (last || signal.aborted || this.isTimeout(e)) {
+          throw this.networkError(e)
+        }
+        await this.pause(signal)
+        continue
+      }
+      if (!last && RETRY_STATUSES.has(res.status) && !signal.aborted) {
+        await res.body?.cancel().catch(() => {})
+        await this.pause(signal)
+        continue
+      }
+      return this.readAnswer(res, signal)
+    }
+  }
+
+  private async pause(signal: AbortSignal) {
+    await new Promise<void>((resolve) => {
+      const done = () => {
+        signal.removeEventListener("abort", done)
+        resolve()
+      }
+      signal.addEventListener("abort", done, { once: true })
+      setTimeout(done, this.retryPauseMs)
+    })
+    if (signal.aborted) {
+      throw this.networkError(signal.reason)
+    }
+  }
+
+  private async readAnswer(res: Response, signal: AbortSignal): Promise<unknown> {
+    // An inline PNG answer is base64 inside JSON; refuse an oversized body before reading it.
+    if (Number(res.headers?.get("content-length") ?? 0) > MAX_RESULT_BASE64_CHARS + 4096) {
+      throw failed("The photo service returned an image that is too large")
     }
     // A body that is not JSON (an HTML error page) is fine; a body cut off by the deadline is a timeout.
     const json = await res.json().catch((e) => {
@@ -155,6 +207,9 @@ export class FalProvider implements BackgroundRemovalProvider {
       const comma = url.indexOf(",")
       if (comma < 0 || !url.slice(0, comma).endsWith(";base64")) {
         throw failed("The photo service returned an unreadable image")
+      }
+      if (url.length - comma - 1 > MAX_RESULT_BASE64_CHARS) {
+        throw failed("The photo service returned an image that is too large")
       }
       return Buffer.from(url.slice(comma + 1), "base64")
     }
@@ -201,8 +256,12 @@ export class FalProvider implements BackgroundRemovalProvider {
     }
   }
 
+  private isTimeout(e: unknown) {
+    return ["TimeoutError", "AbortError"].includes((e as Error)?.name)
+  }
+
   private networkError(e: unknown) {
-    const timedOut = ["TimeoutError", "AbortError"].includes((e as Error)?.name)
+    const timedOut = this.isTimeout(e)
     return failed(
       timedOut
         ? `The photo service timed out after ${Math.round(this.timeoutMs / 1000)} s`

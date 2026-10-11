@@ -25,8 +25,8 @@ const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0
 export class RembgHttpProvider implements BackgroundRemovalProvider {
   readonly id = "rembg-http"
   readonly defaultModel: PhotoModel
+  readonly timeoutMs: number
   private readonly baseUrl: string
-  private readonly timeoutMs: number
   private readonly healthTimeoutMs: number
   private readonly fetchImpl: typeof fetch
 
