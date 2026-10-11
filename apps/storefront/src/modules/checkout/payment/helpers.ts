@@ -249,11 +249,20 @@ export function returnErrorMessage(code: string | null | undefined): string | nu
     case "hold_released":
       return HOLD_RELEASED
     case "payment_failed":
-      return "We couldn't confirm your payment. You haven't been charged. Please try again."
+      return PAYMENT_NOT_AUTHORISED
+    case "processing":
+      return PAYMENT_PROCESSING
     default:
       return null
   }
 }
+
+/** The backend refused to complete because the payment was never authorised: nothing is held. */
+export const PAYMENT_NOT_AUTHORISED =
+  "We couldn't confirm your payment. You haven't been charged. Please try again, or use another card or payment method."
+/** The bank is still deciding (redirect_status=processing); the payment webhook places the order when it confirms. */
+export const PAYMENT_PROCESSING =
+  "Your bank is still processing the payment. Don't pay again: we'll email you as soon as your order is placed. If you hear nothing within an hour, call the shop."
 
 /** The backend refused the basket after the card was authorised and released the hold itself. */
 export const HOLD_RELEASED =

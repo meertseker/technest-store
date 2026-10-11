@@ -20,7 +20,7 @@ vi.mock("@sentry/nextjs", () => ({ captureException: (...a: unknown[]) => captur
 const reported = () => captureException.mock.calls.map(([error, hint]) => [error, hint?.tags?.handled_in])
 
 import { completeOrder, preparePaymentSession } from "./actions"
-import { ORDER_FAILED, SESSION_FAILED } from "./helpers"
+import { ORDER_FAILED, PAYMENT_NOT_AUTHORISED, SESSION_FAILED } from "./helpers"
 
 const backendDown = Object.assign(new Error("Service Unavailable"), { status: 503 })
 const cart = { id: "cart_1", region_id: "reg_1", total: 10, items: [{ id: "li_1" }] }
@@ -90,6 +90,16 @@ describe("an order that could not be placed reaches monitoring", () => {
     retrieveCart.mockResolvedValue(cart)
     placeOrder.mockRejectedValue(Object.assign(new Error("Out of stock."), { payment_released: true }))
     await completeOrder()
+    expect(reported()).toEqual([])
+  })
+})
+
+describe("an order the backend refused because the payment was not authorised", () => {
+  it("is worded as a payment problem, not as an authorised payment without an order", async () => {
+    retrieveCart.mockResolvedValue(cart)
+    placeOrder.mockRejectedValue(Object.assign(new Error("Payment authorization failed"), { payment_not_authorised: true }))
+    await expect(completeOrder()).resolves.toEqual({ ok: false, message: PAYMENT_NOT_AUTHORISED })
+    expect(PAYMENT_NOT_AUTHORISED).not.toContain("authorised but")
     expect(reported()).toEqual([])
   })
 })

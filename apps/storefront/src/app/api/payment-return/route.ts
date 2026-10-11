@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
   // replaces the one they have: its outcome is shown on their own basket page.
   const cookieCartId = await getCartId()
   const ownBasket = !cookieCartId || cookieCartId === cartId
-  const backToPayment = (code: "payment_failed" | "declined" | "order_failed" | "hold_released") =>
+  const backToPayment = (code: "payment_failed" | "declined" | "order_failed" | "hold_released" | "processing") =>
     ownBasket
       ? seeOther(`/checkout?step=payment&payment_error=${code}`)
       : seeOther(`/basket?error=${code === "declined" || code === "payment_failed" ? "payment_failed" : "order_failed"}`)
@@ -68,13 +68,23 @@ export async function GET(req: NextRequest) {
     return backToPayment("declined")
   }
 
+  // The bank has not decided yet (some bank-transfer and wallet methods). The
+  // intent is not authorised, so completing now would only be refused; the
+  // payment webhook completes the basket when the bank confirms.
+  if (redirectStatus === "processing") {
+    return backToPayment("processing")
+  }
+
   try {
     await placeOrder(cartId)
   } catch (error) {
     unstable_rethrow(error)
 
+    const refusal = error as { payment_released?: boolean; payment_not_authorised?: boolean } | null
+    // Each outcome in its own words: a released hold, a payment that was never
+    // authorised (nothing held), or an authorised payment without an order.
     return backToPayment(
-      (error as { payment_released?: boolean } | null)?.payment_released ? "hold_released" : "order_failed"
+      refusal?.payment_released ? "hold_released" : refusal?.payment_not_authorised ? "payment_failed" : "order_failed"
     )
   }
 

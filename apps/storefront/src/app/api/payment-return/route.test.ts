@@ -63,6 +63,18 @@ describe("GET /api/payment-return (Stripe redirect back)", () => {
     expect(res.headers.get("location")).toBe("/checkout?step=payment&payment_error=order_failed")
   })
 
+  it("says the payment could not be confirmed when the intent was never authorised", async () => {
+    placeOrder.mockRejectedValue(Object.assign(new Error("Payment authorization failed"), { payment_not_authorised: true }))
+    const res = await GET(url({ ...good, redirect_status: "succeeded" }))
+    expect(res.headers.get("location")).toBe("/checkout?step=payment&payment_error=payment_failed")
+  })
+
+  it("a payment the bank is still processing is not completed here, and the shopper is told to wait", async () => {
+    const res = await GET(url({ ...good, redirect_status: "processing" }))
+    expect(placeOrder).not.toHaveBeenCalled()
+    expect(res.headers.get("location")).toBe("/checkout?step=payment&payment_error=processing")
+  })
+
   it("says the hold was released when the backend released it", async () => {
     placeOrder.mockRejectedValue(Object.assign(new Error("Out of stock."), { payment_released: true }))
     const res = await GET(url({ ...good, redirect_status: "succeeded" }))

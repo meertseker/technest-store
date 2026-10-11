@@ -265,6 +265,8 @@ describe("returnErrorMessage", () => {
     expect(returnErrorMessage("order_failed")).toContain("couldn't place your order")
     expect(returnErrorMessage("payment_failed")).toContain("couldn't confirm your payment")
     expect(returnErrorMessage("hold_released")).toBe(HOLD_RELEASED)
+    expect(returnErrorMessage("processing")).toContain("still processing")
+    expect(returnErrorMessage("processing")).toContain("pay again")
     expect(HOLD_RELEASED).toContain("hold on your card has been released")
     expect(returnErrorMessage("<script>")).toBeNull()
     expect(returnErrorMessage(null)).toBeNull()

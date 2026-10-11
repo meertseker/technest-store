@@ -4,7 +4,7 @@ import { CHECKOUT_CART_FIELDS } from "@lib/data/basket"
 import { initiatePaymentSession, placeOrder, retrieveCart } from "@lib/data/cart"
 import { reportUnexpected } from "@lib/monitoring/report"
 import { unstable_rethrow } from "next/navigation"
-import { HOLD_RELEASED, ORDER_FAILED, SESSION_FAILED, sessionErrorMessage, providerForMode, sessionDecision } from "./helpers"
+import { HOLD_RELEASED, ORDER_FAILED, PAYMENT_NOT_AUTHORISED, SESSION_FAILED, sessionErrorMessage, providerForMode, sessionDecision } from "./helpers"
 import { getPaymentMode } from "./mode"
 
 /**
@@ -86,8 +86,13 @@ export async function completeOrder(): Promise<PaymentActionResult> {
   } catch (e) {
     // placeOrder's redirect to the confirmation page is thrown; let Next handle it
     unstable_rethrow(e)
-    if ((e as { payment_released?: boolean } | null)?.payment_released) {
+    const refusal = e as { payment_released?: boolean; payment_not_authorised?: boolean } | null
+    if (refusal?.payment_released) {
       return { ok: false, message: HOLD_RELEASED }
+    }
+    // the backend's own payment step refused: nothing is held, no order exists
+    if (refusal?.payment_not_authorised) {
+      return { ok: false, message: PAYMENT_NOT_AUTHORISED }
     }
     // the card may be authorised with no order: the shop must hear about it
     await reportUnexpected(e, "checkout.place-order")

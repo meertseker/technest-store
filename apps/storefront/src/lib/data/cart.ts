@@ -283,6 +283,9 @@ export async function initiatePaymentSession(
     .catch(medusaError)
 }
 
+/** Medusa's error types for a completion refused at its own authorise step */
+const NOT_AUTHORISED_TYPES = new Set(["payment_authorization_error", "payment_requires_more_error"])
+
 /**
  * Places an order for a cart. If no cart ID is provided, it will use the cart ID from the cookies.
  * @param cartId - optional - The ID of the cart to place an order for.
@@ -322,10 +325,17 @@ export async function placeOrder(cartId?: string) {
 
   // The backend refused the basket (sold out, a basket rule) and released the
   // card hold: callers tell the shopper so instead of "try again".
-  const refusal = (cartRes as { error?: { message?: string; payment_released?: boolean } }).error
+  const refusal = (cartRes as { error?: { message?: string; type?: string; payment_released?: boolean } }).error
   if (refusal?.payment_released) {
     throw Object.assign(new Error(refusal.message ?? "The order could not be placed."), {
       payment_released: true,
+    })
+  }
+  // The payment step itself refused: the card was never authorised (a tampered
+  // or unfinished return, a bank still deciding). Nothing is held, no order exists.
+  if (refusal && NOT_AUTHORISED_TYPES.has(refusal.type ?? "")) {
+    throw Object.assign(new Error(refusal.message ?? "The payment was not authorised."), {
+      payment_not_authorised: true,
     })
   }
 

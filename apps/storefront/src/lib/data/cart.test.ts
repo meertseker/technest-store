@@ -166,3 +166,26 @@ describe("placeOrder", () => {
     expect(jar._medusa_cart_id).toBe("cart_old")
   })
 })
+
+// The backend answers 200 with the cart (not an order) when the payment step
+// itself refused, so the callers can word the outcome honestly.
+describe("placeOrder when the payment was never authorised", () => {
+  const refusal = (type: string, extra: Record<string, unknown> = {}) => ({
+    type: "cart",
+    cart: { id: "cart_old" },
+    error: { message: "Payment authorization failed", name: "Error", type, ...extra },
+  })
+
+  it("throws a refusal marked as not authorised, without a confirmation redirect", async () => {
+    completeCart.mockResolvedValue(refusal("payment_authorization_error"))
+    await expect(placeOrder("cart_old")).rejects.toMatchObject({ payment_not_authorised: true })
+    completeCart.mockResolvedValue(refusal("payment_requires_more_error"))
+    await expect(placeOrder("cart_old")).rejects.toMatchObject({ payment_not_authorised: true })
+    expect(setCookie).not.toHaveBeenCalledWith("_technest_order", expect.anything(), expect.anything())
+  })
+
+  it("a refusal that released the hold keeps its own mark", async () => {
+    completeCart.mockResolvedValue(refusal("not_allowed", { payment_released: true }))
+    await expect(placeOrder("cart_old")).rejects.toMatchObject({ payment_released: true })
+  })
+})
