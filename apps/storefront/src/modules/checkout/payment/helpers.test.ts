@@ -219,6 +219,22 @@ describe("classifyConfirmResult", () => {
     ).toEqual({ kind: "authorised" })
   })
 
+  it("an intent cancelled by a basket change elsewhere asks for a fresh payment form, not a retry", () => {
+    const stale = classifyConfirmResult({
+      error: { type: "invalid_request_error", code: "payment_intent_unexpected_state", payment_intent: { status: "canceled" } },
+    })
+    expect(stale.kind).toBe("stale")
+    expect(stale).toMatchObject({ message: expect.stringContaining("basket changed") })
+    // the same when Stripe reports the intent as cancelled under any other code
+    expect(classifyConfirmResult({ error: { type: "invalid_request_error", payment_intent: { status: "canceled" } } }).kind).toBe("stale")
+    // an intent that still waits for a payment method is an ordinary retry
+    expect(
+      classifyConfirmResult({
+        error: { type: "invalid_request_error", code: "payment_intent_unexpected_state", payment_intent: { status: "requires_payment_method" } },
+      }).kind
+    ).toBe("error")
+  })
+
   it("declines use Stripe's shopper message and point at the payment form", () => {
     const out = classifyConfirmResult({ error: { type: "card_error", code: "card_declined", message: "Your card has insufficient funds." } })
     expect(out).toEqual({

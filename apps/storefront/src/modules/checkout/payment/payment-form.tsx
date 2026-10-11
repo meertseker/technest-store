@@ -184,6 +184,7 @@ function StripeCheckout({
 }: PaymentFormProps & Handlers & { session: StripeSessionView }) {
   const stripe = useStripe()
   const elements = useElements()
+  const router = useRouter()
   const [ready, setReady] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [phase, setPhase] = useState<Phase>("idle")
@@ -215,6 +216,13 @@ function StripeCheckout({
     if (outcome.kind === "error") {
       setPhase("idle")
       fail(outcome.message, outcome.focus)
+      return
+    }
+    if (outcome.kind === "stale") {
+      // the server sees the dead session on re-render and creates a new one (SessionLoader)
+      setPhase("idle")
+      fail(outcome.message)
+      router.refresh()
       return
     }
     setPhase("placing")

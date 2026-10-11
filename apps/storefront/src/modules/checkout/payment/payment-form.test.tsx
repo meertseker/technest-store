@@ -138,6 +138,19 @@ describe("PaymentForm (Stripe)", () => {
     expect((placeButton() as HTMLButtonElement).disabled).toBe(false)
   })
 
+  it("a payment intent cancelled by a basket change in another tab reloads the payment step instead of erroring for ever", async () => {
+    confirmPayment.mockResolvedValue({
+      error: { type: "invalid_request_error", code: "payment_intent_unexpected_state", payment_intent: { status: "canceled" } },
+    })
+    render(<PaymentForm {...base} />)
+    await waitFor(() => expect((placeButton() as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(placeButton())
+    expect((await screen.findByTestId("error-summary")).textContent).toContain("basket changed")
+    // the page is refreshed so the server sees the dead session and creates a new one
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1))
+    expect(complete).not.toHaveBeenCalled()
+  })
+
   it("initiates the session when the total changed, then refreshes", async () => {
     prepare.mockResolvedValue({ ok: true })
     render(<PaymentForm {...base} session={null} needsSession />)

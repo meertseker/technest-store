@@ -185,9 +185,13 @@ const AUTHORISED = new Set(["requires_capture", "succeeded"])
 export type ConfirmOutcome =
   | { kind: "authorised" }
   | { kind: "error"; message: string; focus: "payment" | "button" }
+  /** The intent behind this form is dead (cancelled by a basket change elsewhere): the step must be reloaded */
+  | { kind: "stale"; message: string }
 
 export const NETWORK_ERROR =
   "We couldn't reach the payment service. Check your internet connection and try again. You haven't been charged."
+export const BASKET_CHANGED =
+  "Your basket changed in another tab or window, so this payment form is out of date. You haven't been charged. We've reloaded the payment step: check the total and try again."
 const GENERIC_ERROR = "Something went wrong with the payment. You haven't been charged. Please try again."
 const AUTH_FAILED =
   "Your bank couldn't confirm the payment. Try again, or use another card or payment method."
@@ -208,6 +212,9 @@ export function classifyConfirmResult(result: ConfirmResultLike): ConfirmOutcome
   }
   // Already authorised (e.g. the order step failed and the shopper retries)
   if (error.payment_intent?.status && AUTHORISED.has(error.payment_intent.status)) return { kind: "authorised" }
+  // Medusa cancels the intent when the basket changes (another tab, a stock
+  // refusal): confirming it again can never work, the step must start over.
+  if (error.payment_intent?.status === "canceled") return { kind: "stale", message: BASKET_CHANGED }
 
   switch (error.type) {
     case "validation_error":
