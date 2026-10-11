@@ -79,6 +79,8 @@ export type CreateBody = {
   }
   photo_file_id?: string
   ai_assisted?: boolean
+  /** Made when the form opens, kept across retries, new after a save or reset (lib/idempotency). */
+  idempotency_key?: string
 }
 
 export type CreatedProduct = {

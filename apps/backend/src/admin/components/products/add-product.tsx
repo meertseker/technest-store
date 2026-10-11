@@ -19,6 +19,7 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { PhotoCompare } from "../photo-compare"
 import { sdk } from "../../lib/client"
+import { newIdempotencyKey } from "../../lib/idempotency"
 import { ownerMessage } from "../../lib/today"
 import {
   approvePhoto,
@@ -226,6 +227,9 @@ export const AddProduct = () => {
   const [formError, setFormError] = useState<string | null>(null)
   const [product, setProduct] = useState<CreatedProduct | null>(null)
   const [processed, setProcessed] = useState<ProcessResult | null>(null)
+  // One key per product being added: a retry after a lost answer sends the same key,
+  // so a server that keeps keys creates the product once. New key for the next product.
+  const [idempotencyKey, setIdempotencyKey] = useState(() => newIdempotencyKey())
 
   // Display data: loaded on mount.
   const { data: aiStatus } = useQuery({
@@ -343,6 +347,7 @@ export const AddProduct = () => {
       },
       photo_file_id: original?.id,
       ai_assisted: Boolean(suggestion),
+      idempotency_key: idempotencyKey,
     })
   }
 
@@ -355,6 +360,7 @@ export const AddProduct = () => {
     setFormError(null)
     setProduct(null)
     setProcessed(null)
+    setIdempotencyKey(newIdempotencyKey())
     ;[upload, analyze, create, processPhotoMutation, approve].forEach((m) => m.reset())
   }
 
