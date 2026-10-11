@@ -1,6 +1,7 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
 import type { OrderEmailData } from "@technest/emails"
+import { BasketRuleShippingOptionRow, isPickupOption } from "../basket-rules"
 
 /** Medusa stores money in major units (3.49). Our contracts use pence. */
 export const toPence = (amount: unknown) => Math.round(Number(amount ?? 0) * 100)
@@ -11,8 +12,10 @@ export const storefrontUrl = () =>
 export const shopNotifyEmail = () => process.env.SHOP_NOTIFY_EMAIL || "hello@technest.co.uk"
 
 /**
- * True when the order's shipping method is a native pickup option (the
- * "Tech Nest pickup" fulfillment set, i.e. Click & Collect).
+ * True when the order's shipping method is Click & Collect: a native pickup
+ * fulfillment set or the `click-collect` option type, the same test the
+ * basket rule applies (`isPickupOption`), so a basket allowed as pickup is
+ * also captured and emailed as pickup.
  */
 export async function isPickupOrder(
   container: MedusaContainer,
@@ -23,10 +26,10 @@ export async function isPickupOrder(
   const query = container.resolve(ContainerRegistrationKeys.QUERY)
   const { data } = await query.graph({
     entity: "shipping_option",
-    fields: ["id", "service_zone.fulfillment_set.type"],
+    fields: ["id", "type.code", "service_zone.fulfillment_set.type"],
     filters: { id: ids },
   })
-  return data.some((o) => o.service_zone?.fulfillment_set?.type === "pickup")
+  return (data as BasketRuleShippingOptionRow[]).some(isPickupOption)
 }
 
 const ORDER_FIELDS = [
