@@ -75,6 +75,7 @@ export type ShipPackedFulfillmentsInput = {
   order_id: string
   fulfillments: { id: string; items: OrderItems }[]
   created_by?: string
+  labels?: { tracking_number: string; tracking_url: string; label_url: string }[]
 }
 
 /**
@@ -94,6 +95,7 @@ export const shipPackedFulfillmentsStep = createStep(
           fulfillment_id: fulfillment.id,
           items: fulfillment.items,
           created_by: input.created_by,
+          labels: input.labels ?? [],
           no_notification: false,
         },
       })

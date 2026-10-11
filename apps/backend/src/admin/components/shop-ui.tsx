@@ -138,6 +138,7 @@ export function ConfirmDialog({
   variant = "confirmation",
   onConfirm,
   onCancel,
+  children,
 }: {
   open: boolean
   title: string
@@ -147,6 +148,8 @@ export function ConfirmDialog({
   variant?: "confirmation" | "danger"
   onConfirm: () => void
   onCancel: () => void
+  /** Optional fields between the question and the buttons (e.g. a tracking number). */
+  children?: ReactNode
 }) {
   return (
     <Prompt open={open} variant={variant} onOpenChange={(o) => !o && onCancel()}>
@@ -155,6 +158,7 @@ export function ConfirmDialog({
           <Prompt.Title>{title}</Prompt.Title>
           <Prompt.Description className="txt-medium">{description}</Prompt.Description>
         </Prompt.Header>
+        {children ? <div className="flex flex-col gap-3 px-6 pb-2">{children}</div> : null}
         <Prompt.Footer className="flex-col-reverse gap-2 sm:flex-row">
           <Prompt.Cancel className={clx(TAP, "w-full sm:w-auto")} onClick={onCancel}>
             {cancelText}

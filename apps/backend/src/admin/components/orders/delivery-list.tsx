@@ -1,5 +1,5 @@
 import { ArrowPath } from "@medusajs/icons"
-import { Alert, Badge, Button, Container, Heading, Text, clx, toast } from "@medusajs/ui"
+import { Alert, Badge, Button, Container, Heading, Input, Label, Text, clx, toast } from "@medusajs/ui"
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { Link } from "react-router-dom"
@@ -12,6 +12,8 @@ import {
   paymentBadge,
   type ShippedResponse,
   shipBlocker,
+  type TrackingBody,
+  trackingInput,
 } from "../../lib/delivery"
 import { errorMessage, formatDateTime, formatPence, plural, timeAgo } from "../../lib/format"
 import { ConfirmDialog, FilterChips, PageLoading, Pager, TAP } from "../shop-ui"
@@ -45,12 +47,15 @@ export function DeliveryOrderCard({ order }: { order: DeliveryOrder }) {
   const queryClient = useQueryClient()
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<{ message: string; status?: number } | null>(null)
+  const [trackingNumber, setTrackingNumber] = useState("")
+  const [trackingUrl, setTrackingUrl] = useState("")
+  const [trackingError, setTrackingError] = useState<string | null>(null)
 
   const markShipped = useMutation({
-    mutationFn: () =>
+    mutationFn: (body: TrackingBody) =>
       sdk.client.fetch<ShippedResponse>(`/admin/delivery-orders/${order.id}/shipped`, {
         method: "POST",
-        body: {},
+        body,
       }),
     onMutate: () => setError(null),
     onSuccess: (r) => {
@@ -69,6 +74,7 @@ export function DeliveryOrderCard({ order }: { order: DeliveryOrder }) {
 
   const titleId = `delivery-order-${order.id}`
   const blockerId = `delivery-blocker-${order.id}`
+  const trackingId = `delivery-tracking-${order.id}`
   const place = deliveryPlace(order)
   const badge = paymentBadge(order)
   const blocker = order.status === "to_pack" ? shipBlocker(order) : null
@@ -186,12 +192,65 @@ export function DeliveryOrderCard({ order }: { order: DeliveryOrder }) {
         }
         confirmText="Yes, it's shipped"
         cancelText="Not yet"
-        onCancel={() => setConfirming(false)}
-        onConfirm={() => {
+        onCancel={() => {
           setConfirming(false)
-          markShipped.mutate()
+          setTrackingError(null)
         }}
-      />
+        onConfirm={() => {
+          const tracking = trackingInput(trackingNumber, trackingUrl)
+          if (!tracking.ok) {
+            setTrackingError(tracking.error)
+            return
+          }
+          setTrackingError(null)
+          setConfirming(false)
+          markShipped.mutate(tracking.body)
+        }}
+      >
+        <div className="flex flex-col gap-1">
+          <Label htmlFor={`${trackingId}-number`} size="base">
+            Tracking number (optional)
+          </Label>
+          <Input
+            id={`${trackingId}-number`}
+            value={trackingNumber}
+            onChange={(e) => setTrackingNumber(e.target.value)}
+            maxLength={64}
+            autoComplete="off"
+            className="min-h-11 text-base"
+            placeholder="e.g. RM123456789GB"
+            aria-invalid={!!trackingError}
+            aria-describedby={trackingError ? `${trackingId}-error` : `${trackingId}-hint`}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label htmlFor={`${trackingId}-url`} size="base">
+            Tracking link (optional)
+          </Label>
+          <Input
+            id={`${trackingId}-url`}
+            type="url"
+            inputMode="url"
+            value={trackingUrl}
+            onChange={(e) => setTrackingUrl(e.target.value)}
+            maxLength={500}
+            autoComplete="off"
+            className="min-h-11 text-base"
+            placeholder="https://"
+            aria-invalid={!!trackingError}
+            aria-describedby={trackingError ? `${trackingId}-error` : `${trackingId}-hint`}
+          />
+        </div>
+        {trackingError ? (
+          <Text size="base" className="text-ui-fg-error" id={`${trackingId}-error`} role="alert">
+            {trackingError}
+          </Text>
+        ) : (
+          <Text size="base" className="text-ui-fg-subtle" id={`${trackingId}-hint`}>
+            Both go in the customer's email. Leave them empty if the parcel has no tracking.
+          </Text>
+        )}
+      </ConfirmDialog>
     </li>
   )
 }

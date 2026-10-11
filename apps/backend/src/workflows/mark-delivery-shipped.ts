@@ -18,6 +18,16 @@ export type MarkDeliveryShippedInput = {
   order_id: string
   /** Admin user id, recorded on the fulfilment and the shipment. */
   actor_id?: string
+  /** Carrier tracking, already validated by the route; goes on every parcel this press ships. */
+  tracking_number?: string
+  tracking_url?: string
+}
+
+/** Medusa's label shape; `label_url` is for a printable label, which the shop has none of. */
+export function trackingLabels(input: Pick<MarkDeliveryShippedInput, "tracking_number" | "tracking_url">) {
+  return input.tracking_number
+    ? [{ tracking_number: input.tracking_number, tracking_url: input.tracking_url ?? "", label_url: "" }]
+    : []
 }
 
 /**
@@ -54,6 +64,7 @@ export const markDeliveryShippedWorkflow = createWorkflow(
         order_id: input.order_id,
         fulfillments: prepared.unshipped_fulfillments,
         created_by: input.actor_id,
+        labels: trackingLabels(input),
       }))
       return shipPackedFulfillmentsStep(packed)
     })
@@ -75,6 +86,7 @@ export const markDeliveryShippedWorkflow = createWorkflow(
             fulfillment_id: fulfillment.id,
             items: prepared.items,
             created_by: input.actor_id,
+            labels: trackingLabels(input),
             no_notification: false,
           })
         )

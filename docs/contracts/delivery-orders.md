@@ -57,7 +57,12 @@ refunded in full; each row says which (`payment_status`).
 
 ## `POST /admin/delivery-orders/:id/shipped`
 
-Body: `{}`. Creates the shipment for every fulfilment that was packed but never marked shipped, then
+Body: `{}`, or `{ "tracking_number": "RM123456789GB", "tracking_url": "https://..." }` (both optional,
+`tracking_url` only with a number). `tracking_number` is trimmed, 1–64 characters, letters, digits,
+spaces and dashes only; `tracking_url` is trimmed, at most 500 characters and must start with
+`http://` or `https://` (anything else is `400`: the email renders the link as given). They are
+stored as the shipment's label on every parcel this call ships, and the "on its way" email shows
+them. Creates the shipment for every fulfilment that was packed but never marked shipped, then
 fulfils every remaining item and ships that too. Each shipment fires `shipment.created` (the "on its
 way" email, `docs/contracts/emails.md`). The admin user is recorded as `created_by`.
 `fulfillment_id` is the fulfilment shipped last.
@@ -71,6 +76,8 @@ way" email, `docs/contracts/emails.md`). The admin user is recorded as `created_
   no-ops. The lock is the order's own (`technest-click-collect:<order id>`), the one taking its
   payment holds, so an order is never shipped while its payment is being captured. A lock still held
   after 10 s gives `409 conflict` "… is being updated. Refresh in a moment."
+- `400 invalid_data` for an unknown body field, a tracking number with other characters, a
+  tracking link that is not http(s) or a link without a number.
 - `400 not_allowed` for a Click & Collect order ("… Use the Collect tab."), an order with no delivery
   method, a cancelled or draft order, an order whose payment was not taken or was refunded in full,
   or an order with nothing left to ship. `404` for an unknown order.

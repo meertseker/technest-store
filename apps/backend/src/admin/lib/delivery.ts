@@ -77,3 +77,30 @@ export function shipBlocker(order: Pick<DeliveryOrder, "payment_status">): strin
   }
   return null
 }
+
+export type TrackingBody = { tracking_number?: string; tracking_url?: string }
+
+/** What the server accepts (docs/contracts/delivery-orders.md): letters, digits, spaces, dashes. */
+export const TRACKING_NUMBER_RE = /^[A-Za-z0-9 -]{1,64}$/
+export const TRACKING_URL_MAX = 500
+
+/**
+ * The optional tracking fields of the "Packed & shipped" dialog, checked the way
+ * the server checks them so the shop hears about a slip before the press.
+ */
+export function trackingInput(
+  number: string,
+  url: string
+): { ok: true; body: TrackingBody } | { ok: false; error: string } {
+  const n = number.trim()
+  const u = url.trim()
+  if (!n && !u) return { ok: true, body: {} }
+  if (!n) return { ok: false, error: "Add the tracking number as well, or clear the link." }
+  if (!TRACKING_NUMBER_RE.test(n)) {
+    return { ok: false, error: "A tracking number has only letters, numbers, spaces and dashes (up to 64)." }
+  }
+  if (u && !(/^https?:\/\//i.test(u) && u.length <= TRACKING_URL_MAX)) {
+    return { ok: false, error: "The tracking link must start with https:// and be under 500 characters." }
+  }
+  return { ok: true, body: u ? { tracking_number: n, tracking_url: u } : { tracking_number: n } }
+}

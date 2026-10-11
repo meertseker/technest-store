@@ -1,4 +1,4 @@
-import { deliveryPlace, deliverySummary, paymentBadge, shipBlocker } from "../delivery"
+import { deliveryPlace, deliverySummary, paymentBadge, shipBlocker, trackingInput } from "../delivery"
 
 describe("deliverySummary", () => {
   it("lists quantity × title, with the variant in brackets when there is one", () => {
@@ -45,5 +45,31 @@ describe("shipBlocker", () => {
 
   it("lets a paid order be shipped", () => {
     expect(shipBlocker({ payment_status: "paid" })).toBeNull()
+  })
+})
+
+describe("trackingInput", () => {
+  it("sends nothing when both fields are empty", () => {
+    expect(trackingInput("", "")).toEqual({ ok: true, body: {} })
+    expect(trackingInput("  ", " ")).toEqual({ ok: true, body: {} })
+  })
+
+  it("sends the number alone, or number and link, trimmed", () => {
+    expect(trackingInput(" RM123456789GB ", "")).toEqual({ ok: true, body: { tracking_number: "RM123456789GB" } })
+    expect(trackingInput("RM123456789GB", " https://www.royalmail.com/track-your-item#/tracking-results/RM123456789GB ")).toEqual({
+      ok: true,
+      body: {
+        tracking_number: "RM123456789GB",
+        tracking_url: "https://www.royalmail.com/track-your-item#/tracking-results/RM123456789GB",
+      },
+    })
+  })
+
+  it("refuses a link without a number, odd characters, and anything but http(s)", () => {
+    expect(trackingInput("", "https://x.test/1")).toMatchObject({ ok: false, error: expect.stringMatching(/number/i) })
+    expect(trackingInput("RM<script>", "")).toMatchObject({ ok: false, error: expect.stringMatching(/letters, numbers/i) })
+    expect(trackingInput("x".repeat(65), "")).toMatchObject({ ok: false })
+    expect(trackingInput("RM1", "javascript:alert(1)")).toMatchObject({ ok: false, error: expect.stringMatching(/https/i) })
+    expect(trackingInput("RM1", "https://x.test/" + "a".repeat(500))).toMatchObject({ ok: false })
   })
 })

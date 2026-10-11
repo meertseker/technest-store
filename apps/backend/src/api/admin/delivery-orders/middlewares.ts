@@ -11,8 +11,28 @@ export const AdminGetDeliveryOrdersParams = z.strictObject({
 })
 export type AdminGetDeliveryOrdersParams = z.infer<typeof AdminGetDeliveryOrdersParams>
 
-/** No body: the button carries nothing. */
-export const AdminPostDeliveryOrderShipped = z.strictObject({})
+/**
+ * Optional tracking, typed by the shop in the "Packed & shipped" dialog and shown in the
+ * customer's "on its way" email. Only http(s) links: the email renders the link as given.
+ */
+export const AdminPostDeliveryOrderShipped = z
+  .strictObject({
+    tracking_number: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9 -]{1,64}$/, "A tracking number has only letters, numbers, spaces and dashes (up to 64).")
+      .optional(),
+    tracking_url: z
+      .string()
+      .trim()
+      .max(500)
+      .regex(/^https?:\/\/\S+$/i, "The tracking link must start with https://.")
+      .optional(),
+  })
+  .refine((b) => !b.tracking_url || !!b.tracking_number, {
+    message: "Add the tracking number as well, or leave the link out.",
+  })
+export type AdminPostDeliveryOrderShipped = z.infer<typeof AdminPostDeliveryOrderShipped>
 
 export const adminDeliveryOrdersMiddlewares: MiddlewareRoute[] = [
   {
