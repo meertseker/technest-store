@@ -69,15 +69,15 @@ describe("home page", { timeout: 30_000 }, () => {
     expect(html).not.toMatch(/Medusa|Starter Template|GitHub/i)
   })
 
-  it("uses only real Tech Nest photos, with priority on the hero photo alone", async () => {
+  it("uses only real Tech Nest photos, all below the hero and lazy", async () => {
     const html = await render()
     const imgs = html.match(/<img[^>]*>/g) ?? []
+    expect(imgs.length).toBeGreaterThan(0)
     const srcs = imgs.map((i) => decodeURIComponent(i.match(/src="([^"]+)"/)?.[1] ?? ""))
     for (const s of srcs) expect(s).toMatch(/\/images\/shop\/(controller-wall|interior-wide|interior-audio|shopfront|aisle-accessories)\.jpg/)
+    // the hero has no photo (2026-10-12): nothing is eager, so the text and the picker paint first
     const eager = imgs.filter((i) => !/loading="lazy"/.test(i))
-    expect(eager).toHaveLength(1)
-    expect(eager[0]).toContain("interior-wide")
-    expect(eager[0]).toMatch(/fetchPriority="high"/i)
+    expect(eager).toHaveLength(0)
   })
 
   it("category tiles come from the backend, without the £1 range", async () => {

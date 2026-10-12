@@ -72,9 +72,17 @@ export default async function Home(props: { searchParams?: SP }) {
   const curated = bestSellers ? all.filter((p) => p.collection_id === bestSellers.id) : []
   const tiles = pickCategoryTiles(categories ?? [], 8)
 
+  const now = new Date()
+
   return (
     <>
-      <Hero tree={tree} current={current} />
+      <Hero
+        tree={tree}
+        current={current}
+        categories={categories ?? []}
+        hrefFor={(c) => categoryPath(categories ?? [], c)}
+        now={now}
+      />
       <TrustRow />
 
       {products ? (
@@ -117,7 +125,7 @@ export default async function Home(props: { searchParams?: SP }) {
 
       <RepairsCta />
       <GoogleReviews />
-      <ShopStrip now={new Date()} />
+      <ShopStrip now={now} />
       <TradeBanner />
     </>
   )
