@@ -7,6 +7,7 @@ import { JsonLd } from "@/lib/seo/json-ld"
 import { buildLocalBusinessJsonLd } from "@/lib/seo/local-business"
 import { siteConfig } from "@/lib/site-config"
 import CookieBanner from "@modules/consent/cookie-banner"
+import AnnouncementBar from "@modules/layout/components/announcement-bar"
 import CartMismatchBanner from "@modules/layout/components/cart-mismatch-banner"
 import Footer from "@modules/layout/templates/footer"
 import Nav from "@modules/layout/templates/nav"
@@ -26,6 +27,7 @@ export default async function PageLayout(props: { children: React.ReactNode }) {
   return (
     <>
       <JsonLd data={buildLocalBusinessJsonLd(siteConfig, getBaseURL())} />
+      <AnnouncementBar now={new Date()} />
       <CookieBanner />
       <Nav />
       {customer && cart && (

@@ -1,9 +1,19 @@
 import Image from "next/image"
 import Link from "next/link"
+import { ChevronRight } from "lucide-react"
 import type { HttpTypes } from "@medusajs/types"
 import PhotoPlaceholder from "@/components/ui/photo-placeholder"
 import { iconKeyFor } from "@/lib/catalogue/category-icon"
 import { h2Class } from "@/lib/typography"
+
+/** Department tint by the top-level handle (the first segment of the tile's path) */
+const TINTS: Record<string, string> = {
+  "phone-accessories": "phone",
+  audio: "audio",
+  gaming: "gaming",
+  "computer-laptop": "computer",
+}
+const tintFor = (href: string) => TINTS[href.split("/")[2] ?? ""] ?? "other"
 
 const imageOf = (c: HttpTypes.StoreProductCategory) => {
   const url = c.metadata?.image_url
@@ -66,14 +76,23 @@ export default function CategoryTiles({
               ) : (
                 <Link
                   href={hrefFor(c)}
-                  className="group flex h-full min-h-[108px] flex-col justify-between gap-3 rounded-lg border border-border bg-background p-4 transition-colors duration-150 hover:border-border-strong hover:bg-surface"
+                  style={
+                    {
+                      "--tint": `var(--tint-${tintFor(hrefFor(c))})`,
+                      "--tint-ink": `var(--tint-${tintFor(hrefFor(c))}-ink)`,
+                    } as React.CSSProperties
+                  }
+                  className="group flex h-full min-h-[116px] flex-col justify-between gap-3 rounded-lg bg-[image:var(--tint)] p-4 transition-[box-shadow,transform] duration-150 hover:shadow-[inset_0_0_0_2px_var(--tint-ink)]"
                 >
                   <PhotoPlaceholder
                     icon={icon}
                     size="tile"
-                    className="text-foreground transition-colors duration-150 group-hover:bg-background"
+                    className="bg-background/80 text-[color:var(--tint-ink)]"
                   />
-                  <span className="font-semibold leading-snug">{c.name}</span>
+                  <span className="flex items-center justify-between gap-2 font-semibold leading-snug">
+                    {c.name}
+                    <ChevronRight aria-hidden className="size-5 shrink-0 text-[color:var(--tint-ink)]" />
+                  </span>
                 </Link>
               )}
             </li>
