@@ -29,13 +29,13 @@ export function FitBanner({
   if (fit.kind === "none" || fit.kind === "not-applicable") return null
   const filtered = fit.kind === "filtered"
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-success-subtle px-4 py-2">
+    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-0 rounded-lg bg-success-subtle px-4 py-2">
       {filtered ? (
         <CircleCheck aria-hidden className="size-5 shrink-0 text-success" />
       ) : (
         <Smartphone aria-hidden className="size-5 shrink-0" />
       )}
-      <p className="flex-1">
+      <p className="min-w-0 flex-1 basis-[16rem] py-1">
         {filtered ? (
           <>
             Showing items that fit your <strong className="font-semibold">{fit.device}</strong>
@@ -47,7 +47,7 @@ export function FitBanner({
           </>
         )}
       </p>
-      <span className="flex flex-wrap gap-x-4">
+      <span className="flex flex-wrap gap-x-4 pl-8 sm:pl-0">
         <Link
           href={href(nav, withShowAll(nav.state, filtered))}
           scroll={false}

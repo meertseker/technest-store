@@ -33,7 +33,8 @@ export default function SortSelect({ state, pathname, options, defaultSort }: Pr
         (state.filters[k] ?? []).map((v) => <input key={`${k}-${v}`} type="hidden" name={k} value={v} />)
       )}
       {state.showAll && <input type="hidden" name="fit" value="all" />}
-      <label htmlFor="listing-sort" className="whitespace-nowrap">
+      {/* the visible word hides on a 320px phone so Filters and Sort share one row */}
+      <label htmlFor="listing-sort" className="sr-only whitespace-nowrap min-[360px]:not-sr-only">
         Sort<span className="sr-only"> by</span>
       </label>
       <div className="relative">
@@ -52,7 +53,7 @@ export default function SortSelect({ state, pathname, options, defaultSort }: Pr
               )
             )
           }
-          className="min-h-11 cursor-pointer appearance-none rounded border border-border-strong bg-background py-2 pl-3 pr-10 text-base"
+          className="min-h-11 max-w-[11rem] cursor-pointer appearance-none rounded border border-border-strong bg-background py-2 pl-3 pr-9 text-base"
         >
           {options.map((o) => (
             <option key={o} value={o}>

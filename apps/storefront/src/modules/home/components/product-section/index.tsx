@@ -45,7 +45,7 @@ export default function ProductSection({
       </div>
       {children}
       {products.length ? (
-        <ul className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 lg:grid-cols-4 lg:gap-x-6">
+        <ul className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-4 lg:gap-x-6">
           {products.map((p, i) => (
             <li key={p.id}>
               <ProductCard product={p} eager={i < 2} />

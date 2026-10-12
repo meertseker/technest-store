@@ -67,7 +67,8 @@ export default function BasketDrawer({
         data-testid="nav-cart-link"
       >
         <ShoppingBag aria-hidden className="size-5" />
-        <span>Basket</span>
+        {/* the word hides below 360px (a 320px phone); the accessible name keeps it */}
+        <span className="sr-only min-[360px]:not-sr-only">Basket</span>
         <span
           aria-hidden
           className={`min-w-6 rounded-full px-1.5 text-center text-sm font-semibold leading-6 tabular-nums ${count > 0 ? "bg-brand text-brand-foreground" : "bg-surface-2 text-foreground"}`}
