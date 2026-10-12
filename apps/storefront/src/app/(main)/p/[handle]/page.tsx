@@ -144,7 +144,7 @@ export default async function ProductPage(props: Props) {
             placeholderIcon={iconKeyFor(product.title, ...chain.map((c) => c.handle).reverse())}
           />
         </div>
-        <div className="mt-6 lg:sticky lg:top-[calc(var(--header-stack)+24px)] lg:col-span-5 lg:mt-0 lg:self-start">
+        <div className="mt-6 lg:sticky lg:top-[calc(var(--header-stack)+24px)] lg:col-span-5 lg:mt-0 lg:self-start lg:rounded-xl lg:border lg:border-border lg:p-6">
           <h1 className={h1Class}>
             {product.title}
           </h1>

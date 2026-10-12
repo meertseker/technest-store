@@ -41,15 +41,21 @@ All ratios checked with a script (WCAG formula). Red text on `--brand-subtle` = 
 Rules:
 - **Red never carries meaning on its own**, and errors never use brand red. Errors use `--destructive` plus an icon and text.
 - **Focus ring:** `outline: 3px solid var(--ring); outline-offset: 2px` on `:focus-visible` for every interactive element. Sticky header/bars get `scroll-padding-top`/`bottom` so focus is never hidden (WCAG 2.2 2.4.11).
-- **Radius:** `--radius: 0.5rem` (8px) for buttons, inputs and cards; `9999px` for chips/badges. One radius, used everywhere.
+- **Radius:** `--radius: 0.5rem` (8px) for buttons and inputs; `--radius-lg: 0.75rem` (12px, `rounded-lg`) for cards, tiles and notices; `--radius-xl` (16px) for the hero card and dark bands; `9999px` for chips, badges and pill variant buttons. (Revised 2026-10-12: one radius on everything read as a template.)
 - **Shadow:** none on cards (border only). `shadow-lg` only on overlays (drawer, sheet, popover, sticky mobile bar).
-- **Spacing:** Tailwind 4px scale. Page gutter 16px (<768), 24px (768–1279), 32px (≥1280). Section gap 48px mobile, 80px desktop.
+- **Spacing:** Tailwind 4px scale. Page gutter 16px (<768), 24px (768–1279), 32px (≥1280). Section rhythm 40px mobile, 64px desktop (`.section`; revised 2026-10-12 from 48/80).
 - **Motion:** 150–200ms ease-out; everything disabled under `prefers-reduced-motion`.
 - **Dark mode:** not at launch (keeps QA and photo backgrounds simple).
 
 ## 3. Typography
 
-One typeface: **Inter** (variable, `next/font/google`, `display: swap`, latin subset, self-hosted by Next). Atkinson Hyperlegible is the fallback choice if the lead prefers it, and swapping it is a one-line change. Prices use `font-variant-numeric: tabular-nums` (`.tabular-nums`).
+**Revised 2026-10-12 (storefront redesign):** headings (`h1Class`, `h2Class`, `h3Class` in `src/lib/typography.ts`),
+the display headline and prices use **Bricolage Grotesque** (variable, `next/font/google`, `--font-display`,
+`opsz` and `wdth` axes), set heavy and tight like the sign over the door. Body, UI and form text stay in Inter.
+Reverting is the one `Bricolage_Grotesque` declaration in `src/app/layout.tsx`. The scale below is otherwise
+unchanged, except H2 is 24/32 and the home display headline 36/56.
+
+One typeface for body and UI: **Inter** (variable, `next/font/google`, `display: swap`, latin subset, self-hosted by Next). Atkinson Hyperlegible is the fallback choice if the lead prefers it, and swapping it is a one-line change. Prices use `font-variant-numeric: tabular-nums` (`.tabular-nums`).
 
 | Style | Mobile (375) | Desktop (≥1024) | Weight | Line height | Use |
 |---|---|---|---|---|---|
