@@ -81,7 +81,6 @@ export default async function Home(props: { searchParams?: SP }) {
         current={current}
         categories={categories ?? []}
         hrefFor={(c) => categoryPath(categories ?? [], c)}
-        now={now}
       />
       <TrustRow />
 

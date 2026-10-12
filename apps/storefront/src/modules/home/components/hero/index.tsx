@@ -1,13 +1,23 @@
+import Image from "next/image"
 import Link from "next/link"
-import { ChevronRight, Clock, HelpCircle } from "lucide-react"
+import { ChevronRight, HelpCircle } from "lucide-react"
 import type { HttpTypes } from "@medusajs/types"
-import PhotoPlaceholder from "@/components/ui/photo-placeholder"
-import { iconKeyFor } from "@/lib/catalogue/category-icon"
 import { brandSlug } from "@/lib/devices/tree"
 import type { Device, DeviceTree } from "@/lib/devices/types"
 import { ONE_POUND_CATEGORY } from "@/lib/home/select"
-import { getOpenStatus } from "@/lib/site-config"
 import DeviceSearch from "@modules/devices/components/device-search"
+
+/**
+ * Real shop photos for the department tiles (docs/specs/design.md 5): the
+ * case wall for phone accessories, the speaker shelves for audio, the
+ * controller wall for gaming; the accessories aisle for anything else.
+ */
+const TILE_PHOTOS: Record<string, { src: string; position: string }> = {
+  "phone-accessories": { src: "/images/shop/case-wall.jpg", position: "50% 60%" },
+  audio: { src: "/images/shop/interior-audio.jpg", position: "40% 45%" },
+  gaming: { src: "/images/shop/controller-wall.jpg", position: "50% 45%" },
+}
+const FALLBACK_PHOTO = { src: "/images/shop/aisle-accessories.jpg", position: "50% 50%" }
 
 type Category = HttpTypes.StoreProductCategory
 
@@ -17,7 +27,8 @@ type Props = {
   /** the backend's category tree; the hero links straight into it */
   categories: Category[]
   hrefFor: (c: Category) => string
-  now: Date
+  /** kept for the visit band; the hero itself no longer shows the opening status */
+  now?: Date
 }
 
 const byRank = (a: Category, b: Category) => (a.rank ?? 0) - (b.rank ?? 0) || a.name.localeCompare(b.name)
@@ -30,14 +41,13 @@ const byRank = (a: Category, b: Category) => (a.rank ?? 0) - (b.rank ?? 0) || a.
  * biggest departments, all from the backend. Light surface so the red
  * tile and the black search button are the only strong colours.
  */
-export default function Hero({ tree, current, categories, hrefFor, now }: Props) {
+export default function Hero({ tree, current, categories, hrefFor }: Props) {
   const brands = tree.brands.slice(0, 6)
   const onePound = categories.find((c) => c.handle === ONE_POUND_CATEGORY) ?? null
   const departments = categories
     .filter((c) => !c.parent_category_id && c.handle !== ONE_POUND_CATEGORY)
     .sort(byRank)
     .slice(0, onePound ? 3 : 4)
-  const status = getOpenStatus(now)
 
   return (
     <section aria-labelledby="hero-title" className="border-b border-border bg-surface">
@@ -49,9 +59,8 @@ export default function Hero({ tree, current, categories, hrefFor, now }: Props)
           >
             Accessories that fit your phone
           </h1>
-          <p className="mt-3 max-w-[50ch] text-lg text-muted-foreground">
-            Tell us your phone or console once and we only show what fits it. Collect free from the
-            shop today, or have it delivered.
+          <p className="mt-3 max-w-[48ch] text-lg text-muted-foreground">
+            Tell us your phone or console and we only show what fits.
           </p>
 
           <div className="mt-6">
@@ -94,13 +103,6 @@ export default function Hero({ tree, current, categories, hrefFor, now }: Props)
             </nav>
           )}
 
-          <p className="mt-5 flex items-center gap-2 text-muted-foreground">
-            <Clock aria-hidden className="size-5 shrink-0" />
-            <span>
-              <strong className="font-semibold text-foreground">{status.label}</strong>
-              {" "}on Southwark Park Road, London SE16
-            </span>
-          </p>
         </div>
 
         {(onePound || departments.length > 0) && (
@@ -126,27 +128,38 @@ export default function Hero({ tree, current, categories, hrefFor, now }: Props)
                   </Link>
                 </li>
               )}
-              {departments.map((c) => (
-                <li key={c.id}>
-                  <Link
-                    href={hrefFor(c)}
-                    className="group flex h-full min-h-[132px] flex-col justify-between rounded-xl border border-border bg-background p-4 transition-colors duration-150 hover:border-border-strong lg:min-h-[164px] lg:p-5"
-                  >
-                    <PhotoPlaceholder
-                      icon={iconKeyFor(c.handle, c.name)}
-                      size="tile"
-                      className="bg-surface text-foreground transition-colors duration-150 group-hover:bg-surface-2"
-                    />
-                    <span className="flex items-end justify-between gap-2">
-                      <span className="font-semibold leading-tight">
-                        {c.name}
-                        <span className="block font-normal text-muted-foreground">Shop now</span>
+              {departments.map((c) => {
+                const photo = TILE_PHOTOS[c.handle] ?? FALLBACK_PHOTO
+                return (
+                  <li key={c.id}>
+                    <Link
+                      href={hrefFor(c)}
+                      className="group relative isolate flex h-full min-h-[132px] flex-col justify-end overflow-hidden rounded-xl bg-foreground p-4 text-white lg:min-h-[164px] lg:p-5"
+                    >
+                      <Image
+                        src={photo.src}
+                        alt=""
+                        fill
+                        loading="lazy"
+                        sizes="(min-width: 1024px) 260px, 45vw"
+                        style={{ objectPosition: photo.position }}
+                        className="-z-20 object-cover transition-transform duration-300 ease-out group-hover:scale-[1.04] motion-reduce:transition-none"
+                      />
+                      <span
+                        aria-hidden
+                        className="absolute inset-0 -z-10 bg-[linear-gradient(to_top,rgba(17,24,39,0.88)_0%,rgba(17,24,39,0.45)_45%,rgba(17,24,39,0.05)_100%)]"
+                      />
+                      <span className="flex items-end justify-between gap-2">
+                        <span className="font-display text-lg font-bold leading-tight tracking-[-0.01em] lg:text-xl">
+                          {c.name}
+                          <span className="block font-sans text-base font-normal tracking-normal text-white/85">Shop now</span>
+                        </span>
+                        <ChevronRight aria-hidden className="size-5 shrink-0" />
                       </span>
-                      <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
-                    </span>
-                  </Link>
-                </li>
-              ))}
+                    </Link>
+                  </li>
+                )
+              })}
             </ul>
           </nav>
         )}

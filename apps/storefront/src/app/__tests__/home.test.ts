@@ -74,7 +74,7 @@ describe("home page", { timeout: 30_000 }, () => {
     const imgs = html.match(/<img[^>]*>/g) ?? []
     expect(imgs.length).toBeGreaterThan(0)
     const srcs = imgs.map((i) => decodeURIComponent(i.match(/src="([^"]+)"/)?.[1] ?? ""))
-    for (const s of srcs) expect(s).toMatch(/\/images\/shop\/(controller-wall|interior-wide|interior-audio|shopfront|aisle-accessories)\.jpg/)
+    for (const s of srcs) expect(s).toMatch(/\/images\/shop\/(controller-wall|interior-wide|interior-audio|case-wall|shopfront|aisle-accessories)\.jpg/)
     // the hero has no photo (2026-10-12): nothing is eager, so the text and the picker paint first
     const eager = imgs.filter((i) => !/loading="lazy"/.test(i))
     expect(eager).toHaveLength(0)
