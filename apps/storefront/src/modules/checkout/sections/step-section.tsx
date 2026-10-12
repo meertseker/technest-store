@@ -1,5 +1,6 @@
 import { CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { h2Class } from "@/lib/typography"
 
 export type SectionState = "open" | "done" | "locked"
 
@@ -37,7 +38,7 @@ export default function StepSection({
         <h2
           id={headingId}
           className={cn(
-            "flex items-center gap-3 text-[22px] font-semibold leading-tight lg:text-[28px]",
+            `flex items-center gap-3 ${h2Class}`,
             state === "locked" && "text-muted-foreground"
           )}
         >

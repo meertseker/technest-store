@@ -74,7 +74,7 @@ export default function FilterPanel({
 
       {fit && (
         <fieldset className="border-b border-border pb-4">
-          <legend className="text-lg font-semibold">Fits your device</legend>
+          <legend className="font-display text-lg font-bold">Fits your device</legend>
           <label className="mt-2 flex min-h-11 cursor-pointer items-center gap-3">
             <input
               type="checkbox"
@@ -91,7 +91,7 @@ export default function FilterPanel({
 
       {facets.map((facet) => (
         <fieldset key={facet.key} className="border-b border-border py-4">
-          <legend className="float-left w-full text-lg font-semibold">{facet.label}</legend>
+          <legend className="float-left w-full font-display text-lg font-bold">{facet.label}</legend>
           <ul className="clear-left pt-2">
             {facet.options.map((o) => {
               const id = `${idPrefix}-${facet.key}-${o.value}`

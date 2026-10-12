@@ -44,7 +44,7 @@ const GUIDES = [
 export default function DeviceHelpPage() {
   return (
     <div className="content-container max-w-3xl py-8 lg:py-12">
-      <h1 className="text-[28px] font-bold leading-tight tracking-tight lg:text-4xl">
+      <h1 className="font-display text-[28px] font-bold leading-[1.1] tracking-[-0.02em] lg:text-[36px]">
         How do I find my model?
       </h1>
       <p className="mt-2 text-lg text-muted-foreground">
@@ -55,7 +55,7 @@ export default function DeviceHelpPage() {
           <section
             key={g.id}
             aria-labelledby={`guide-${g.id}`}
-            className="rounded border border-border p-4"
+            className="rounded-lg border border-border p-4"
           >
             <h2 id={`guide-${g.id}`} className="text-xl font-semibold">
               {g.title}

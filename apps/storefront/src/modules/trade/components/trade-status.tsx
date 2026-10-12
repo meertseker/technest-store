@@ -25,13 +25,13 @@ export default function TradeStatus({
   return (
     <section
       aria-labelledby="trade-status-title"
-      className="rounded border border-border p-4 lg:p-6"
+      className="rounded-lg border border-border p-4 lg:p-6"
       data-testid="trade-status"
     >
       <StatusBadge tone={copy.tone}>{copy.label}</StatusBadge>
       <H
         id="trade-status-title"
-        className="mt-3 text-[22px] font-semibold leading-tight"
+        className="mt-3 font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em]"
       >
         {copy.title}
       </H>

@@ -24,7 +24,7 @@ export default function ProductGrid({
 }: Props) {
   const fits = new Set(fitIds)
   return (
-    <ul className={`grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-3 lg:gap-x-6 ${columns}`}>
+    <ul className={`grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:gap-x-6 lg:gap-y-10 ${columns}`}>
       {products.map((p, i) => {
         const variants = p.variants ?? []
         const single = variants.length === 1 && isPurchasable(variants[0]) ? variants[0] : null

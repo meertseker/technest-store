@@ -166,7 +166,7 @@ export function RadioGroup({ name, label, hint, error, options, defaultValue, cl
         {options.map((o, i) => (
           <label
             key={o.value}
-            className="flex min-h-12 cursor-pointer items-start gap-3 rounded border border-border px-4 py-3 transition-colors duration-150 hover:bg-surface has-[:checked]:border-foreground has-[:checked]:bg-surface"
+            className="flex min-h-12 cursor-pointer items-start gap-3 rounded-lg border border-border px-4 py-3 transition-colors duration-150 hover:bg-surface has-[:checked]:border-foreground has-[:checked]:bg-surface"
           >
             <input
               type="radio"

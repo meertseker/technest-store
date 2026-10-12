@@ -27,6 +27,7 @@ import ProductGrid from "@modules/catalogue/components/product-grid"
 import BuyBox from "@modules/catalogue/pdp/buy-box"
 import Gallery from "@modules/catalogue/pdp/gallery"
 import { Accordion, DeliveryBox, FitBox, Specs, type FitStatus } from "@modules/catalogue/pdp/parts"
+import { h1Class, h2Class } from "@/lib/typography"
 
 type Props = {
   params: Promise<{ handle: string }>
@@ -144,7 +145,7 @@ export default async function ProductPage(props: Props) {
           />
         </div>
         <div className="mt-6 lg:sticky lg:top-[calc(var(--header-stack)+24px)] lg:col-span-5 lg:mt-0 lg:self-start">
-          <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em] lg:text-4xl">
+          <h1 className={h1Class}>
             {product.title}
           </h1>
           {product.subtitle && <p className="mt-1 text-lg text-muted-foreground">{product.subtitle}</p>}
@@ -208,7 +209,7 @@ export default async function ProductPage(props: Props) {
 
       {goesWith.length >= 2 && (
         <section aria-labelledby="goes-with" className="mt-12 lg:mt-16">
-          <h2 id="goes-with" className="text-[22px] font-semibold leading-tight lg:text-[28px]">
+          <h2 id="goes-with" className={h2Class}>
             Goes well with this
           </h2>
           <div className="mt-6">

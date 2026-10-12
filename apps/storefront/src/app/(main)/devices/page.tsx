@@ -24,7 +24,7 @@ export default async function DevicesPage(props: { searchParams: Promise<SP> }) 
 
   return (
     <div className="content-container max-w-3xl py-8 lg:py-12">
-      <h1 className="text-[28px] font-bold leading-tight tracking-tight lg:text-4xl">
+      <h1 className="font-display text-[28px] font-bold leading-[1.1] tracking-[-0.02em] lg:text-[36px]">
         Choose your device
       </h1>
       <p className="mt-2 text-lg text-muted-foreground">

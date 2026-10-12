@@ -8,7 +8,7 @@ import { activeSection, type ShopMenuGroup } from "@/lib/layout/menu"
 import { cn } from "@/lib/utils"
 
 const item =
-  "inline-flex min-h-11 cursor-pointer items-center gap-1 rounded px-3 font-semibold transition-colors duration-150 hover:bg-surface aria-[current]:underline aria-[current]:decoration-2 aria-[current]:underline-offset-8"
+  "inline-flex min-h-11 cursor-pointer items-center gap-1 rounded px-3 font-semibold transition-colors duration-150 hover:bg-surface-2 aria-[current]:underline aria-[current]:decoration-brand aria-[current]:decoration-[3px] aria-[current]:underline-offset-[10px]"
 const panelLink =
   "inline-flex min-h-11 items-center rounded underline-offset-4 hover:underline"
 
@@ -82,7 +82,7 @@ export default function MainNav({
           {open && (
             <div
               id={panelId}
-              className="absolute inset-x-0 top-full z-50 border-b border-border bg-background shadow-lg"
+              className="absolute inset-x-0 top-full z-50 border-y border-border bg-background shadow-lg"
               data-testid="shop-menu"
             >
               <div className="content-container py-6">

@@ -25,7 +25,7 @@ export default function ReturnNotice({ code }: { code: string | undefined }) {
     return (
       <div
         role="status"
-        className="mt-4 flex gap-3 rounded border border-border bg-surface p-3 text-base"
+        className="mt-4 flex gap-3 rounded-lg border border-border bg-surface p-3 text-base"
         data-testid="basket-return-status"
       >
         <Info aria-hidden className="mt-0.5 size-5 shrink-0" />
@@ -36,7 +36,7 @@ export default function ReturnNotice({ code }: { code: string | undefined }) {
   return (
     <div
       role="alert"
-      className="mt-4 flex gap-3 rounded border border-destructive p-3 text-base"
+      className="mt-4 flex gap-3 rounded-lg border border-destructive p-3 text-base"
       data-testid="basket-return-error"
     >
       <AlertCircle aria-hidden className="mt-0.5 size-5 shrink-0 text-destructive" />

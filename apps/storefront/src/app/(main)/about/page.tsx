@@ -3,6 +3,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { buttonVariants } from "@/components/ui/button"
 import { siteConfig } from "@/lib/site-config"
+import { h1Class, h2Class } from "@/lib/typography"
 
 export const metadata: Metadata = {
   title: "About us",
@@ -46,7 +47,7 @@ export default function AboutPage() {
     <div className="content-container py-10 lg:py-14">
       <div className="grid gap-8 lg:grid-cols-12 lg:items-center">
         <div className="lg:col-span-7">
-          <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em] lg:text-4xl">
+          <h1 className={h1Class}>
             About Tech Nest
           </h1>
           <p className="mt-4 max-w-[68ch] text-lg">
@@ -75,19 +76,19 @@ export default function AboutPage() {
             width={2000}
             height={1500}
             sizes="(min-width: 1280px) 500px, (min-width: 1024px) 40vw, 100vw"
-            className="h-auto w-full rounded border border-border"
+            className="h-auto w-full rounded-lg border border-border"
             priority
           />
         </div>
       </div>
 
       <section aria-labelledby="about-what" className="mt-14">
-        <h2 id="about-what" className="text-[22px] font-semibold leading-tight lg:text-[28px]">
+        <h2 id="about-what" className={h2Class}>
           What we do
         </h2>
         <ul className="mt-6 grid gap-6 md:grid-cols-2">
           {WHAT_WE_DO.map((item) => (
-            <li key={item.title} className="flex flex-col rounded border border-border bg-surface p-6">
+            <li key={item.title} className="flex flex-col rounded-lg border border-border bg-surface p-6">
               <h3 className="text-lg font-semibold lg:text-xl">{item.title}</h3>
               <p className="mt-2 flex-1">{item.text}</p>
               <Link href={item.href} className="mt-4 inline-flex min-h-11 items-center font-semibold underline underline-offset-4">
@@ -106,11 +107,11 @@ export default function AboutPage() {
             width={2000}
             height={1500}
             sizes="(min-width: 1280px) 500px, (min-width: 1024px) 40vw, 100vw"
-            className="h-auto w-full rounded border border-border"
+            className="h-auto w-full rounded-lg border border-border"
           />
         </div>
         <div className="lg:col-span-7">
-          <h2 id="about-visit" className="text-[22px] font-semibold leading-tight lg:text-[28px]">
+          <h2 id="about-visit" className={h2Class}>
             Come and see us
           </h2>
           <p className="mt-3 max-w-[68ch]">

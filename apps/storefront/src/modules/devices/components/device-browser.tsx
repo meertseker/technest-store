@@ -13,7 +13,7 @@ type Props = {
 }
 
 const stepLink =
-  "flex min-h-12 items-center justify-between gap-3 rounded border border-border bg-background px-4 py-2 font-semibold transition-colors duration-150 hover:border-border-strong hover:bg-surface"
+  "flex min-h-12 items-center justify-between gap-3 rounded-lg border border-border bg-background px-4 py-2 font-semibold transition-colors duration-150 hover:border-border-strong hover:bg-surface"
 
 /** Brand -> series -> model, as plain links (server-rendered, no JS needed) */
 export default function DeviceBrowser({ tree, brand, series, returnTo, currentSlug }: Props) {

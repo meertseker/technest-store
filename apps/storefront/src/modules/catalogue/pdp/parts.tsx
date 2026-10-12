@@ -20,7 +20,7 @@ export function FitBox({ status }: { status: FitStatus }) {
   if (status.kind === "none") return null
   if (status.kind === "fits") {
     return (
-      <div className="mt-4 flex gap-3 rounded bg-success-subtle p-4 text-success">
+      <div className="mt-4 flex gap-3 rounded-lg bg-success-subtle p-4 text-success">
         <CircleCheck aria-hidden className="mt-0.5 size-5 shrink-0" />
         <div>
           <p className="font-semibold">Fits your {status.device}</p>
@@ -31,7 +31,7 @@ export function FitBox({ status }: { status: FitStatus }) {
   }
   if (status.kind === "doesnt-fit") {
     return (
-      <div className="mt-4 flex gap-3 rounded bg-warning-subtle p-4">
+      <div className="mt-4 flex gap-3 rounded-lg bg-warning-subtle p-4">
         <TriangleAlert aria-hidden className="mt-0.5 size-5 shrink-0 text-warning" />
         <p>
           <span className="font-semibold text-warning">Doesn&apos;t fit your {status.device}</span>
@@ -47,7 +47,7 @@ export function FitBox({ status }: { status: FitStatus }) {
     )
   }
   return (
-    <div className="mt-4 flex items-center gap-3 rounded border border-border p-4">
+    <div className="mt-4 flex items-center gap-3 rounded-lg border border-border bg-surface p-4">
       <Smartphone aria-hidden className="size-5 shrink-0" />
       <p>
         Check it fits:{" "}
@@ -66,8 +66,8 @@ const ICONS = { collect: Store, standard: Truck, "next-day": Zap } as const
 
 export function DeliveryBox({ lines, fallbackNote }: { lines: DeliveryLine[]; fallbackNote?: boolean }) {
   return (
-    <section aria-labelledby="delivery-heading" className="mt-6 rounded border border-border p-4">
-      <h2 id="delivery-heading" className="text-lg font-semibold">
+    <section aria-labelledby="delivery-heading" className="mt-6 rounded-lg border border-border p-4">
+      <h2 id="delivery-heading" className="font-display text-lg font-bold">
         Delivery and collection
       </h2>
       <ul className="mt-2 space-y-3">
@@ -106,7 +106,7 @@ export function Accordion({
 }) {
   return (
     <details open={open} className="group border-b border-border">
-      <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 py-2 text-lg font-semibold [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 py-2 font-display text-lg font-bold [&::-webkit-details-marker]:hidden">
         {title}
         <ChevronDown
           aria-hidden

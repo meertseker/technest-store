@@ -8,6 +8,8 @@ module.exports = {
     "./src/pages/**/*.{js,ts,jsx,tsx}",
     "./src/components/**/*.{js,ts,jsx,tsx}",
     "./src/modules/**/*.{js,ts,jsx,tsx}",
+    // class strings shared from lib (typography.ts and friends)
+    "./src/lib/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
@@ -50,6 +52,7 @@ module.exports = {
         destructive: "var(--destructive)",
         ring: "var(--ring)",
       },
+      // Radius hierarchy: controls 8px (DEFAULT), cards and tiles 12px (lg), chips pill
       borderRadius: {
         none: "0px",
         soft: "2px",
@@ -58,6 +61,8 @@ module.exports = {
         large: "16px",
         circle: "9999px",
         DEFAULT: "var(--radius)",
+        lg: "var(--radius-lg)",
+        xl: "var(--radius-xl)",
       },
       maxWidth: {
         "8xl": "100rem",
@@ -75,6 +80,7 @@ module.exports = {
         "3xl": "2rem",
       },
       fontFamily: {
+        display: ["var(--font-display)", "var(--font-inter)", "Inter", "sans-serif"],
         sans: [
           "var(--font-inter)",
           "Inter",

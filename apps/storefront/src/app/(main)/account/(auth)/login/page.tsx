@@ -38,7 +38,7 @@ export default async function LoginPage({ searchParams }: Props) {
       </div>
 
       <div className="flex flex-col gap-6 lg:col-span-6 xl:col-span-5 xl:col-start-8">
-        <section aria-labelledby="new-here" className="rounded border border-border bg-surface p-6">
+        <section aria-labelledby="new-here" className="rounded-lg border border-border bg-surface p-6">
           <h2 id="new-here" className={h2Class}>
             New to Tech Nest?
           </h2>
@@ -50,7 +50,7 @@ export default async function LoginPage({ searchParams }: Props) {
             Create an account
           </Link>
         </section>
-        <section aria-labelledby="no-account" className="rounded border border-border p-6">
+        <section aria-labelledby="no-account" className="rounded-lg border border-border p-6">
           <h2 id="no-account" className="text-lg font-semibold">
             You do not need an account to shop
           </h2>

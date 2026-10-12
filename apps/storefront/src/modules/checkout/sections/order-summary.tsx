@@ -122,7 +122,7 @@ export function DesktopOrderSummary({
       className="hidden lg:col-span-5 lg:block"
       data-testid="desktop-summary"
     >
-      <div className="sticky top-6 rounded border border-border bg-surface p-6">
+      <div className="sticky top-6 rounded-lg border border-border bg-surface p-6">
         <h2 id="order-summary-title" className="mb-4 text-xl font-semibold">
           Order summary
         </h2>

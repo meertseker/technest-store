@@ -80,9 +80,9 @@ export default function FilterSheet({ facets, index, state, pathname, defaultSor
       <Dialog open={open} onClose={() => setOpen(false)} className="relative z-[80] lg:hidden">
         <div className="fixed inset-0 bg-foreground/40" aria-hidden />
         <div className="fixed inset-x-0 bottom-0 flex max-h-[90vh]">
-          <DialogPanel className="flex max-h-[90vh] w-full flex-col rounded-t-lg bg-background shadow-lg">
+          <DialogPanel className="flex max-h-[90vh] w-full flex-col rounded-t-xl bg-background shadow-lg">
             <div className="flex items-center justify-between border-b border-border px-4 py-2">
-              <DialogTitle className="text-lg font-semibold">Filters</DialogTitle>
+              <DialogTitle className="font-display text-xl font-bold">Filters</DialogTitle>
               <button
                 type="button"
                 onClick={() => setOpen(false)}

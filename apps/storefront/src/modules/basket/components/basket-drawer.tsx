@@ -63,14 +63,14 @@ export default function BasketDrawer({
         }}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 px-1.5 hover:underline sm:gap-2 sm:px-2"
+        className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded px-2 transition-colors duration-150 hover:bg-surface sm:gap-2 sm:px-3"
         data-testid="nav-cart-link"
       >
         <ShoppingBag aria-hidden className="size-5" />
         <span>Basket</span>
         <span
           aria-hidden
-          className="min-w-6 rounded-full bg-foreground px-1.5 text-center text-sm font-semibold leading-6 text-background tabular-nums"
+          className={`min-w-6 rounded-full px-1.5 text-center text-sm font-semibold leading-6 tabular-nums ${count > 0 ? "bg-brand text-brand-foreground" : "bg-surface-2 text-foreground"}`}
           data-testid="nav-cart-count"
         >
           {count}
@@ -102,7 +102,7 @@ export default function BasketDrawer({
             justAdded={justAdded}
             heading={
               <>
-                <SheetTitle className="text-lg font-semibold leading-[44px] lg:text-xl">
+                <SheetTitle className="font-display text-xl font-bold leading-[44px]">
                   Your basket ({count})
                 </SheetTitle>
                 <SheetDescription className="sr-only">

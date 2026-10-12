@@ -114,7 +114,7 @@ function Tile({
     <li>
       <Link
         href={href}
-        className="flex h-full min-h-[88px] items-start gap-3 rounded border border-border p-4 transition-colors duration-150 hover:bg-surface"
+        className="flex h-full min-h-[88px] items-start gap-3 rounded-lg border border-border p-4 transition-colors duration-150 hover:bg-surface"
       >
         <Icon aria-hidden className="mt-0.5 size-6 shrink-0 text-muted-foreground" />
         <span className="flex flex-col gap-1">

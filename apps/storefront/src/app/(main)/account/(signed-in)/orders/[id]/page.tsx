@@ -39,7 +39,7 @@ export default async function AccountOrderPage({ params }: Props) {
       <div>
         <h1 className={h1Class}>Order #{order.display_id}</h1>
         <p className="mt-2 text-muted-foreground">Placed on {formatOrderDate(order.created_at as string)}</p>
-        <div className="mt-4 flex flex-col gap-2 rounded border border-border p-4 sm:flex-row sm:items-center sm:gap-4">
+        <div className="mt-4 flex flex-col gap-2 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:gap-4">
           <StatusBadge tone={status.tone} className="self-start">
             {status.label}
           </StatusBadge>
@@ -78,7 +78,7 @@ export default async function AccountOrderPage({ params }: Props) {
       </section>
 
       <div className="grid gap-8 md:grid-cols-2">
-        <section aria-labelledby="delivery" className="rounded border border-border p-4">
+        <section aria-labelledby="delivery" className="rounded-lg border border-border p-4">
           <h2 id="delivery" className="flex items-center gap-2 text-lg font-semibold">
             {collect ? <Store aria-hidden className="size-5" /> : <Truck aria-hidden className="size-5" />}
             {collect ? "Click & Collect" : "Delivery"}
@@ -97,7 +97,7 @@ export default async function AccountOrderPage({ params }: Props) {
           {order.shipping_methods?.[0]?.name && <p className="mt-2 text-muted-foreground">{order.shipping_methods[0].name}</p>}
         </section>
 
-        <section aria-labelledby="help" className="rounded border border-border p-4">
+        <section aria-labelledby="help" className="rounded-lg border border-border p-4">
           <h2 id="help" className="flex items-center gap-2 text-lg font-semibold">
             <Phone aria-hidden className="size-5" />
             Help with this order

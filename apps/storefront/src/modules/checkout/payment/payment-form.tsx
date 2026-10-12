@@ -169,7 +169,7 @@ function SessionLoader({ needsSession }: { needsSession: boolean }) {
         <Loader2 aria-hidden className="size-5 animate-spin motion-reduce:animate-none" />
         Loading secure payment form…
       </p>
-      <div aria-hidden className="h-40 rounded border border-border bg-surface-2" />
+      <div aria-hidden className="h-40 rounded-lg border border-border bg-surface-2" />
     </div>
   )
 }
@@ -245,7 +245,7 @@ function StripeCheckout({
     <>
       {klarna && (
         <p
-          className="flex items-start gap-2 rounded border border-border bg-surface p-3"
+          className="flex items-start gap-2 rounded-lg border border-border bg-surface p-3"
           data-testid={`klarna-${klarna.kind}`}
         >
           <Info aria-hidden className="mt-0.5 size-5 shrink-0" />

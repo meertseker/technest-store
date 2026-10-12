@@ -7,6 +7,7 @@ import {
   type GoogleReview,
 } from "@/lib/reviews/reviews"
 import { siteConfig } from "@/lib/site-config"
+import { blockLinkClass, h2Class } from "@/lib/typography"
 
 const REVIEWS: GoogleReview[] = data.reviews
 
@@ -36,19 +37,19 @@ export default function GoogleReviews({ count = 3 }: { count?: number }) {
   const { value, count: total } = siteConfig.rating
 
   return (
-    <section aria-labelledby="reviews-heading" className="content-container py-12 lg:py-20">
+    <section aria-labelledby="reviews-heading" className="content-container section">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 id="reviews-heading" className="text-[22px] font-semibold leading-tight lg:text-[28px]">
-            {value.toFixed(1)} on Google · {total} reviews
+          <h2 id="reviews-heading" className={h2Class}>
+            {value.toFixed(1)} on Google from {total} reviews
           </h2>
-          <p className="mt-1 text-muted-foreground">Reviews from Google</p>
+          <p className="mt-1 text-muted-foreground">Reviews from Google, as customers wrote them</p>
         </div>
         <a
           href={siteConfig.mapsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-11 items-center gap-2 font-semibold underline underline-offset-4"
+          className={`${blockLinkClass} gap-2`}
         >
           Read all reviews on Google
           <ExternalLink aria-hidden className="size-4" />
@@ -60,14 +61,15 @@ export default function GoogleReviews({ count = 3 }: { count?: number }) {
           const month = approxReviewMonth(r.relative_date, data.collected_at)
           return (
             <li key={r.id}>
-              <figure className="flex h-full flex-col gap-3 rounded border border-border bg-background p-5">
+              <figure className="flex h-full flex-col gap-3 rounded-lg border border-border bg-background p-5">
                 <Stars value={r.stars} />
                 <blockquote className="max-w-[68ch] whitespace-pre-line break-words">
                   {r.text}
                 </blockquote>
                 <figcaption className="mt-auto text-sm text-muted-foreground" data-small-text>
                   <span className="font-semibold text-foreground">{displayAuthor(r.author)}</span>
-                  {month && <> · {month}</>} · Google review
+                  {" on Google"}
+                  {month && `, ${month}`}
                 </figcaption>
               </figure>
             </li>

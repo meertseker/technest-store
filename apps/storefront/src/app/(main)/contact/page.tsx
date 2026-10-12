@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Clock, Mail, MapPin, Phone } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { formatTime, getOpenStatus, siteConfig } from "@/lib/site-config"
+import { h1Class } from "@/lib/typography"
 
 export const metadata: Metadata = {
   title: "Contact us",
@@ -25,7 +26,7 @@ export default function ContactPage() {
 
   return (
     <div className="content-container py-10 lg:py-14">
-      <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em] lg:text-4xl">
+      <h1 className={h1Class}>
         Contact us
       </h1>
       <p className="mt-3 max-w-[68ch] text-lg">
@@ -36,7 +37,7 @@ export default function ContactPage() {
       <div className="mt-8 grid gap-10 lg:grid-cols-12">
         <div className="flex flex-col gap-8 lg:col-span-7">
           <section aria-labelledby="contact-call">
-            <h2 id="contact-call" className="flex items-center gap-2 text-[22px] font-semibold lg:text-[28px]">
+            <h2 id="contact-call" className="flex items-center gap-2 font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em] lg:text-[32px]">
               <Phone aria-hidden className="size-6 text-muted-foreground" /> Call us
             </h2>
             <a
@@ -49,7 +50,7 @@ export default function ContactPage() {
 
           {email && (
             <section aria-labelledby="contact-email">
-              <h2 id="contact-email" className="flex items-center gap-2 text-[22px] font-semibold lg:text-[28px]">
+              <h2 id="contact-email" className="flex items-center gap-2 font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em] lg:text-[32px]">
                 <Mail aria-hidden className="size-6 text-muted-foreground" /> Email us
               </h2>
               <a href={`mailto:${email}`} className="mt-2 inline-flex min-h-11 items-center font-semibold underline underline-offset-4">
@@ -59,7 +60,7 @@ export default function ContactPage() {
           )}
 
           <section aria-labelledby="contact-visit">
-            <h2 id="contact-visit" className="flex items-center gap-2 text-[22px] font-semibold lg:text-[28px]">
+            <h2 id="contact-visit" className="flex items-center gap-2 font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em] lg:text-[32px]">
               <MapPin aria-hidden className="size-6 text-muted-foreground" /> Visit the shop
             </h2>
             <address className="mt-3 not-italic">
@@ -81,7 +82,7 @@ export default function ContactPage() {
           </section>
 
           <section aria-labelledby="contact-hours">
-            <h2 id="contact-hours" className="flex items-center gap-2 text-[22px] font-semibold lg:text-[28px]">
+            <h2 id="contact-hours" className="flex items-center gap-2 font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em] lg:text-[32px]">
               <Clock aria-hidden className="size-6 text-muted-foreground" /> Opening hours
             </h2>
             <p className="mt-3 font-semibold">{status.label}</p>
@@ -107,7 +108,7 @@ export default function ContactPage() {
           </section>
 
           <section aria-labelledby="contact-help">
-            <h2 id="contact-help" className="text-[22px] font-semibold lg:text-[28px]">
+            <h2 id="contact-help" className="font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em] lg:text-[32px]">
               Help with an order
             </h2>
             <ul className="mt-2">
@@ -129,7 +130,7 @@ export default function ContactPage() {
             width={2000}
             height={1413}
             sizes="(min-width: 1280px) 500px, (min-width: 1024px) 40vw, 100vw"
-            className="h-auto w-full rounded border border-border"
+            className="h-auto w-full rounded-lg border border-border"
           />
         </div>
       </div>

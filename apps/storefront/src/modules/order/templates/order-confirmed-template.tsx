@@ -11,6 +11,7 @@ import {
 } from "@lib/order/delivery-estimate"
 import { SummaryBody } from "@modules/checkout/sections/order-summary"
 import CreateAccountOffer from "@modules/order/components/create-account-offer"
+import { h1Class } from "@/lib/typography"
 
 /** Today's opening hours in London time: "9am to 8pm" or null when closed */
 export function todaysHours(now: Date) {
@@ -45,7 +46,7 @@ export default function OrderConfirmedTemplate({
     <div className="content-container py-8 lg:py-12" data-testid="order-complete-container">
       <div className="mx-auto flex max-w-3xl flex-col gap-8">
         <header className="flex flex-col gap-2">
-          <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em] lg:text-4xl">
+          <h1 className={h1Class}>
             Thanks, your order is placed
           </h1>
           <p className="text-lg">
@@ -61,7 +62,7 @@ export default function OrderConfirmedTemplate({
         {kind === "collect" ? (
           <section
             aria-labelledby="collect-title"
-            className="grid overflow-hidden rounded border border-border md:grid-cols-2"
+            className="grid overflow-hidden rounded-lg border border-border md:grid-cols-2"
             data-testid="collect-details"
           >
             <Image
@@ -73,7 +74,7 @@ export default function OrderConfirmedTemplate({
               className="h-full max-h-72 w-full object-cover md:max-h-none"
             />
             <div className="flex flex-col gap-3 p-4 md:p-6">
-              <h2 id="collect-title" className="text-[22px] font-semibold leading-tight">
+              <h2 id="collect-title" className="font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em]">
                 Collect from our shop
               </h2>
               <p className="flex gap-2">
@@ -104,10 +105,10 @@ export default function OrderConfirmedTemplate({
         ) : (
           <section
             aria-labelledby="delivery-title"
-            className="flex flex-col gap-3 rounded border border-border p-4 md:p-6"
+            className="flex flex-col gap-3 rounded-lg border border-border p-4 md:p-6"
             data-testid="delivery-details"
           >
-            <h2 id="delivery-title" className="flex items-center gap-2 text-[22px] font-semibold leading-tight">
+            <h2 id="delivery-title" className="flex items-center gap-2 font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em]">
               <Truck aria-hidden className="size-6" />
               {kind === "next-day" ? "Next-day delivery" : "Standard delivery"}
             </h2>
@@ -129,8 +130,8 @@ export default function OrderConfirmedTemplate({
           </section>
         )}
 
-        <section aria-labelledby="summary-title" className="rounded border border-border bg-surface p-4 md:p-6">
-          <h2 id="summary-title" className="mb-4 text-[22px] font-semibold leading-tight">
+        <section aria-labelledby="summary-title" className="rounded-lg border border-border bg-surface p-4 md:p-6">
+          <h2 id="summary-title" className="mb-4 font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em]">
             Order summary
           </h2>
           <SummaryBody items={order.items ?? undefined} totals={order} deliveryChosen />

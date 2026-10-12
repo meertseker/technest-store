@@ -27,6 +27,7 @@ const LEGAL = [
 const PAYMENT_METHODS = ["Visa", "Mastercard", "Apple Pay", "Google Pay", "Klarna"]
 
 const linkClass = "inline-flex min-h-11 items-center hover:underline"
+const headingClass = "font-display text-lg font-bold"
 
 export default async function Footer() {
   // The footer must still render when the backend is down
@@ -37,10 +38,10 @@ export default async function Footer() {
   const { address, phone, mapsUrl, hours } = siteConfig
 
   return (
-    <footer className="mt-20 border-t border-border bg-surface">
-      <div className="content-container grid gap-10 py-12 md:grid-cols-2 lg:grid-cols-4">
+    <footer className="mt-16 border-t-4 border-brand bg-surface lg:mt-24">
+      <div className="content-container grid gap-10 py-12 md:grid-cols-2 lg:grid-cols-4 lg:py-16">
         <section aria-labelledby="footer-shop">
-          <h2 id="footer-shop" className="text-lg font-semibold">
+          <h2 id="footer-shop" className={headingClass}>
             Shop
           </h2>
           <ul className="mt-3">
@@ -55,7 +56,7 @@ export default async function Footer() {
         </section>
 
         <section aria-labelledby="footer-visit">
-          <h2 id="footer-visit" className="text-lg font-semibold">
+          <h2 id="footer-visit" className={headingClass}>
             Visit us
           </h2>
           <address className="mt-3 not-italic">
@@ -93,7 +94,7 @@ export default async function Footer() {
         </section>
 
         <section aria-labelledby="footer-help">
-          <h2 id="footer-help" className="text-lg font-semibold">
+          <h2 id="footer-help" className={headingClass}>
             Help
           </h2>
           <ul className="mt-3">
@@ -108,7 +109,7 @@ export default async function Footer() {
         </section>
 
         <section aria-labelledby="footer-more">
-          <h2 id="footer-more" className="text-lg font-semibold">
+          <h2 id="footer-more" className={headingClass}>
             Repairs and trade
           </h2>
           <ul className="mt-3">
@@ -149,7 +150,7 @@ export default async function Footer() {
         <div className="content-container flex flex-col gap-3 py-6 text-muted-foreground lg:flex-row lg:items-center lg:justify-between">
           <p>
             &copy; {new Date().getFullYear()} {siteConfig.legalName ?? siteConfig.name}
-            {siteConfig.vatNumber ? ` · VAT ${siteConfig.vatNumber}` : ""}
+            {siteConfig.vatNumber ? `, VAT ${siteConfig.vatNumber}` : ""}
           </p>
           <nav aria-label="Legal">
             <ul className="flex flex-wrap gap-x-4">

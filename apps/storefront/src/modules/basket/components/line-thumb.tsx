@@ -14,7 +14,7 @@ export default function LineThumb({
 }) {
   return (
     <div
-      className="relative shrink-0 overflow-hidden rounded bg-surface"
+      className="relative shrink-0 overflow-hidden rounded-lg border border-border bg-surface"
       style={{ width: size, height: size }}
     >
       {src ? (

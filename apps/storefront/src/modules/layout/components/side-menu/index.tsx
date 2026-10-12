@@ -8,7 +8,7 @@ import type { ShopMenuGroup } from "@/lib/layout/menu"
 import { cn } from "@/lib/utils"
 
 const row = "flex min-h-12 items-center rounded px-2 transition-colors duration-150 hover:bg-surface"
-const heading = "px-2 pb-1 pt-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+const heading = "px-2 pb-1 pt-5 text-sm font-semibold text-muted-foreground"
 
 /**
  * Mobile menu (below 1024px): a left-hand panel on Radix Dialog, the same
@@ -53,7 +53,7 @@ export default function SideMenu({ groups = [] }: { groups?: ShopMenuGroup[] }) 
           className="fixed inset-y-0 left-0 z-[70] flex w-[min(20rem,calc(100vw-3rem))] flex-col bg-background text-foreground shadow-lg outline-none data-[state=open]:animate-[tn-slide-in-left_200ms_ease-out]"
         >
           <div className="flex items-center justify-between border-b border-border p-4">
-            <Dialog.Title className="text-lg font-semibold">Menu</Dialog.Title>
+            <Dialog.Title className="font-display text-xl font-bold">Menu</Dialog.Title>
             <Dialog.Close
               aria-label="Close menu"
               data-testid="close-menu-button"

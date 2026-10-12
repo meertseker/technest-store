@@ -25,6 +25,7 @@ import {
 import DeviceField from "./device-field"
 import { CheckCircle2 } from "lucide-react"
 import { useEffect, useRef } from "react"
+import { h2Class } from "@/lib/typography"
 
 const ORDER = [...REPAIR_FIELDS, "security_check"]
 
@@ -77,7 +78,7 @@ export default function RepairBookingForm({
       />
 
       <fieldset className="flex flex-col gap-6">
-        <legend className="text-[22px] font-semibold leading-tight">
+        <legend className="font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em]">
           About your device
         </legend>
         <DeviceField
@@ -98,7 +99,7 @@ export default function RepairBookingForm({
       </fieldset>
 
       <fieldset className="flex flex-col gap-6">
-        <legend className="text-[22px] font-semibold leading-tight">
+        <legend className="font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em]">
           When suits you?
         </legend>
         <p className="text-muted-foreground">
@@ -125,7 +126,7 @@ export default function RepairBookingForm({
       </fieldset>
 
       <fieldset className="flex flex-col gap-6">
-        <legend className="text-[22px] font-semibold leading-tight">
+        <legend className="font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em]">
           Your details
         </legend>
         <TextField
@@ -216,7 +217,7 @@ function Success({
     >
       <h2
         id="booked"
-        className="flex items-center gap-2 text-[22px] font-semibold leading-tight lg:text-[28px]"
+        className={`flex items-center gap-2 ${h2Class}`}
       >
         <CheckCircle2 aria-hidden className="size-7 text-success" />
         Thanks{name ? `, ${name}` : ""}. We have your request

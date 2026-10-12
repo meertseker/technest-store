@@ -13,6 +13,7 @@ import {
   type ListingState,
 } from "@/lib/catalogue/listing-params"
 import { siteConfig } from "@/lib/site-config"
+import { h2Class } from "@/lib/typography"
 
 type Nav = { state: ListingState; pathname: string; defaultSort: ListingSort }
 
@@ -28,7 +29,7 @@ export function FitBanner({
   if (fit.kind === "none" || fit.kind === "not-applicable") return null
   const filtered = fit.kind === "filtered"
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded bg-success-subtle px-4 py-2">
+    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-success-subtle px-4 py-2">
       {filtered ? (
         <CircleCheck aria-hidden className="size-5 shrink-0 text-success" />
       ) : (
@@ -77,7 +78,7 @@ export function ActiveChips({ chips, ...nav }: Nav & { chips: Chip[] }) {
             <Link
               href={href(nav, toggleValue(nav.state, c.key, c.value))}
               scroll={false}
-              className="inline-flex min-h-11 items-center gap-1 rounded-full bg-surface px-4 text-base transition-colors duration-150 hover:bg-surface-2"
+              className="inline-flex min-h-11 items-center gap-1 rounded-full border border-border bg-surface px-4 text-base transition-colors duration-150 hover:border-border-strong hover:bg-surface-2"
             >
               {c.label}
               <X aria-hidden className="size-4" />
@@ -137,8 +138,8 @@ export function EmptyState({
 }: Nav & { what: string; device: string | null; hasFilters: boolean }) {
   const title = `No ${what}${device ? ` for ${device}` : ""}${hasFilters ? " with these filters" : ""}`
   return (
-    <div className="mt-8 rounded bg-surface p-6">
-      <h2 className="text-[22px] font-semibold leading-tight">{title}</h2>
+    <div className="mt-8 rounded-lg bg-surface p-6">
+      <h2 className={h2Class}>{title}</h2>
       <p className="mt-2 max-w-prose">
         Try fewer filters or all devices. We stock more in the shop than we list online, so it is
         worth asking.

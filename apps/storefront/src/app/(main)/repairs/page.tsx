@@ -59,7 +59,7 @@ export default function RepairsPage() {
             height={1500}
             priority
             sizes="(min-width: 1280px) 500px, (min-width: 1024px) 40vw, 100vw"
-            className="h-auto w-full rounded border border-border"
+            className="h-auto w-full rounded-lg border border-border"
           />
         </div>
       </section>
@@ -71,7 +71,7 @@ export default function RepairsPage() {
           </h2>
           <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {REPAIRS.map(({ Icon, title, text }) => (
-              <li key={title} className="rounded border border-border bg-background p-4">
+              <li key={title} className="rounded-lg border border-border bg-background p-4">
                 <Icon aria-hidden className="size-6 text-muted-foreground" />
                 <h3 className="mt-2 text-lg font-semibold">{title}</h3>
                 <p className="mt-1">{text}</p>
@@ -91,7 +91,7 @@ export default function RepairsPage() {
         </h2>
         <ol className="mt-6 grid gap-4 md:grid-cols-3">
           {STEPS.map((s, i) => (
-            <li key={s.title} className="flex gap-3 rounded border border-border p-4">
+            <li key={s.title} className="flex gap-3 rounded-lg border border-border p-4">
               <span
                 aria-hidden
                 className="flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground font-semibold text-background"
@@ -126,7 +126,7 @@ export default function RepairsPage() {
             height={1500}
             loading="lazy"
             sizes="(min-width: 1280px) 600px, (min-width: 768px) 50vw, 100vw"
-            className="h-auto w-full rounded border border-border"
+            className="h-auto w-full rounded-lg border border-border"
           />
           <div>
             <h2 id="visit" className={h2Class}>

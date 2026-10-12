@@ -1,7 +1,11 @@
 import Link from "next/link"
 
+/**
+ * Wordmark styled after the sign over the door: heavy, tight, uppercase, in
+ * the shop's red. Uppercase here is the logo, not a text style.
+ */
 const wordmark = (
-  <span className="whitespace-nowrap text-lg font-extrabold uppercase tracking-tight text-brand lg:text-2xl">
+  <span className="font-display whitespace-nowrap text-[22px] font-extrabold uppercase leading-none tracking-[-0.03em] text-brand lg:text-[26px]">
     Tech Nest
   </span>
 )
@@ -11,7 +15,7 @@ export default function Logo({ fullReload = false }: { fullReload?: boolean }) {
   const props = {
     href: "/",
     "aria-label": "Tech Nest home",
-    className: "inline-flex min-h-11 items-center",
+    className: "inline-flex min-h-11 items-center rounded",
   }
   return fullReload ? <a {...props}>{wordmark}</a> : <Link {...props}>{wordmark}</Link>
 }

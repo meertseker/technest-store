@@ -12,6 +12,7 @@ import { itemCount } from "@modules/basket/components/basket-panel"
 import BasketSummary from "@modules/basket/components/basket-summary"
 import FreeDeliveryBar from "@modules/basket/components/free-delivery-bar"
 import ReturnNotice from "@modules/basket/components/return-notice"
+import { h1Class } from "@/lib/typography"
 
 export const metadata: Metadata = {
   title: "Your basket",
@@ -41,7 +42,7 @@ export default async function BasketPage(props: {
 
   return (
     <div className="content-container py-8 lg:py-12" data-testid="cart-container">
-      <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em] lg:text-4xl">
+      <h1 className={h1Class}>
         Your basket{count > 0 && <span className="font-normal text-muted-foreground"> ({count})</span>}
       </h1>
       <ReturnNotice code={error} />
@@ -56,8 +57,8 @@ export default async function BasketPage(props: {
             <BasketLines items={cart.items} />
           </section>
           <aside aria-labelledby="basket-summary-title" className="lg:col-span-4">
-            <div className="flex flex-col gap-4 rounded border border-border bg-surface p-4 lg:sticky lg:top-[calc(var(--header-stack)+24px)]">
-              <h2 id="basket-summary-title" className="text-lg font-semibold">
+            <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 lg:sticky lg:top-[calc(var(--header-stack)+24px)]">
+              <h2 id="basket-summary-title" className="font-display text-xl font-bold">
                 Order summary
               </h2>
               <BasketSummary cart={cart} view={view} />
@@ -74,8 +75,8 @@ export default async function BasketPage(props: {
 function BasketUnavailable() {
   return (
     <div className="content-container py-8 lg:py-12" data-testid="basket-unavailable">
-      <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em] lg:text-4xl">Your basket</h1>
-      <div role="alert" className="mt-4 flex gap-3 rounded border border-destructive p-4 text-base">
+      <h1 className={h1Class}>Your basket</h1>
+      <div role="alert" className="mt-4 flex gap-3 rounded-lg border border-destructive p-4 text-base">
         <AlertCircle aria-hidden className="mt-0.5 size-5 shrink-0 text-destructive" />
         <div>
           <p className="font-semibold">We couldn&apos;t load your basket just now.</p>

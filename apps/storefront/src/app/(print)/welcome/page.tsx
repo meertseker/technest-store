@@ -42,7 +42,7 @@ export default function WelcomePosterPage() {
         <p className="text-4xl font-extrabold uppercase tracking-tight text-brand sm:text-6xl">
           Tech Nest
         </p>
-        <h1 className="mt-6 text-[28px] font-bold leading-tight tracking-[-0.01em] sm:text-5xl">
+        <h1 className="mt-6 font-display text-[28px] font-bold leading-[1.1] tracking-[-0.02em] sm:text-5xl">
           Shop online, collect here
         </h1>
         <p className="mt-3 text-lg sm:text-2xl">Scan with your phone camera</p>

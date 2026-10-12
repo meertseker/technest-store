@@ -13,8 +13,8 @@ import { HeaderSearchDialog, HeaderSearchField } from "@modules/search/component
 /**
  * Sticky header (docs/specs/design.md 6), two rows at every width:
  * - below 1024px: [Menu] [logo] ... [search] [basket], then the device chip row;
- * - from 1024px: [logo] [search field] [Account] [Basket], then
- *   [Shop / Repairs / Trade] ... [device chip].
+ * - from 1024px: [logo] [search field] [Account] [Basket], then a surface band
+ *   with [Shop / Repairs / Trade] ... [device chip].
  * The second row is 53px in both layouts (--header-stack in globals.css).
  */
 export default async function Nav() {
@@ -29,17 +29,17 @@ export default async function Nav() {
   return (
     <header className="sticky inset-x-0 top-0 z-50 border-b border-border bg-background">
       <nav aria-label="Main">
-        <div className="content-container flex h-[var(--header-h)] items-center gap-1 sm:gap-2 lg:gap-6">
+        <div className="content-container flex h-[var(--header-h)] items-center gap-1 sm:gap-2 lg:gap-8">
           <div className="lg:hidden">
             <SideMenu groups={groups} />
           </div>
           <Logo />
-          <HeaderSearchField className="mx-auto hidden w-full max-w-2xl lg:block" />
-          <div className="ml-auto flex shrink-0 items-center gap-0 sm:gap-2 lg:ml-0">
+          <HeaderSearchField className="mx-auto hidden w-full max-w-xl lg:block" />
+          <div className="ml-auto flex shrink-0 items-center gap-0 sm:gap-1 lg:ml-0">
             <HeaderSearchDialog />
             <Link
               href="/account"
-              className="hidden min-h-11 items-center gap-2 px-2 hover:underline lg:inline-flex"
+              className="hidden min-h-11 items-center gap-2 rounded px-3 transition-colors duration-150 hover:bg-surface lg:inline-flex"
             >
               <User aria-hidden className="size-5" />
               Account
@@ -54,10 +54,10 @@ export default async function Nav() {
             <CartButton />
           </div>
         </div>
-        <div className="relative hidden border-t border-border lg:block">
+        <div className="relative hidden border-t border-border bg-surface lg:block">
           <div className="content-container flex min-h-[52px] items-center justify-between gap-6">
             <MainNav groups={groups} className="-ml-3" />
-            <DeviceChipSlot device={device} />
+            <DeviceChipSlot device={device} className="border border-border bg-background hover:bg-surface-2" />
           </div>
         </div>
       </nav>

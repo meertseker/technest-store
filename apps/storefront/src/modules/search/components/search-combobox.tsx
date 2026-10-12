@@ -126,7 +126,7 @@ export default function SearchCombobox({ variant, autoFocus, onNavigate }: Props
       <div
         className={cn(
           // the input has no outline of its own: the ring goes round the whole field
-          "flex items-center gap-2 rounded border border-border-strong bg-background px-3 has-[input:focus-visible]:outline has-[input:focus-visible]:outline-[3px] has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-ring",
+          "flex items-center gap-2 rounded-full border border-border bg-surface px-4 transition-colors duration-150 hover:border-border-strong has-[input:focus-visible]:border-border-strong has-[input:focus-visible]:bg-background has-[input:focus-visible]:outline has-[input:focus-visible]:outline-[3px] has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-ring",
           variant === "dialog" && "mx-4 mt-2"
         )}
       >
@@ -193,7 +193,7 @@ export default function SearchCombobox({ variant, autoFocus, onNavigate }: Props
         hidden={!expanded}
         className={cn(
           variant === "inline"
-            ? "absolute inset-x-0 top-full z-50 mt-2 rounded border border-border bg-background py-1 shadow-lg"
+            ? "absolute inset-x-0 top-full z-50 mt-2 rounded-lg border border-border bg-background py-1 shadow-lg"
             : "mt-2 flex-1 overflow-y-auto border-t border-border"
         )}
       >

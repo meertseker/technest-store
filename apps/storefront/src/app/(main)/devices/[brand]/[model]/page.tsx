@@ -14,6 +14,7 @@ import { brandSlug, deviceHref } from "@/lib/devices/tree"
 import { JsonLd } from "@/lib/seo/json-ld"
 import Breadcrumbs from "@modules/catalogue/components/breadcrumbs"
 import ProductGrid from "@modules/catalogue/components/product-grid"
+import { h1Class, h2Class } from "@/lib/typography"
 
 type Props = { params: Promise<{ brand: string; model: string }> }
 
@@ -56,7 +57,7 @@ export default async function DevicePage(props: Props) {
       <JsonLd data={breadcrumbJsonLd(getBaseURL(), crumbs)} />
       <Breadcrumbs crumbs={crumbs} />
       <div className="mt-2 flex flex-wrap items-baseline gap-x-3">
-        <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em] lg:text-4xl">
+        <h1 className={h1Class}>
           Accessories for {device.model}
         </h1>
         <p className="text-muted-foreground">
@@ -97,7 +98,7 @@ export default async function DevicePage(props: Props) {
           return (
             <section key={id} aria-labelledby={id} className="mt-12">
               <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
-                <h2 id={id} className="text-[22px] font-semibold leading-tight lg:text-[28px]">
+                <h2 id={id} className={h2Class}>
                   {g.category?.name ?? "Other accessories"}
                 </h2>
                 {g.category && (
@@ -118,7 +119,7 @@ export default async function DevicePage(props: Props) {
         })
       ) : (
         <div className="mt-8 rounded bg-surface p-6">
-          <h2 className="text-[22px] font-semibold leading-tight">
+          <h2 className="font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em]">
             Nothing listed for {device.model} yet
           </h2>
           <p className="mt-2 max-w-prose">

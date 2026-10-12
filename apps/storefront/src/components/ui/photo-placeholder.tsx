@@ -36,15 +36,17 @@ const ICONS: Record<IconKey, LucideIcon> = {
 const SIZES = {
   /** basket and search thumbnails */
   sm: { disc: "", icon: "size-7" },
-  /** product cards and category links */
-  md: { disc: "size-20 bg-background", icon: "size-9" },
+  /** product cards: a large, thin line drawing straight on the tile (no disc, which read as a button) */
+  md: { disc: "", icon: "size-14 lg:size-16" },
   /** the product page */
-  lg: { disc: "size-28 bg-background", icon: "size-12" },
+  lg: { disc: "", icon: "size-20" },
+  /** category tiles: a 44px disc on the surface */
+  tile: { disc: "size-11 bg-surface", icon: "size-6" },
 }
 
 /**
  * Stand-in for a product or category picture that does not exist yet: an icon
- * for what the thing is, on a white disc so the tile reads as deliberate
+ * for what the thing is, drawn thin and quiet so the tile reads as deliberate
  * rather than broken. Decorative: the name is always next to it.
  */
 export default function PhotoPlaceholder({
@@ -62,9 +64,9 @@ export default function PhotoPlaceholder({
     <span
       aria-hidden
       data-placeholder-icon={icon}
-      className={cn("flex shrink-0 items-center justify-center rounded-full text-muted-foreground", s.disc, className)}
+      className={cn("flex shrink-0 items-center justify-center rounded-full text-border-strong", s.disc, className)}
     >
-      <Icon className={s.icon} strokeWidth={1.5} />
+      <Icon className={s.icon} strokeWidth={1.25} />
     </span>
   )
 }

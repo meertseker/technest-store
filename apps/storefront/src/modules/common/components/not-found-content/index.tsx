@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { buttonVariants } from "@/components/ui/button"
+import { h1Class } from "@/lib/typography"
 
 type Props = {
   /** Checkout pages leave with a full page load so their strict CSP isn't carried over */
@@ -20,7 +21,7 @@ export default function NotFoundContent({ fullReload }: Props) {
   const A = fullReload ? "a" : Link
   return (
     <div className="content-container flex flex-col items-start gap-4 py-12 lg:py-20">
-      <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em] lg:text-4xl">
+      <h1 className={h1Class}>
         Page not found
       </h1>
       <p className="max-w-[68ch] text-muted-foreground">

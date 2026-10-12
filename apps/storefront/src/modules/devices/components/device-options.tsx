@@ -27,7 +27,7 @@ export default function DeviceOptions({ devices, returnTo, currentSlug, showBran
                 name="slug"
                 value={d.slug}
                 aria-current={current || undefined}
-                className="flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 rounded border border-border bg-background px-4 py-2 text-left transition-colors duration-150 hover:border-border-strong hover:bg-surface aria-[current]:border-success"
+                className="flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-background px-4 py-2 text-left transition-colors duration-150 hover:border-border-strong hover:bg-surface aria-[current]:border-success"
               >
                 <span>
                   {showBrand && <span className="text-muted-foreground">{d.brand} </span>}

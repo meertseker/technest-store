@@ -34,7 +34,7 @@ export default async function AccountTradePage({ searchParams }: Props) {
           We could not load your trade account just now. Please try again soon, or call {siteConfig.phone.display}.
         </p>
       ) : application === null ? (
-        <div className="rounded border border-border p-4 lg:p-6">
+        <div className="rounded-lg border border-border p-4 lg:p-6">
           <p className="text-lg font-semibold">You have not applied for a trade account.</p>
           <p className="mt-2 max-w-[68ch]">
             Trade accounts get lower prices, shown without VAT, on many accessories when you buy in quantity.

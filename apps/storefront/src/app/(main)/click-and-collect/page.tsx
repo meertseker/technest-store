@@ -69,7 +69,7 @@ export default function ClickAndCollectPage() {
             height={1413}
             priority
             sizes="(min-width: 1280px) 500px, (min-width: 1024px) 40vw, 100vw"
-            className="h-auto w-full rounded border border-border"
+            className="h-auto w-full rounded-lg border border-border"
           />
         </div>
       </section>
@@ -81,7 +81,7 @@ export default function ClickAndCollectPage() {
           </h2>
           <ol className="mt-6 grid gap-4 md:grid-cols-3">
             {STEPS.map((s, i) => (
-              <li key={s.title} className="flex gap-3 rounded border border-border bg-background p-4">
+              <li key={s.title} className="flex gap-3 rounded-lg border border-border bg-background p-4">
                 <span
                   aria-hidden
                   className="flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground font-semibold text-background"

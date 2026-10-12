@@ -5,6 +5,7 @@ import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { reportClientError } from "@lib/monitoring/report-client"
 import { siteConfig } from "@lib/site-config"
+import { h1Class } from "@/lib/typography"
 
 /**
  * Last resort: replaces the whole document when the root layout or a route
@@ -35,7 +36,7 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
           </div>
         </header>
         <main id="main" className="content-container flex flex-col items-start gap-4 py-12 lg:py-20">
-          <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em] lg:text-4xl">
+          <h1 className={h1Class}>
             Something went wrong
           </h1>
           <p role="alert" className="max-w-[68ch] text-muted-foreground">

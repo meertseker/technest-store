@@ -25,7 +25,7 @@ export default function TradeTierTable({ data, variantId, className }: Props) {
   return (
     <section
       aria-labelledby="trade-prices-title"
-      className={cn("rounded border border-border bg-surface p-4", className)}
+      className={cn("rounded-lg border border-border bg-surface p-4", className)}
       data-testid="trade-tier-prices"
     >
       <h2 id="trade-prices-title" className="flex items-center gap-2 text-lg font-semibold">

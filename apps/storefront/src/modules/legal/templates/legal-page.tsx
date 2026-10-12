@@ -3,6 +3,7 @@ import { LEGAL_DRAFT, LEGAL_LAST_UPDATED } from "@/lib/legal/business"
 import { LEGAL_PAGES } from "@/lib/legal/pages"
 import type { LegalContent } from "@modules/legal/types"
 import Link from "next/link"
+import { h1Class, h2Class } from "@/lib/typography"
 
 /** Styles for the running text inside each section (kept here, not in globals.css) */
 const PROSE =
@@ -31,7 +32,7 @@ export default function LegalPage({
   return (
     <div className="content-container py-10 lg:py-14">
       <article className="max-w-[68ch]">
-        <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em] lg:text-4xl">
+        <h1 className={h1Class}>
           {title}
         </h1>
         <p className="mt-2 text-muted-foreground">Last updated {lastUpdated}</p>
@@ -51,7 +52,7 @@ export default function LegalPage({
 
         <div className="mt-6 text-lg">{content.summary}</div>
 
-        <nav aria-labelledby="legal-contents" className="mt-8 rounded border border-border bg-surface p-4">
+        <nav aria-labelledby="legal-contents" className="mt-8 rounded-lg border border-border bg-surface p-4">
           <h2 id="legal-contents" className="text-lg font-semibold">
             Contents
           </h2>
@@ -68,7 +69,7 @@ export default function LegalPage({
 
         {content.sections.map((s, i) => (
           <section key={s.id} aria-labelledby={s.id} className="mt-10">
-            <h2 id={s.id} className="text-[22px] font-semibold leading-tight lg:text-[28px]">
+            <h2 id={s.id} className={h2Class}>
               {i + 1}. {s.heading}
             </h2>
             <div className={PROSE}>{s.body}</div>

@@ -128,7 +128,7 @@ export default function DeliveryForm({
       </fieldset>
 
       {selected?.kind === "collect" && (
-        <div className="flex gap-3 rounded border border-border bg-surface p-4" data-testid="collect-info">
+        <div className="flex gap-3 rounded-lg border border-border bg-surface p-4" data-testid="collect-info">
           <Store aria-hidden className="mt-0.5 size-5 shrink-0" />
           <p>
             Collect from <strong className="font-semibold">{shopAddress}</strong>. We&apos;ll email you when

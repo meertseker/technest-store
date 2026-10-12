@@ -2,6 +2,7 @@
 
 import { buttonVariants } from "@/components/ui/button"
 import { siteConfig } from "@lib/site-config"
+import { h1Class } from "@/lib/typography"
 
 /**
  * Shown inside the checkout header when the checkout page fails (for example
@@ -12,7 +13,7 @@ import { siteConfig } from "@lib/site-config"
 export default function CheckoutError(_props: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <div className="content-container flex flex-col items-start gap-4 py-12 lg:py-20" data-testid="checkout-error">
-      <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em] lg:text-4xl">
+      <h1 className={h1Class}>
         We couldn&apos;t load the checkout
       </h1>
       <p role="alert" className="max-w-[68ch] text-muted-foreground">

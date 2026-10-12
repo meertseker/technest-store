@@ -37,7 +37,7 @@ export default function ErrorSummary({ errors, formError, trigger, order }: Prop
       className="mb-8 rounded border-[3px] border-destructive bg-background p-4 outline-none focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-ring"
       data-testid="error-summary"
     >
-      <h2 id="error-summary-title" className="text-[22px] font-semibold leading-tight">
+      <h2 id="error-summary-title" className="font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em]">
         There is a problem
       </h2>
       {formError && <p className="mt-2">{formError}</p>}

@@ -26,7 +26,7 @@ export default function CreateAccountOffer({
 
   if (state?.state === "success" || state?.state === "verification_required") {
     return (
-      <div role="status" className="flex gap-3 rounded border border-border bg-success-subtle p-4">
+      <div role="status" className="flex gap-3 rounded-lg border border-border bg-success-subtle p-4">
         <CheckCircle2 aria-hidden className="mt-0.5 size-5 shrink-0 text-success" />
         <p>
           {state.state === "success"
@@ -40,10 +40,10 @@ export default function CreateAccountOffer({
   return (
     <section
       aria-labelledby="save-details-title"
-      className="rounded border border-border p-4 md:p-6"
+      className="rounded-lg border border-border p-4 md:p-6"
       data-testid="create-account-offer"
     >
-      <h2 id="save-details-title" className="text-[22px] font-semibold leading-tight">
+      <h2 id="save-details-title" className="font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em]">
         Save your details?
       </h2>
       <p className="mt-2 text-muted-foreground">

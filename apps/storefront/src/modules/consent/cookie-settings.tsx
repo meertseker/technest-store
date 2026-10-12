@@ -10,7 +10,7 @@ const LABEL = {
 export default async function CookieSettings() {
   const choice = await getConsent()
   return (
-    <div className="mt-4 rounded border border-border bg-surface p-4">
+    <div className="mt-4 rounded-lg border border-border bg-surface p-4">
       <p className="!mt-0 font-semibold">
         {choice ? LABEL[choice] : "You have not made a choice yet, so analytics cookies are off."}
       </p>

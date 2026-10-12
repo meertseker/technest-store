@@ -67,7 +67,7 @@ export default function DeviceSearch({
               setQ(e.target.value)
               setTyped(true)
             }}
-            className="min-h-12 w-full min-w-0 flex-1 rounded border border-border-strong bg-background px-4 text-base"
+            className="min-h-12 w-full min-w-0 flex-1 rounded border border-border-strong bg-background px-4 text-base transition-colors duration-150 focus:border-foreground"
           />
           <button
             type="submit"

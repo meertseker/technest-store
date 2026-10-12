@@ -19,6 +19,7 @@ import {
   type Selected,
   type VariantLike,
 } from "@/lib/catalogue/variants"
+import { priceClass } from "@/lib/typography"
 import { cn } from "@/lib/utils"
 import { useAddToBasket } from "@modules/catalogue/components/use-add-to-basket"
 
@@ -129,9 +130,9 @@ export default function BuyBox({ product, initial, fitBox, addOnNote }: Props) {
       {/* Price */}
       <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
         {priceText ? (
-          <p className="text-2xl font-bold tabular-nums lg:text-[28px]">
+          <p className={`${priceClass} text-[28px] lg:text-[32px]`}>
             {priceText}
-            <span className="ml-2 text-base font-normal text-muted-foreground">inc. VAT</span>
+            <span className="ml-2 font-sans text-base font-normal tracking-normal text-muted-foreground">inc. VAT</span>
           </p>
         ) : (
           <p className="text-muted-foreground">Price not available</p>
@@ -142,7 +143,7 @@ export default function BuyBox({ product, initial, fitBox, addOnNote }: Props) {
               <span className="sr-only">Was </span>
               <s>{formatGbp(was)}</s>
             </p>
-            <span className="rounded-full bg-brand-subtle px-2 py-0.5 text-sm font-semibold text-brand" data-small-text>
+            <span className="rounded-full bg-brand px-2.5 py-0.5 text-sm font-semibold text-brand-foreground" data-small-text>
               Sale
             </span>
           </>
@@ -200,9 +201,9 @@ export default function BuyBox({ product, initial, fitBox, addOnNote }: Props) {
                           disabled={!v.exists}
                           onClick={() => choose(c.id, v.value)}
                           className={cn(
-                            "inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded border px-4 transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50",
+                            "inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full border px-4 transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50",
                             on
-                              ? "border-2 border-foreground bg-surface font-semibold"
+                              ? "border-2 border-foreground bg-foreground font-semibold text-background"
                               : "border-border-strong bg-background hover:bg-surface",
                             unavailable && "text-muted-foreground line-through"
                           )}
@@ -228,7 +229,7 @@ export default function BuyBox({ product, initial, fitBox, addOnNote }: Props) {
 
       {/* Quantity + add */}
       <div className="mt-6 flex flex-wrap gap-3">
-        <div className="flex items-center rounded border border-border-strong">
+        <div className="flex items-center overflow-hidden rounded border border-border-strong">
           <button
             type="button"
             onClick={() => setQty((q) => Math.max(1, q - 1))}
@@ -319,7 +320,7 @@ export default function BuyBox({ product, initial, fitBox, addOnNote }: Props) {
         <div className="flex items-center gap-3">
           <p className="min-w-0 flex-1">
             <span className="block truncate text-sm text-muted-foreground" data-small-text>{product.title}</span>
-            {priceText && <span className="text-lg font-bold tabular-nums">{priceText}</span>}
+            {priceText && <span className={`${priceClass} text-lg`}>{priceText}</span>}
           </p>
           <Button type="button" onClick={onAdd} disabled={pending || outOfStock} className="shrink-0">
             {outOfStock ? "Out of stock" : variant ? addLabel : "Choose options"}

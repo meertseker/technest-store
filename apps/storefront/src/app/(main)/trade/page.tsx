@@ -74,7 +74,7 @@ export default async function TradePage() {
             height={1500}
             priority
             sizes="(min-width: 1280px) 500px, (min-width: 1024px) 40vw, 100vw"
-            className="h-auto w-full rounded border border-border"
+            className="h-auto w-full rounded-lg border border-border"
           />
         </div>
       </section>
@@ -86,7 +86,7 @@ export default async function TradePage() {
           </h2>
           <ul className="mt-6 grid gap-4 md:grid-cols-3">
             {WHO.map(({ Icon, title, text }) => (
-              <li key={title} className="rounded border border-border bg-background p-4">
+              <li key={title} className="rounded-lg border border-border bg-background p-4">
                 <Icon aria-hidden className="size-6 text-muted-foreground" />
                 <h3 className="mt-2 text-lg font-semibold">{title}</h3>
                 <p className="mt-1">{text}</p>
@@ -121,7 +121,7 @@ export default async function TradePage() {
             </ul>
           </div>
           <div className="lg:col-span-5">
-            <figure className="rounded border border-border p-4">
+            <figure className="rounded-lg border border-border p-4">
               <figcaption className="font-semibold">Reading a trade price (example)</figcaption>
               <table className="mt-3 w-full text-left tabular-nums">
                 <tbody>
@@ -159,7 +159,7 @@ export default async function TradePage() {
           </h2>
           <ol className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s, i) => (
-              <li key={s.title} className="flex gap-3 rounded border border-border bg-background p-4">
+              <li key={s.title} className="flex gap-3 rounded-lg border border-border bg-background p-4">
                 <span
                   aria-hidden
                   className="flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground font-semibold text-background"

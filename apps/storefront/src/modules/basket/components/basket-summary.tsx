@@ -1,6 +1,7 @@
 import { Lock } from "lucide-react"
 import { HttpTypes } from "@medusajs/types"
 import { buttonVariants } from "@/components/ui/button"
+import { priceClass } from "@/lib/typography"
 import { formatGbp, formatPenceExact, toPence } from "@lib/basket/money"
 import { cheapestDeliveryPence } from "@lib/basket/shipping-options"
 import type { BasketView } from "@lib/data/basket"
@@ -36,7 +37,7 @@ export default function BasketSummary({
           <dt className="font-semibold">
             Subtotal <span className="font-normal text-muted-foreground">(inc. VAT)</span>
           </dt>
-          <dd className="text-lg font-bold tabular-nums" data-testid="basket-subtotal">
+          <dd className={`${priceClass} text-xl`} data-testid="basket-subtotal">
             {formatGbp(cart.item_total)}
           </dd>
         </div>

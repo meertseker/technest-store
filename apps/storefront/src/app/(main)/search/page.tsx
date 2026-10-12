@@ -22,6 +22,7 @@ import {
 } from "@/lib/catalogue/listing-params"
 import { pickerHref } from "@/lib/devices/cookie"
 import { Button } from "@/components/ui/button"
+import { h2Class } from "@/lib/typography"
 import ListingTemplate from "@modules/catalogue/templates/listing"
 
 type Props = { searchParams: Promise<RawSearchParams> }
@@ -93,8 +94,8 @@ export default async function SearchPage(props: Props) {
       .then((all) => all.filter((c) => !c.parent_category_id).map((c) => ({ ...c, href: categoryPath(all, c) })))
       .catch(() => [])
     noResults = (
-      <div className="mt-8 rounded bg-surface p-6">
-        <h2 className="text-[22px] font-semibold leading-tight">
+      <div className="mt-8 rounded-lg bg-surface p-6">
+        <h2 className={h2Class}>
           {failed ? "Search isn't working right now" : `No results for “${q}”`}
         </h2>
         <p className="mt-2 max-w-prose">
@@ -108,7 +109,7 @@ export default async function SearchPage(props: Props) {
               <li key={c.id}>
                 <Link
                   href={c.href}
-                  className="inline-flex min-h-11 items-center rounded-full bg-background px-4 hover:underline"
+                  className="inline-flex min-h-11 items-center rounded-full border border-border bg-background px-4 transition-colors duration-150 hover:border-border-strong"
                 >
                   {c.name}
                 </Link>

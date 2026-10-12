@@ -7,7 +7,7 @@ import { AlertTriangle } from "lucide-react"
 export default function AddonNotice({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`flex gap-3 rounded border border-warning/40 bg-warning-subtle p-3 text-base text-foreground ${className}`}
+      className={`flex gap-3 rounded-lg border border-warning/40 bg-warning-subtle p-3 text-base text-foreground ${className}`}
       data-testid="addon-notice"
     >
       <AlertTriangle aria-hidden className="mt-0.5 size-5 shrink-0 text-warning" />

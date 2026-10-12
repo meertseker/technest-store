@@ -15,7 +15,7 @@ export default function OrderCard({ order }: { order: HttpTypes.StoreOrder }) {
   return (
     <Link
       href={`/account/orders/${order.id}`}
-      className="group flex items-center gap-4 rounded border border-border p-4 transition-colors duration-150 hover:bg-surface"
+      className="group flex items-center gap-4 rounded-lg border border-border p-4 transition-colors duration-150 hover:bg-surface"
       data-testid="order-card"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">

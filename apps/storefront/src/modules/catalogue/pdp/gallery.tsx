@@ -33,7 +33,7 @@ export default function Gallery({
 
   if (!images.length) {
     return (
-      <div className="flex aspect-[16/9] w-full flex-col items-center justify-center gap-3 rounded bg-surface text-muted-foreground lg:aspect-[16/10]">
+      <div className="flex aspect-[16/9] w-full flex-col items-center justify-center gap-3 rounded-lg border border-border bg-surface text-muted-foreground lg:aspect-[16/10]">
         <PhotoPlaceholder icon={placeholderIcon} size="lg" />
         <span>Photo coming soon</span>
       </div>
@@ -61,7 +61,7 @@ export default function Gallery({
         >
           {images.map((img, i) => (
             <li key={img.id} className="w-full shrink-0 snap-center px-4 md:px-0">
-              <div className="relative aspect-square overflow-hidden rounded bg-surface">
+              <div className="relative aspect-square overflow-hidden rounded-lg border border-border bg-surface">
                 <Image
                   src={img.url}
                   alt={alt(i)}
@@ -107,7 +107,7 @@ export default function Gallery({
                   aria-current={i === active ? "true" : undefined}
                   aria-label={`Show image ${i + 1} of ${images.length}`}
                   className={cn(
-                    "relative block aspect-square w-20 cursor-pointer overflow-hidden rounded border-2 bg-surface",
+                    "relative block aspect-square w-20 cursor-pointer overflow-hidden rounded-lg border-2 bg-surface",
                     i === active ? "border-foreground" : "border-transparent hover:border-border-strong"
                   )}
                 >
@@ -117,7 +117,7 @@ export default function Gallery({
             ))}
           </ul>
         )}
-        <div className="relative aspect-square overflow-hidden rounded bg-surface">
+        <div className="relative aspect-square overflow-hidden rounded-lg border border-border bg-surface">
           <Image
             src={images[active].url}
             alt={alt(active)}

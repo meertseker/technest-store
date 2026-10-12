@@ -93,6 +93,7 @@ export default async function Home(props: { searchParams?: SP }) {
             <ProductSection
               id="best-sellers-heading"
               title="Best sellers"
+              lede="What customers buy most, chosen by the shop."
               seeAllHref={`/collections/${BEST_SELLERS_COLLECTION}`}
               seeAllLabel="See all best sellers"
               products={curated.slice(0, 4)}
@@ -101,6 +102,7 @@ export default async function Home(props: { searchParams?: SP }) {
             <ProductSection
               id="new-in-heading"
               title="New in"
+              lede="The latest additions to the shelves."
               seeAllHref="/search"
               seeAllLabel="See all products"
               products={pickNewIn(all)}
@@ -108,7 +110,7 @@ export default async function Home(props: { searchParams?: SP }) {
           )}
         </>
       ) : (
-        <p className="content-container py-12 text-center text-muted-foreground">
+        <p className="content-container section text-center text-muted-foreground">
           We can&apos;t show products right now. Please try again in a moment.
         </p>
       )}

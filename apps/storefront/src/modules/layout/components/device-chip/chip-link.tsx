@@ -22,7 +22,7 @@ export default function DeviceChipLink({ device, href, className }: Props) {
           Shopping for: <strong className="font-semibold">{device.label}</strong>
           <span className="text-muted-foreground">
             {" "}
-            · <span className="underline underline-offset-4">change</span>
+            (<span className="underline underline-offset-4">change</span>)
           </span>
         </span>
       ) : (

@@ -83,7 +83,7 @@ export default async function Checkout(props: { searchParams: Promise<{ step?: s
       <MobileOrderSummary cart={cart} deliveryChosen={!!method} />
       <div className="content-container grid grid-cols-1 gap-x-12 pb-12 lg:grid-cols-12 lg:py-10">
         <div className="lg:col-span-7">
-          <h1 className="pt-6 text-[28px] font-bold leading-tight tracking-[-0.01em] lg:pt-0 lg:text-4xl">
+          <h1 className="pt-6 font-display text-[28px] font-bold leading-[1.1] tracking-[-0.02em] lg:pt-0 lg:text-4xl">
             Checkout
           </h1>
 

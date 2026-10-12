@@ -34,7 +34,7 @@ describe("<GoogleReviews>", () => {
     expect(html).toContain(`href="${esc(siteConfig.mapsUrl)}"`)
     expect(siteConfig.mapsUrl.startsWith("https://www.google.com/maps/")).toBe(true)
     expect(html).toContain("Read all reviews on Google")
-    expect(html).toContain(`${siteConfig.rating.value.toFixed(1)} on Google · ${siteConfig.rating.count} reviews`)
+    expect(html).toContain(`${siteConfig.rating.value.toFixed(1)} on Google from ${siteConfig.rating.count} reviews`)
   })
 
   it("shows first name + initial and an approximate month, never the full name", () => {

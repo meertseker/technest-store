@@ -21,7 +21,7 @@ export default function Notice({
     <div
       role="status"
       className={cn(
-        "flex gap-3 rounded border p-4",
+        "flex gap-3 rounded-lg border p-4",
         tone === "success" ? "border-success bg-success-subtle" : "border-border bg-surface",
         className
       )}

@@ -1,21 +1,29 @@
 import Image from "next/image"
 import Link from "next/link"
-import { Briefcase, Clock, MapPin, Phone, Store, Wrench } from "lucide-react"
+import { BatteryCharging, Briefcase, Cable, Clock, Gamepad2, MapPin, Phone, Smartphone, Store, Wrench } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { getOpenStatus, formatTime, siteConfig } from "@/lib/site-config"
-import { sectionTitle } from "../product-section"
+import { h2Class } from "@/lib/typography"
 
-const photo = "relative aspect-[4/3] overflow-hidden rounded border border-border"
+const photo = "relative aspect-[4/3] overflow-hidden rounded-lg"
 
-/** Repairs CTA: surface band, interior photo | text, secondary button */
+// The same four lines as /repairs, so the home page never promises more than that page does
+const REPAIRS = [
+  { Icon: Smartphone, label: "Screens" },
+  { Icon: BatteryCharging, label: "Batteries" },
+  { Icon: Cable, label: "Charging ports" },
+  { Icon: Gamepad2, label: "Consoles and laptops" },
+]
+
+/** Repairs CTA: interior photo | text with what we fix, secondary button */
 export function RepairsCta() {
   return (
-    <section aria-labelledby="repairs-heading" className="bg-surface">
-      <div className="content-container grid gap-6 py-12 md:grid-cols-2 md:items-center lg:gap-12 lg:py-20">
+    <section aria-labelledby="repairs-heading" className="content-container section">
+      <div className="grid gap-6 md:grid-cols-2 md:items-center lg:gap-12">
         <div className={photo}>
           <Image
-            src="/images/shop/interior-wide.jpg"
-            alt="Inside the Tech Nest shop: aisles of cables, chargers and accessories"
+            src="/images/shop/interior-audio.jpg"
+            alt="Inside the Tech Nest shop: shelves of speakers, headphones and accessories"
             fill
             loading="lazy"
             sizes="(min-width: 1280px) 600px, (min-width: 768px) 50vw, 100vw"
@@ -23,13 +31,21 @@ export function RepairsCta() {
           />
         </div>
         <div>
-          <h2 id="repairs-heading" className={sectionTitle}>
-            Screen broken? Most repairs same day
+          <h2 id="repairs-heading" className={h2Class}>
+            Screen broken? Most repairs are done the same day.
           </h2>
-          <p className="mt-3 max-w-[68ch]">
-            Screens, batteries and charging ports for phones, tablets, consoles and laptops. Book
-            online, then bring your device to the shop.
+          <p className="mt-3 max-w-[60ch] text-muted-foreground">
+            Send a request online, we call you back with a price, then bring your device to the
+            shop. No obligation.
           </p>
+          <ul className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2">
+            {REPAIRS.map(({ Icon, label }) => (
+              <li key={label} className="flex min-h-11 items-center gap-2 font-medium">
+                <Icon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+                {label}
+              </li>
+            ))}
+          </ul>
           <Link
             href="/repairs"
             className={buttonVariants({ variant: "secondary", className: "mt-6 w-full sm:w-auto" })}
@@ -53,8 +69,8 @@ export function ShopStrip({ now }: { now: Date }) {
   const status = getOpenStatus(now)
   const today = status.today
   return (
-    <section aria-labelledby="shop-heading" className="content-container py-12 lg:py-20">
-      <div className="grid gap-6 md:grid-cols-2 md:items-center lg:grid-cols-3 lg:gap-10">
+    <section aria-labelledby="shop-heading" className="bg-surface">
+      <div className="content-container section grid gap-6 md:grid-cols-2 md:items-center lg:grid-cols-3 lg:gap-10">
         <div className={photo}>
           <Image
             src="/images/shop/shopfront.jpg"
@@ -66,7 +82,7 @@ export function ShopStrip({ now }: { now: Date }) {
           />
         </div>
         <div>
-          <h2 id="shop-heading" className={sectionTitle}>
+          <h2 id="shop-heading" className={h2Class}>
             Visit the shop
           </h2>
           <address className="mt-3 flex gap-2 not-italic">
@@ -98,7 +114,7 @@ export function ShopStrip({ now }: { now: Date }) {
         <div className="flex flex-col gap-3 md:col-span-2 md:flex-row lg:col-span-1 lg:flex-col">
           <a
             href={`tel:${phone.e164}`}
-            className={buttonVariants({ variant: "secondary", className: "w-full" })}
+            className={buttonVariants({ variant: "secondary", className: "w-full bg-background" })}
           >
             <Phone aria-hidden />
             Call {phone.display}
@@ -107,7 +123,7 @@ export function ShopStrip({ now }: { now: Date }) {
             href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className={buttonVariants({ variant: "secondary", className: "w-full" })}
+            className={buttonVariants({ variant: "secondary", className: "w-full bg-background" })}
           >
             <MapPin aria-hidden />
             Open in Google Maps
@@ -128,31 +144,31 @@ export function ShopStrip({ now }: { now: Date }) {
 /** Trade banner, full width, with a secondary button */
 export function TradeBanner() {
   return (
-    <section aria-labelledby="trade-heading" className="content-container pb-12 lg:pb-20">
-      <div className="relative isolate overflow-hidden rounded bg-foreground text-white">
+    <section aria-labelledby="trade-heading" className="content-container section">
+      <div className="relative isolate overflow-hidden rounded-xl bg-foreground text-white">
         <Image
           src="/images/shop/aisle-accessories.jpg"
           alt=""
           fill
           loading="lazy"
           sizes="(min-width: 1280px) 1216px, 100vw"
-          className="-z-10 object-cover opacity-25"
+          className="-z-10 object-cover opacity-20"
         />
-        <div className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between lg:p-10">
+        <div className="flex flex-col gap-5 p-6 md:flex-row md:items-center md:justify-between lg:p-10">
           <div>
-            <h2 id="trade-heading" className={sectionTitle}>
+            <h2 id="trade-heading" className={h2Class}>
               Buying for a business?
             </h2>
-            <p className="mt-2 max-w-[60ch]">
+            <p className="mt-2 max-w-[56ch] text-white/85">
               Open a trade account to buy at trade prices, shown ex-VAT once your account is
-              approved.
+              approved. Wholesale is what the shop started with.
             </p>
           </div>
           <Link
             href="/trade"
             className={buttonVariants({
               variant: "secondary",
-              className: "w-full shrink-0 border-white md:w-auto",
+              className: "w-full shrink-0 border-white bg-transparent text-white hover:bg-white hover:text-foreground md:w-auto",
             })}
           >
             <Briefcase aria-hidden />

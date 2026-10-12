@@ -13,6 +13,7 @@ import FilterSheet from "../components/filter-sheet"
 import { ActiveChips, EmptyState, FitBanner, LoadMore } from "../components/listing-parts"
 import ProductGrid from "../components/product-grid"
 import SortSelect from "../components/sort-select"
+import { h1Class } from "@/lib/typography"
 
 type Props = {
   title: string
@@ -64,18 +65,18 @@ export default function ListingTemplate({
     <div className="content-container pb-12">
       {breadcrumbLd && <JsonLd data={breadcrumbLd} />}
       <Breadcrumbs crumbs={crumbs} />
-      <div className="mt-2 flex flex-wrap items-baseline gap-x-3">
-        <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em] lg:text-4xl">
+      <div className="mt-2 flex flex-wrap items-baseline gap-x-3 lg:mt-4">
+        <h1 className={h1Class}>
           {title}
         </h1>
-        <p className="text-muted-foreground" aria-live="polite">
+        <p className="text-lg text-muted-foreground" aria-live="polite">
           {listing.total} {listing.total === 1 ? "item" : "items"}
         </p>
       </div>
       {intro}
       <FitBanner fit={listing.fit} pickerHref={pickerHref} {...nav} />
 
-      <div className={showRail ? "mt-4 lg:mt-8 lg:grid lg:grid-cols-[264px_1fr] lg:gap-8" : "mt-4"}>
+      <div className={showRail ? "mt-4 lg:mt-8 lg:grid lg:grid-cols-[248px_1fr] lg:gap-10" : "mt-4"}>
         {showRail && (
           <aside aria-label="Filters" className="hidden lg:block">
             <FilterPanel
@@ -92,7 +93,7 @@ export default function ListingTemplate({
         <div className="min-w-0">
           <div
             data-sticky-toolbar
-            className="sticky top-[var(--header-stack)] z-30 -mx-4 flex min-h-[52px] items-center justify-between gap-3 border-b border-border bg-background px-4 py-1 lg:static lg:mx-0 lg:justify-end lg:border-0 lg:px-0"
+            className="sticky top-[var(--header-stack)] z-30 -mx-4 flex min-h-[52px] items-center justify-between gap-3 border-b border-border bg-background px-4 py-1 lg:static lg:mx-0 lg:justify-end lg:border-0 lg:px-0 lg:py-0"
           >
             <FilterSheet
               facets={listing.facets}

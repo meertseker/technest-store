@@ -57,10 +57,10 @@ describe("home page", { timeout: 30_000 }, () => {
       "Accessories that fit your phone",
       "Why shop with us",
       "Shop by category",
-      "£1 Deals and under £5",
+      "£1 deals and under £5",
       "New in",
-      "Screen broken? Most repairs same day",
-      "on Google · ",
+      "Screen broken? Most repairs are done the same day.",
+      "on Google from ",
       "Visit the shop",
       "Buying for a business?",
     ].map((s) => html.indexOf(s))
@@ -73,10 +73,10 @@ describe("home page", { timeout: 30_000 }, () => {
     const html = await render()
     const imgs = html.match(/<img[^>]*>/g) ?? []
     const srcs = imgs.map((i) => decodeURIComponent(i.match(/src="([^"]+)"/)?.[1] ?? ""))
-    for (const s of srcs) expect(s).toMatch(/\/images\/shop\/(controller-wall|interior-wide|shopfront|aisle-accessories)\.jpg/)
+    for (const s of srcs) expect(s).toMatch(/\/images\/shop\/(controller-wall|interior-wide|interior-audio|shopfront|aisle-accessories)\.jpg/)
     const eager = imgs.filter((i) => !/loading="lazy"/.test(i))
     expect(eager).toHaveLength(1)
-    expect(eager[0]).toContain("controller-wall")
+    expect(eager[0]).toContain("interior-wide")
     expect(eager[0]).toMatch(/fetchPriority="high"/i)
   })
 

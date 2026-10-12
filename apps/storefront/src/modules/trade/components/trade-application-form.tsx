@@ -25,7 +25,7 @@ export default function TradeApplicationForm({ initial }: { initial: FormValues 
       <ErrorSummary errors={e} formError={state.formError} trigger={state} order={TRADE_FIELDS} />
 
       <fieldset className="flex flex-col gap-6">
-        <legend className="text-[22px] font-semibold leading-tight">Your business</legend>
+        <legend className="font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em]">Your business</legend>
         <TextField
           name="company_name"
           label="Business name"
@@ -66,7 +66,7 @@ export default function TradeApplicationForm({ initial }: { initial: FormValues 
       </fieldset>
 
       <fieldset className="flex flex-col gap-6">
-        <legend className="text-[22px] font-semibold leading-tight">Who should we contact?</legend>
+        <legend className="font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em]">Who should we contact?</legend>
         <TextField name="contact_name" label="Full name" autoComplete="name" defaultValue={v.contact_name} error={e.contact_name} />
         <TextField
           name="contact_phone"
