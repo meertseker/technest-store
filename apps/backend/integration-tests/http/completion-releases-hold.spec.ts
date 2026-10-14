@@ -13,6 +13,8 @@ import { recordedPaymentCalls, resetPaymentRecorder } from "../helpers/recording
 process.env.TECHNEST_TEST_PAYMENT_PROVIDER = "true"
 
 jest.setTimeout(10 * 60 * 1000)
+// Money paths: a test that only passes on a retry is a real fault, not noise (no retries here).
+jest.retryTimes(0)
 
 type Headers = { headers: Record<string, string> }
 
@@ -93,6 +95,13 @@ medusaIntegrationTestRunner({
           { inventory_item_id: variants[handle].inventory_item_id, location_id: locationId, stocked_quantity: quantity },
         ])
 
+    const reserved = async (handle: string) => {
+      const [level] = await getContainer()
+        .resolve(Modules.INVENTORY)
+        .listInventoryLevels({ inventory_item_id: variants[handle].inventory_item_id, location_id: locationId })
+      return Number(level.reserved_quantity)
+    }
+
     it("control: a cart that can be completed becomes an order and nothing is released", async () => {
       const { cartId } = await cartReadyToPay("clear-shockproof-case")
 
@@ -123,6 +132,42 @@ medusaIntegrationTestRunner({
       )
       const retry = await api.post(`/store/carts/${cartId}/complete`, {}, store)
       expect(retry.data.type).toBe("order")
+    })
+
+    it("refuses two lines of the same item that together need more than the stock, and releases the hold", async () => {
+      const handle = "clear-shockproof-case"
+      const { data: created } = await api.post("/store/carts", { region_id: regionId, email: "shopper@example.com" }, store)
+      const cartId = created.cart.id as string
+      // Different metadata keeps them as two lines; Medusa checks each against the full stock.
+      await api.post(`/store/carts/${cartId}/line-items`, { variant_id: variants[handle].id, quantity: 3, metadata: { note: "a" } }, store)
+      const { data: two } = await api.post(
+        `/store/carts/${cartId}/line-items`,
+        { variant_id: variants[handle].id, quantity: 3, metadata: { note: "b" } },
+        store
+      )
+      expect(two.cart.items).toHaveLength(2)
+      await api.post(`/store/carts/${cartId}`, { shipping_address: ADDRESS, billing_address: ADDRESS }, store)
+      await api.post(`/store/carts/${cartId}/shipping-methods`, { option_id: options["standard"] }, store)
+      await setStock(handle, 5)
+      const { data: pc } = await api.post("/store/payment-collections", { cart_id: cartId }, store)
+      await api.post(`/store/payment-collections/${pc.payment_collection.id}/payment-sessions`, { provider_id: TEST_PROVIDER_ID }, store)
+      const reservedBefore = await reserved(handle)
+
+      const res = await api.post(`/store/carts/${cartId}/complete`, {}, store).catch((e: any) => e.response)
+
+      expect(res.status).toBe(200)
+      expect(res.data).toMatchObject({ type: "cart", error: { type: "not_allowed", payment_released: true } })
+      expect(released()).toBe(1)
+      expect(await ordersOf(cartId)).toBe(0)
+      expect(await reserved(handle)).toBe(reservedBefore)
+
+      // Within the stock, the same two lines become an order.
+      await setStock(handle, 6)
+      const { data: pc2 } = await api.post("/store/payment-collections", { cart_id: cartId }, store)
+      await api.post(`/store/payment-collections/${pc2.payment_collection.id}/payment-sessions`, { provider_id: TEST_PROVIDER_ID }, store)
+      const retry = await api.post(`/store/carts/${cartId}/complete`, {}, store)
+      expect(retry.data.type).toBe("order")
+      expect(await reserved(handle)).toBe(reservedBefore + 6)
     })
 
     it("refuses a payment session for a basket that breaks the add-on rule, before any hold is placed", async () => {

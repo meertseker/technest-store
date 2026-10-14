@@ -5,6 +5,7 @@ import {
   completeCartWorkflow,
 } from "@medusajs/medusa/core-flows"
 import { collectStateKeysIn } from "../../lib/click-collect"
+import { cartShortSharedInventory } from "../../lib/shared-stock"
 import { assertBasketRules } from "../steps/basket-rules"
 
 // Add-on rule (CLAUDE.md, docs/contracts/basket-rules.md): a basket of only £1
@@ -32,5 +33,14 @@ completeCartWorkflow.hooks.validate(async ({ cart }, { container }) => {
     )
   }
   await assertBasketRules(container, cart.id)
+  // Lines sharing an inventory item are checked together (Medusa checks each
+  // line alone). Refused here, before the payment step, so the card hold is
+  // released like for any other out-of-stock refusal (lib/cart-completion).
+  if ((await cartShortSharedInventory(container, cart.id)).length) {
+    throw new MedusaError(
+      MedusaError.Types.NOT_ALLOWED,
+      "We don't have enough stock for all the items in your basket. Please reduce the quantity and try again."
+    )
+  }
   return new StepResponse(undefined)
 })
