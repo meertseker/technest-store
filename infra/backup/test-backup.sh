@@ -101,5 +101,22 @@ BACKUP_MAX_AGE_SECONDS=7200 bash "$here/healthcheck.sh"; check "healthy right af
 echo $(( $(date -u +%s) - 8000 )) > "$work/state/last_success"
 BACKUP_MAX_AGE_SECONDS=7200 bash "$here/healthcheck.sh"; check "unhealthy when the last backup is too old" "1" "$?"
 
+echo "# entrypoint.sh (PID 1 in the container)"
+# A stop signal must end the loop at once, not after Docker's grace period, also while it pauses.
+setup none
+printf '#!/usr/bin/env bash\necho ran >> "%s/runs"\n' "$work" > "$work/bin/backup.sh"
+chmod +x "$work/bin/backup.sh"
+BACKUP_BIN="$work/bin" bash "$here/entrypoint.sh" > "$work/out" 2>&1 &
+pid=$!
+sleep 1
+kill -TERM "$pid"
+stopped=no
+for _ in $(seq 1 20); do kill -0 "$pid" 2>/dev/null || { stopped=yes; break; }; sleep 0.25; done
+kill -KILL "$pid" 2>/dev/null
+wait "$pid" 2>/dev/null; status=$?
+check "stops within 5 s of SIGTERM while pausing" "yes" "$stopped"
+check "exits cleanly on SIGTERM" "0" "$([ "$stopped" = yes ] && echo "$status" || echo killed)"
+check "says it is stopping" "1" "$(grep -c 'backup: stopping' "$work/out")"
+
 echo
 [ "$fails" -eq 0 ] && echo "all backup checks passed" || { echo "$fails check(s) failed"; exit 1; }

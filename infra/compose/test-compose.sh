@@ -80,7 +80,7 @@ for variant in production staging; do
   check "$variant: the one-shot migrate has no heap flag of its own" "None" "$(inspect "$json" 'env("migrate", "NODE_OPTIONS")')"
 
   echo "## ports and images"
-  check "$variant: caddy publishes 80/tcp and 443/tcp only" "[('80', 'tcp'), ('443', 'tcp')]" \
+  check "$variant: caddy publishes 80/tcp and 443/tcp only" "[('443', 'tcp'), ('80', 'tcp')]" \
     "$(inspect "$json" 'sorted((str(p["published"]), p.get("protocol", "tcp")) for p in s["caddy"]["ports"])')"
   check "$variant: no other service publishes a port" "[]" \
     "$(inspect "$json" '[n for n, v in s.items() if n != "caddy" and v.get("ports")]')"

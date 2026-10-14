@@ -83,7 +83,8 @@ services:
     # what a deploy runs. Bump tag and digest together (docker buildx imagetools inspect <tag>).
     image: caddy:2.10-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
     networks: [edge]
-    ports: ["80:80", "443:443", "443:443/udp"]
+    # TCP only: Cloudflare proxies to the origin over TCP, so HTTP/3 (UDP 443) is never used here.
+    ports: ["80:80", "443:443"]
     environment:
       SHOP_DOMAIN: ${SHOP_DOMAIN:-technest.co.uk}
       ACME_EMAIL: ${ACME_EMAIL:-hello@technest.co.uk}

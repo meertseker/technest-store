@@ -45,7 +45,7 @@ Tek bir Hetzner sunucusu (boyut için bölüm 2.1), Docker Compose ile şu servi
 | `storefront` | Next.js mağaza | Hayır (Caddy üzerinden) |
 | `postgres` | Veritabanı (Postgres 16) | Hayır |
 | `redis` | Kuyruk, olaylar, kilitler (Redis 7) | Hayır |
-| `backup` | Her gece 03:15'te veritabanı yedeği → R2 | Hayır |
+| `backup` | Saatte bir veritabanı yedeği → R2 (bölüm 8) | Hayır |
 
 İki iç ağ vardır: `edge` (caddy, storefront, server) ve `data` (server, worker, postgres, redis,
 backup, migrate). İkisinde de yalnızca `server` bulunur; mağaza (storefront) Postgres'e ve Redis'e
@@ -93,7 +93,7 @@ silinebilir. Geri yükleme tatbikatı (bölüm 8.4) için de bu boyutta yeni bir
    Yoksa: `ssh-keygen -t ed25519 -C "lead@technest"`.
 3. **Add Server**:
    - Location: **Falkenstein** veya **Nuremberg** (Almanya; UK'ye yakın ve ucuz). Londra yok.
-   - Image: **Ubuntu 24.04** (staging 26.04 ile kuruldu; ikisi de olur)
+   - Image: **Ubuntu 24.04 veya daha yeni bir LTS** (staging 26.04 ile kuruldu)
    - Type: **Cost-Optimized → x86 → CX23** (2 vCPU, 4 GB) staging için. Üretim için: staging'de
      `docker stats` ile gerçek bellek kullanımına bakın; 3 GB'ın rahat altındaysa CX23 yeter
      (`docker-compose.staging.yml` sınırlarıyla), değilse **CX33** (4 vCPU, 8 GB). Sunucu sonradan
@@ -110,7 +110,7 @@ silinebilir. Geri yükleme tatbikatı (bölüm 8.4) için de bu boyutta yeni bir
      (sunucu ve iş akışı aynı özel ağa girer, 22 dışarıya kapalı kalır), veya (b) 22'yi herkese
      açıp yalnızca anahtarla girişe ve `deploy` kullanıcısının anahtarını tek komuta
      (`command="…"` ile yayın betiği) kısıtlamak. Karar verilene kadar yayın çalışmaz.
-   - TCP 80, TCP 443, UDP 443: herkes (Cloudflare proxy'si buradan gelir)
+   - TCP 80, TCP 443: herkes (Cloudflare proxy'si buradan gelir; UDP gerekmez, Caddy yalnızca TCP dinler)
    - Diğer her şey kapalı.
 
 ### 2.2 Sunucu hazırlığı (her iki sunucuda aynı)
@@ -122,6 +122,11 @@ ssh root@SUNUCU_IP
 apt update && apt -y upgrade
 apt -y install unattended-upgrades fail2ban
 dpkg-reconfigure -plow unattended-upgrades
+# Çekirdek yaması yeniden başlatma isterse gece 04:30'da (UTC) kendiliğinden yeniden başlasın;
+# konteynerler `restart: unless-stopped` ile geri gelir.
+printf 'Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "04:30";
+'   > /etc/apt/apt.conf.d/52technest-reboot
 
 # Docker (resmi betik)
 curl -fsSL https://get.docker.com | sh
@@ -262,6 +267,20 @@ openssl rand -hex 32
 
 `POSTGRES_PASSWORD` ve `REDIS_PASSWORD` **yalnızca hex** olmalıdır (yukarıdaki komut hex üretir), çünkü
 bağlantı adreslerine (`DATABASE_URL`, `REDIS_URL`) kodlanmadan yazılırlar.
+
+**Parola değiştirme (rotation).** Postgres `POSTGRES_PASSWORD`'u yalnızca veritabanı ilk
+kurulurken okur: yalnızca `.env`'i değiştirmek bağlantıları koparır. Sırayla:
+
+```bash
+cd /opt/technest
+YENI=$(openssl rand -hex 32)
+docker compose exec -T postgres psql -U technest -d technest -c "ALTER USER technest PASSWORD '$YENI';"
+sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$YENI/" .env
+docker compose up -d        # server, worker ve backup yeni parolayla yeniden oluşturulur
+```
+
+`REDIS_PASSWORD` için yalnızca `.env`'deki değeri değiştirip `docker compose up -d` yeterlidir
+(redis, server ve worker birlikte yeniden oluşturulur). Yeni parolayı parola yöneticisine de yazın.
 
 Aşağıdaki tablo `.env.production.template`, `docker-compose.yml` ve `apps/backend/.env.template` ile
 karşılaştırıldı (2026-09-30). "Zorunlu" = boşsa compose başlamaz ya da özellik çalışmaz.
