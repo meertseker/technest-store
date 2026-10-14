@@ -1,4 +1,11 @@
-import { buildImportPlan, DRAFT_SAFETY_WARNING, ExistingVariant, PlanContext, slugify } from "../plan"
+import {
+  buildImportPlan,
+  DRAFT_SAFETY_WARNING,
+  EXISTING_DRAFT_WARNING,
+  ExistingVariant,
+  PlanContext,
+  slugify,
+} from "../plan"
 import { readImportRows } from "../rows"
 
 const chargers = {
@@ -132,6 +139,57 @@ describe("buildImportPlan", () => {
           { device_id: "dev_16p", note: null },
         ],
       },
+    })
+  })
+
+  // An interrupted import leaves new products as drafts (they are created as drafts and
+  // published at the end). A re-import of the same file must say so, not keep them hidden quietly.
+  describe("a SKU that exists as a draft", () => {
+    const draftCase: ExistingVariant = {
+      ...existingCable,
+      product_title: "Clear Case",
+      product_handle: "clear-case",
+      product_id: "prod_2",
+      product_status: "draft",
+      category_ids: ["pcat_cases"],
+      safety_marking: "none",
+    }
+    const draftCtx = () => ctx({ variantsBySku: new Map([["TN-CASE", draftCase]]) })
+
+    it("stays a draft with a warning when the status column is blank, and is counted", () => {
+      const { rows, summary } = plan(["TN-CASE,Clear Case,,cases,5.99,,10,,"], draftCtx())
+      expect(rows[0]).toMatchObject({ action: "update", status: "draft", existing_draft_kept: true })
+      expect(rows[0].warnings).toEqual([EXISTING_DRAFT_WARNING])
+      expect(EXISTING_DRAFT_WARNING).toBe(
+        'This product exists as a draft and the status column is blank, so it stays a draft. Put "published" in the status column to make it live.'
+      )
+      expect(summary).toMatchObject({ update: 1, draft: 1, with_warnings: 1, existing_drafts_kept: 1 })
+    })
+
+    it("is published when the row says so", () => {
+      const { rows, summary } = plan(["TN-CASE,Clear Case,,cases,5.99,published,10,,"], draftCtx())
+      expect(rows[0]).toMatchObject({ status: "published", warnings: [], existing_draft_kept: false })
+      expect(summary.existing_drafts_kept).toBe(0)
+    })
+
+    it("still obeys the safety guard when the row says published", () => {
+      const charger = { ...draftCase, category_ids: ["pcat_chargers"] }
+      const { rows } = plan(
+        ["TN-CASE,20W Plug,,chargers-cables,9.99,published,5,,"],
+        ctx({ variantsBySku: new Map([["TN-CASE", charger]]) })
+      )
+      expect(rows[0]).toMatchObject({ status: "draft", existing_draft_kept: false })
+      expect(rows[0].warnings).toEqual([DRAFT_SAFETY_WARNING])
+    })
+
+    it("does not warn for a live product, a new product or an explicit draft", () => {
+      expect(plan(["TN-CABLE,,,,4.5,,3,,"]).rows[0]).toMatchObject({ status: "published", existing_draft_kept: false })
+      expect(plan(["TN-NEW,New Thing,,cases,1,,1,,"]).rows[0]).toMatchObject({
+        action: "create",
+        existing_draft_kept: false,
+      })
+      const explicit = plan(["TN-CASE,,,,,draft,,,"], draftCtx()).rows[0]
+      expect(explicit).toMatchObject({ status: "draft", existing_draft_kept: false, warnings: [] })
     })
   })
 

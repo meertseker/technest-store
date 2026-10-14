@@ -92,6 +92,11 @@ export type PlanRow = {
   status: ImportStatus | null
   errors: string[]
   warnings: string[]
+  /**
+   * The SKU exists as a draft and the row's status column is blank, so it stays a
+   * draft (with a warning). Typically the leftovers of an interrupted import.
+   */
+  existing_draft_kept: boolean
   input: ImportRowInput
   /** Resolved values the commit workflow writes. Only set when action isn't "error". */
   resolved?: {
@@ -124,6 +129,8 @@ export type ImportPlan = {
     error: number
     with_warnings: number
     draft: number
+    /** Rows that keep an existing draft because their status column is blank. */
+    existing_drafts_kept: number
   }
 }
 
@@ -172,6 +179,8 @@ function priceWrite(existing: ExistingVariant | undefined, price: number | undef
 
 export const DRAFT_SAFETY_WARNING =
   "Imported as a draft: chargers and power products need a safety marking (UKCA or CE) before they can be published. Add it, then publish."
+export const EXISTING_DRAFT_WARNING =
+  'This product exists as a draft and the status column is blank, so it stays a draft. Put "published" in the status column to make it live.'
 
 /**
  * Decides, row by row, what an import will do. Pure: the caller loads the
@@ -323,6 +332,19 @@ export function buildImportPlan(read: ReadRowsResult, ctx: PlanContext): ImportP
       }
     }
 
+    // An import creates products as drafts and publishes them at the end, so an
+    // interrupted run leaves drafts behind. Re-importing the file with a blank status
+    // column keeps them as drafts: say so, instead of hiding them quietly.
+    const existingDraftKept = Boolean(
+      existing &&
+        !variantOnly &&
+        existing.product_status !== "published" &&
+        input.status === undefined &&
+        status === "draft" &&
+        !errors.length
+    )
+    if (existingDraftKept) warnings.push(EXISTING_DRAFT_WARNING)
+
     const action: PlanAction = errors.length ? "error" : existing ? "update" : "create"
     const plan: PlanRow = {
       line,
@@ -332,6 +354,7 @@ export function buildImportPlan(read: ReadRowsResult, ctx: PlanContext): ImportP
       status: action === "error" ? null : status,
       errors,
       warnings,
+      existing_draft_kept: existingDraftKept,
       input,
     }
     if (action !== "error") {
@@ -364,6 +387,7 @@ export function buildImportPlan(read: ReadRowsResult, ctx: PlanContext): ImportP
       error: rows.filter((r) => r.action === "error").length,
       with_warnings: rows.filter((r) => r.warnings.length).length,
       draft: rows.filter((r) => r.status === "draft").length,
+      existing_drafts_kept: rows.filter((r) => r.existing_draft_kept).length,
     },
   }
 }
