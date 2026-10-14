@@ -584,6 +584,9 @@ Amaç: sunucu tamamen kaybolursa mağazanın 1 saatten kısa sürede geri geldi�
      backend üretim modunda bu ikisi olmadan açılmaz.
    - `SMTP_HOST=localhost`: gönderim başarısız olur, müşterilere e-posta gitmez. (Boş bırakmak işe
      yaramaz: compose boş değeri `smtp.resend.com` yapar ve gerçek e-posta gider.)
+   - `IMAGE_TAG=` son sağlıklı yayının etiketi. Sunucu kaybolduysa `.env` de gitmiştir: etiket
+     GitHub → Actions → Deploy → son yeşil çalışmanın özetinde ("Deployed to production") ve
+     `deployed-tag-production-<no>` dosyasında (artifact, 90 gün) durur.
 3. Yalnızca veritabanını başlatıp yedeği geri yükleyin:
    ```bash
    docker compose pull
