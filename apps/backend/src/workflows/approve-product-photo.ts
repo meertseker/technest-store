@@ -3,7 +3,12 @@ import {
   transform,
   WorkflowResponse,
 } from "@medusajs/framework/workflows-sdk"
-import { updateProductsWorkflow, useQueryGraphStep } from "@medusajs/medusa/core-flows"
+import {
+  acquireLockStep,
+  releaseLockStep,
+  updateProductsWorkflow,
+  useQueryGraphStep,
+} from "@medusajs/medusa/core-flows"
 import { resolvePhotoFilesStep } from "./steps/resolve-photo-files"
 
 export type ApproveProductPhotoInput = {
@@ -71,6 +76,9 @@ export function buildPhotoApprovalUpdate(
   }
 }
 
+/** One approval per product at a time: it reads, changes and writes the image list and metadata. */
+export const photoApprovalLockKey = (productId: string) => `technest-photo-approve:${productId}`
+
 /**
  * Sets the processed photo as the product's first image (and thumbnail) and
  * records the original next to it in metadata. The original file is kept.
@@ -79,6 +87,15 @@ export function buildPhotoApprovalUpdate(
 export const approveProductPhotoWorkflow = createWorkflow(
   "approve-product-photo",
   function (input: ApproveProductPhotoInput) {
+    // Without this, two approvals at once both read the old image list and
+    // metadata, and the second write drops the first photo.
+    const lock = transform({ input }, ({ input }) => ({
+      key: photoApprovalLockKey(input.product_id),
+      timeout: 30,
+      ttl: 60,
+    }))
+    acquireLockStep(lock)
+
     const { data: products } = useQueryGraphStep({
       entity: "product",
       fields: ["id", "thumbnail", "metadata", "images.id", "images.url"],
@@ -108,6 +125,8 @@ export const approveProductPhotoWorkflow = createWorkflow(
       fields: ["id", "thumbnail", "metadata", "images.id", "images.url", "images.rank"],
       filters: { id: input.product_id },
     }).config({ name: "get-product-after-photo" })
+
+    releaseLockStep(transform({ input }, ({ input }) => ({ key: photoApprovalLockKey(input.product_id) })))
 
     const product = transform({ updated }, ({ updated }) => {
       const p = updated[0] as unknown as ProductForPhoto & { images: { id: string; url: string; rank?: number }[] }

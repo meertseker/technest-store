@@ -412,6 +412,29 @@ medusaIntegrationTestRunner({
         expect(data.product.images[0].url).toBe(processed.processed.url)
       })
 
+      it("keeps both photos when two approvals for the same product arrive at once", async () => {
+        const { data: second } = await api.post("/admin/photos/process", multipart(photo, {}, "image/jpeg", "second.jpg"), admin)
+        expect(second.processed.id).not.toBe(processed.processed.id)
+
+        const approve = (p: typeof processed) =>
+          api.post(
+            `/admin/products/${productId}/photos/approve`,
+            { processed_file_id: p.processed.id, original_file_id: p.original.id },
+            admin
+          )
+        const results = await Promise.all([approve(processed), approve(second)])
+        expect(results.map((r) => r.status)).toEqual([200, 200])
+
+        const { data } = await api.get(`/admin/products/${productId}?fields=id,metadata,*images`, admin)
+        const records = data.product.metadata.photo_originals as { processed_file_id: string }[]
+        expect(records.map((r) => r.processed_file_id).sort()).toEqual(
+          [processed.processed.id, second.processed.id].sort()
+        )
+        const urls = data.product.images.map((i: { url: string }) => i.url)
+        expect(urls).toEqual(expect.arrayContaining([processed.processed.url, second.processed.url]))
+        expect(urls).toHaveLength(3)
+      })
+
       it("404s for an unknown product and 400s for unknown files or bad bodies", async () => {
         const body = { processed_file_id: processed.processed.id, original_file_id: processed.original.id }
         const missing = await api
