@@ -79,7 +79,9 @@ x-backend-env: &backend-env
 services:
   caddy:
     <<: *defaults
-    image: caddy:2.10-alpine
+    # Base images are pinned by digest (the tag says which release): a re-pushed tag can't change
+    # what a deploy runs. Bump tag and digest together (docker buildx imagetools inspect <tag>).
+    image: caddy:2.10-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
     networks: [edge]
     ports: ["80:80", "443:443", "443:443/udp"]
     environment:
@@ -166,7 +168,7 @@ services:
 
   postgres:
     <<: *defaults
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
     environment:
       POSTGRES_USER: technest
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
@@ -182,7 +184,7 @@ services:
 
   redis:
     <<: *defaults
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
     # A password even on the private network: anything that gets a foothold on it can't
     # read or rewrite the job queues and locks. The health check reads it from REDISCLI_AUTH.
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?}", "--appendonly", "yes", "--maxmemory", "384mb", "--maxmemory-policy", "noeviction"]

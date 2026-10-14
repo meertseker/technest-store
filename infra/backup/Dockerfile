@@ -2,7 +2,9 @@
 # A loop runs backup.sh as a non-root user; see entrypoint.sh and DEPLOY.md ("Yedekleme").
 # /var/lib/backup holds the time of the last good backup: mount a volume there, or every
 # deploy resets the health check's clock.
-FROM alpine:3.20
+# The base image is pinned by digest (a floating tag could change under a deploy); bump the
+# digest with the Alpine release, and raise postgresql<major>-client with the Postgres major.
+FROM alpine:3.22@sha256:5291449c3df73caf6ed85e649dec1b9e818b39a5d8c871e97afc13e9cd5e8fa8
 RUN apk add --no-cache postgresql16-client rclone bash coreutils tzdata ca-certificates curl age \
  && adduser -D -u 10001 backup \
  && mkdir -p /var/lib/backup && chown backup /var/lib/backup
