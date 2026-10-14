@@ -17,6 +17,7 @@ describe("event names (docs/contracts/emails.md, trade.md, repairs.md)", () => {
       "technest.trade_application.created",
       "technest.trade_application.approved",
       "technest.trade_application.rejected",
+      "technest.trade_application.revoked",
     ])
     expect(repairConfig.event).toBe("technest.repair_booking.created")
     expect(lowStockConfig.event).toBe("technest.inventory.low_stock")
@@ -56,6 +57,24 @@ describe("trade application emails", () => {
       ["trade-application-rejected", "customer", "tapp_2"],
     ])
     expect(JSON.stringify(run.mock.calls)).not.toContain("No VAT number")
+  })
+
+  it("revoked → one customer email, ids only; the payload's reason is not passed on", async () => {
+    await emit(tradeApplicationEmails, "technest.trade_application.revoked", {
+      id: "tapp_3",
+      customer_id: "cus_1",
+      reason: "Stopped trading",
+    })
+    expect(run.mock.calls.map((c) => c[1])).toEqual([
+      {
+        template: "trade-application-revoked",
+        recipient: "customer",
+        resource_id: "tapp_3",
+        resource_type: "trade_application",
+        trigger_type: "technest.trade_application.revoked",
+      },
+    ])
+    expect(JSON.stringify(run.mock.calls)).not.toContain("Stopped trading")
   })
 
   it("ignores payloads without an id", async () => {

@@ -46,7 +46,7 @@ describe("trade application emails", () => {
   })
 
   // The account's address is not verified and the applicant types the company name.
-  it.each(["trade-application-received", "trade-application-approved", "trade-application-rejected"])(
+  it.each(["trade-application-received", "trade-application-approved", "trade-application-rejected", "trade-application-revoked"])(
     "%s: nothing the applicant typed about the company reaches the account's address",
     async (template) => {
       const status = template.split("-").pop() === "received" ? "pending" : template.split("-").pop()
@@ -93,6 +93,25 @@ describe("trade application emails", () => {
     })
     expect(await resolveEmail(approved.container, "trade-application-approved", "tapp_1", "customer")).toMatchObject({
       to: "jane@account.test",
+    })
+  })
+
+  it("revoked: only when the application is revoked now, with the stored reason when there is one", async () => {
+    const approved = containerWith({ trade_application: [{ ...application, status: "approved" }], customer: [customer] })
+    expect(await resolveEmail(approved.container, "trade-application-revoked", "tapp_1", "customer")).toBeNull()
+
+    const withReason = containerWith({
+      trade_application: [{ ...application, status: "revoked", reason: "The business has stopped trading." }],
+      customer: [customer],
+    })
+    expect(await resolveEmail(withReason.container, "trade-application-revoked", "tapp_1", "customer")).toEqual({
+      to: "jane@account.test",
+      data: { first_name: "Jane", reason: "The business has stopped trading." },
+    })
+
+    const noReason = containerWith({ trade_application: [{ ...application, status: "revoked", reason: null }], customer: [customer] })
+    expect(await resolveEmail(noReason.container, "trade-application-revoked", "tapp_1", "customer")).toMatchObject({
+      data: { reason: null },
     })
   })
 

@@ -77,6 +77,7 @@ export const fixtures: Record<TemplateId, Record<string, unknown>> = {
     first_name: "Jane",
     reason: "We couldn't verify the VAT number. Please check it and apply again.",
   },
+  "trade-application-revoked": { first_name: "Jane", reason: "The business has stopped trading." },
   "shop-trade-application": {
     company_name: "Acme Phones Ltd",
     business_type: "limited_company",

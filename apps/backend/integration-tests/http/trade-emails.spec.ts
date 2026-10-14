@@ -139,6 +139,42 @@ medusaIntegrationTestRunner({
         expect((await tradeMail(noEmail, 2)).filter((m) => m.Subject === subject)).toHaveLength(1)
       })
 
+      it("revoked: nothing while the application is still approved; the closing email once it is revoked, with the reason", async () => {
+        const email = `e2-trade-revoked-${uid()}@example.com`
+        const c = await customer(email)
+        const app = await apply(c.id)
+        await approveTradeApplicationWorkflow(getContainer()).run({ input: { id: app.id } })
+        await tradeMail(email, 2) // receipt + approved
+
+        // A stray or early event must not close an account that is still approved.
+        await emit(tradeApplicationEmails, "technest.trade_application.revoked", { id: app.id, customer_id: c.id })
+        await settle(email, 500)
+        const subject = "Your Tech Nest trade account has been closed"
+        expect((await tradeMail(email, 2)).filter((m) => m.Subject === subject)).toHaveLength(0)
+
+        // The revoke route and its "revoked" status are another branch's (docs/contracts/trade.md). Until that
+        // migration lands the column's check still lists three statuses, so this test widens it in its own
+        // (per-test) database copy to put an application into the state that route will produce.
+        const db = getContainer().resolve(ContainerRegistrationKeys.PG_CONNECTION)
+        await db.raw(`alter table trade_application drop constraint if exists trade_application_status_check`)
+        await db.raw(`update trade_application set status = 'revoked', reason = ? where id = ?`, [
+          "The business has stopped trading.",
+          app.id,
+        ])
+
+        await emit(tradeApplicationEmails, "technest.trade_application.revoked", { id: app.id, customer_id: c.id })
+        const [closed] = (await tradeMail(email, 3)).filter((m) => m.Subject === subject)
+        expect(closed).toBeDefined()
+        const text = await textOf(closed.ID)
+        expect(text).toContain("Reason: The business has stopped trading.")
+        expect(text).toContain("apply again")
+
+        // A replay sends nothing new.
+        await emit(tradeApplicationEmails, "technest.trade_application.revoked", { id: app.id, customer_id: c.id })
+        await settle(email, 500)
+        expect((await tradeMail(email, 3)).filter((m) => m.Subject === subject)).toHaveLength(1)
+      })
+
       it("sends no approval for an application that isn't approved", async () => {
         const email = `e2-trade-pending-${uid()}@example.com`
         const c = await customer(email)

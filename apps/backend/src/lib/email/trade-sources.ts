@@ -43,7 +43,7 @@ async function loadApplication(container: MedusaContainer, id: string): Promise<
   return data[0] as Row | undefined
 }
 
-type TradeStatus = "pending" | "approved" | "rejected"
+type TradeStatus = "pending" | "approved" | "rejected" | "revoked"
 
 /**
  * Customer trade emails. They go to the customer's ACCOUNT email (the login),
@@ -72,8 +72,9 @@ export function tradeApplicationCustomer(status?: TradeStatus) {
     // it is not verified, so it could be anyone's, and the text could be anything.
     const data: TradeApplicationEmailData = {
       first_name: safeFirstName(customer.first_name),
-      // Written by staff for the customer (contract: "shown to the customer").
-      reason: app.status === "rejected" ? str(app.reason) || null : null,
+      // Written by staff for the customer (contract: "shown to the customer"); on a
+      // revoke it is optional.
+      reason: app.status === "rejected" || app.status === "revoked" ? str(app.reason) || null : null,
     }
     return { to: customer.email, data: asData(data) }
   }

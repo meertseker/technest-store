@@ -15,6 +15,7 @@ import * as shopTradeApplication from "./templates/shop-trade-application"
 import * as tradeApplicationApproved from "./templates/trade-application-approved"
 import * as tradeApplicationReceived from "./templates/trade-application-received"
 import * as tradeApplicationRejected from "./templates/trade-application-rejected"
+import * as tradeApplicationRevoked from "./templates/trade-application-revoked"
 import * as shopNewOrder from "./templates/shop-new-order"
 import * as welcome from "./templates/welcome"
 
@@ -40,6 +41,7 @@ const templates = {
   "trade-application-received": tradeApplicationReceived,
   "trade-application-approved": tradeApplicationApproved,
   "trade-application-rejected": tradeApplicationRejected,
+  "trade-application-revoked": tradeApplicationRevoked,
   "shop-trade-application": shopTradeApplication,
   "shop-repair-booking": shopRepairBooking,
   "shop-low-stock-digest": shopLowStockDigest,

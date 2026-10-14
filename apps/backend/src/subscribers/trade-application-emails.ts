@@ -3,7 +3,7 @@ import type { EmailRecipient } from "../lib/email/sources"
 import { reportingSubscriber } from "../lib/alerting"
 import { runEmail } from "../lib/email/run-email"
 
-/** Event → emails (docs/contracts/emails.md rows 12–14; events from docs/contracts/trade.md). */
+/** Event → emails (docs/contracts/emails.md rows 12–14 and 17; events from docs/contracts/trade.md). */
 export const TRADE_EMAILS: Record<string, { template: string; recipient: EmailRecipient }[]> = {
   "technest.trade_application.created": [
     { template: "trade-application-received", recipient: "customer" },
@@ -11,6 +11,7 @@ export const TRADE_EMAILS: Record<string, { template: string; recipient: EmailRe
   ],
   "technest.trade_application.approved": [{ template: "trade-application-approved", recipient: "customer" }],
   "technest.trade_application.rejected": [{ template: "trade-application-rejected", recipient: "customer" }],
+  "technest.trade_application.revoked": [{ template: "trade-application-revoked", recipient: "customer" }],
 }
 
 /**

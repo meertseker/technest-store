@@ -14,7 +14,7 @@ test("trade application received says what happens next and when", async () => {
 // whatever is typed there must not reach that address inside a genuine Tech Nest email.
 test("customer trade emails never show the typed company name", async () => {
   const typed = "Your account is locked, sign in at evil.example/login"
-  for (const id of ["trade-application-received", "trade-application-approved", "trade-application-rejected"] as const) {
+  for (const id of ["trade-application-received", "trade-application-approved", "trade-application-rejected", "trade-application-revoked"] as const) {
     const e = await renderEmail(id, { ...fixtures[id], company_name: typed } as Record<string, unknown>)
     assert.doesNotMatch(e.text + e.html, /evil\.example|account is locked/, id)
     assert.doesNotMatch(e.text + e.html, /undefined|null/, id)
@@ -97,4 +97,17 @@ test("a repair phone number without digits is shown as text, not a tel: link", a
   const e = await renderEmail("shop-repair-booking", { ...fixtures["shop-repair-booking"], phone: "call me" })
   assert.doesNotMatch(e.html, /href="tel:/)
   assert.match(e.text, /Phone: call me/)
+})
+
+test("trade revoked is short, shows the staff reason when there is one, and says they may apply again", async () => {
+  const e = await renderEmail("trade-application-revoked", fixtures["trade-application-revoked"])
+  assert.equal(e.subject, "Your Tech Nest trade account has been closed")
+  assert.match(e.text, /no longer has a trade account/)
+  assert.match(e.text, /Reason: The business has stopped trading\./)
+  assert.match(e.text, /apply again/)
+  assert.match(e.html, /href="https:\/\/technest\.co\.uk\/trade\/apply"/)
+  assert.ok(e.text.split("\n").filter((l) => l.trim()).length <= 14, "stays short")
+  const none = await renderEmail("trade-application-revoked", { first_name: null })
+  assert.doesNotMatch(none.text, /Reason:/)
+  assert.doesNotMatch(none.text + none.html, /undefined|null/)
 })

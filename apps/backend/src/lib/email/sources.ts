@@ -56,6 +56,7 @@ const sources: Record<string, Source> = {
   "trade-application-received": tradeApplicationCustomer(),
   "trade-application-approved": tradeApplicationCustomer("approved"),
   "trade-application-rejected": tradeApplicationCustomer("rejected"),
+  "trade-application-revoked": tradeApplicationCustomer("revoked"),
   "shop-trade-application": tradeApplicationShop,
   "shop-repair-booking": repairBooking,
   "shop-low-stock-digest": lowStockDigest,
