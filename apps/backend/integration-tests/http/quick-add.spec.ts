@@ -298,6 +298,40 @@ medusaIntegrationTestRunner({
         ])
       })
 
+      it("defaults the opening stock to 0 when none is given", async () => {
+        const { stock: _stock, ...withoutStock } = valid()
+        const res = await create({ ...withoutStock, sku: "QA-NOSTOCK" })
+        expect(res.status).toBe(201)
+        const query = getContainer().resolve(ContainerRegistrationKeys.QUERY)
+        const { data: variants } = await query.graph({
+          entity: "product_variant",
+          fields: ["inventory_items.inventory.location_levels.stocked_quantity"],
+          filters: { sku: "QA-NOSTOCK" },
+        })
+        expect((variants[0] as any).inventory_items[0].inventory.location_levels).toEqual([
+          expect.objectContaining({ stocked_quantity: 0 }),
+        ])
+      })
+
+      it("returns the same draft for a retry with the same idempotency_key", async () => {
+        const before = await productCount()
+        const { sku: _sku, ...body } = valid()
+        const first = await create({ ...body, idempotency_key: "qa-retry-1" })
+        expect(first.status).toBe(201)
+        const retry = await create({ ...body, idempotency_key: "qa-retry-1" })
+        expect(retry.status).toBe(200)
+        expect(retry.data.product.id).toBe(first.data.product.id)
+        expect(retry.data.product.handle).toBe("anker-20w-usb-c-wall-charger")
+        expect(await productCount()).toBe(before + 1)
+        // The key is the client's: a different key is a new product.
+        const other = await create({ ...body, idempotency_key: "qa-retry-2" })
+        expect(other.status).toBe(201)
+        expect(other.data.product.id).not.toBe(first.data.product.id)
+        expect(await productCount()).toBe(before + 2)
+        // Bounds: at most 64 chars.
+        expect((await create({ ...body, idempotency_key: "k".repeat(65) })).status).toBe(400)
+      })
+
       it("picks a free handle for a repeated title", async () => {
         const first = await create({ ...valid(), sku: "QA-1" })
         const second = await create({ ...valid(), sku: "QA-2" })

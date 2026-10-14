@@ -99,6 +99,31 @@ export const suggestProductFromPhotoStep = createStep(
   }
 )
 
+/** Product metadata key that holds the client's idempotency key. */
+export const QUICK_ADD_IDEMPOTENCY_METADATA_KEY = "quick_add_idempotency_key"
+
+/** Lock key so two retries with the same key cannot both create. */
+export const quickAddIdempotencyLockKey = (key: string) => `quick-add:${key}`
+
+/**
+ * The product an earlier submission with this idempotency key created, if any
+ * (its id, or null). Read-only.
+ */
+export const findQuickAddProductStep = createStep(
+  "find-quick-add-product",
+  async ({ idempotency_key }: { idempotency_key?: string | null }, { container }) => {
+    if (!idempotency_key) {
+      return new StepResponse<string | null>(null)
+    }
+    const productService = container.resolve(Modules.PRODUCT)
+    const [existing] = await productService.listProducts(
+      { metadata: { [QUICK_ADD_IDEMPOTENCY_METADATA_KEY]: idempotency_key } } as never,
+      { select: ["id"], take: 1 }
+    )
+    return new StepResponse<string | null>(existing?.id ?? null)
+  }
+)
+
 export type QuickAddProductInput = {
   title: string
   description?: string
@@ -108,7 +133,9 @@ export type QuickAddProductInput = {
   /** Major units, VAT included (GBP 12.99 = 12.99). */
   price: number
   sku?: string
+  /** Opening stock at the shop; omitted means 0 (never a phantom unit). */
   stock?: number
+  idempotency_key?: string
   safety_marking: SafetyMarking
   safety_marking_confirmed?: boolean
   attributes?: {

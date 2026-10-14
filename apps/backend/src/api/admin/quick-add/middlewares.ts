@@ -54,6 +54,12 @@ export const AdminQuickAddCreate = z.strictObject({
     .optional(),
   photo_file_id: FileId.optional(),
   ai_assisted: z.boolean().optional(),
+  /**
+   * Client-chosen key for this submission (any string up to 64 chars). A
+   * retry with the same key gets the product created the first time (200)
+   * instead of a second draft.
+   */
+  idempotency_key: z.string().trim().min(1).max(64).optional(),
 })
 export type AdminQuickAddCreate = z.infer<typeof AdminQuickAddCreate>
 
