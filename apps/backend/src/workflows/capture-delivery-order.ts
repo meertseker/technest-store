@@ -8,6 +8,7 @@ import { acquireLockStep, releaseLockStep } from "@medusajs/medusa/core-flows"
 import { collectLockKey } from "../lib/click-collect"
 import { captureOrderPaymentsStep } from "./steps/click-collect/capture-order-payments"
 import { prepareDeliveryCaptureStep } from "./steps/click-collect/prepare-delivery-capture"
+import { lockOwnerStep } from "./steps/lock-owner"
 
 export type CaptureDeliveryOrderInput = {
   order_id: string
@@ -24,7 +25,9 @@ export type CaptureDeliveryOrderInput = {
 export const captureDeliveryOrderWorkflow = createWorkflow(
   "capture-delivery-order",
   function (input: CaptureDeliveryOrderInput) {
-    const lock = transform({ input }, ({ input }) => ({
+    const owner = lockOwnerStep({ workflow: "capture-delivery-order" })
+    const lock = transform({ input, owner }, ({ input, owner }) => ({
+      ownerId: owner,
       key: collectLockKey(input.order_id),
       timeout: 10,
       ttl: 60,
@@ -43,7 +46,10 @@ export const captureDeliveryOrderWorkflow = createWorkflow(
         return captureOrderPaymentsStep(capture)
       })
 
-    const unlock = transform({ input }, ({ input }) => ({ key: collectLockKey(input.order_id) }))
+    const unlock = transform({ input, owner }, ({ input, owner }) => ({
+      key: collectLockKey(input.order_id),
+      ownerId: owner,
+    }))
     releaseLockStep(unlock)
 
     const result = transform({ prepared, captured }, ({ prepared, captured }) => ({

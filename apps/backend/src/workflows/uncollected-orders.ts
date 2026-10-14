@@ -17,6 +17,7 @@ import {
 } from "./steps/click-collect/prepare-uncollected"
 import { ensureAuthorisationReleasedStep } from "./steps/click-collect/ensure-authorisation-released"
 import { updateOrderMetadataStep } from "./steps/click-collect/update-order-metadata"
+import { lockOwnerStep } from "./steps/lock-owner"
 
 export type UncollectedOrderInput = { order_id: string }
 
@@ -27,7 +28,9 @@ export type UncollectedOrderInput = { order_id: string }
 export const remindUncollectedOrderWorkflow = createWorkflow(
   "remind-uncollected-order",
   function (input: UncollectedOrderInput) {
-    const lock = transform({ input }, ({ input }) => ({
+    const owner = lockOwnerStep({ workflow: "remind-uncollected-order" })
+    const lock = transform({ input, owner }, ({ input, owner }) => ({
+      ownerId: owner,
       key: collectLockKey(input.order_id),
       timeout: 5,
       ttl: 30,
@@ -49,7 +52,10 @@ export const remindUncollectedOrderWorkflow = createWorkflow(
       emitEventStep(event)
     })
 
-    const unlock = transform({ input }, ({ input }) => ({ key: collectLockKey(input.order_id) }))
+    const unlock = transform({ input, owner }, ({ input, owner }) => ({
+      key: collectLockKey(input.order_id),
+      ownerId: owner,
+    }))
     releaseLockStep(unlock)
 
     const result = transform({ prepared }, ({ prepared }) => ({ reminded: prepared.due }))
@@ -68,7 +74,9 @@ export const remindUncollectedOrderWorkflow = createWorkflow(
 export const expireUncollectedOrderWorkflow = createWorkflow(
   "expire-uncollected-order",
   function (input: UncollectedOrderInput) {
-    const lock = transform({ input }, ({ input }) => ({
+    const owner = lockOwnerStep({ workflow: "expire-uncollected-order" })
+    const lock = transform({ input, owner }, ({ input, owner }) => ({
+      ownerId: owner,
       key: collectLockKey(input.order_id),
       timeout: 5,
       ttl: 60,
@@ -90,7 +98,10 @@ export const expireUncollectedOrderWorkflow = createWorkflow(
       }
     )
 
-    const unlock = transform({ input }, ({ input }) => ({ key: collectLockKey(input.order_id) }))
+    const unlock = transform({ input, owner }, ({ input, owner }) => ({
+      key: collectLockKey(input.order_id),
+      ownerId: owner,
+    }))
     releaseLockStep(unlock)
 
     const result = transform({ prepared, release }, ({ prepared, release }) => ({

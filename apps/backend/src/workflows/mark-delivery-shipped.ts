@@ -12,6 +12,7 @@ import {
 } from "@medusajs/medusa/core-flows"
 import { deliveryLockKey } from "../lib/delivery"
 import { prepareShipmentStep, shipPackedFulfillmentsStep } from "./steps/delivery/prepare-shipment"
+import { lockOwnerStep } from "./steps/lock-owner"
 
 export type MarkDeliveryShippedInput = {
   order_id: string
@@ -32,7 +33,9 @@ export type MarkDeliveryShippedInput = {
 export const markDeliveryShippedWorkflow = createWorkflow(
   "mark-delivery-shipped",
   function (input: MarkDeliveryShippedInput) {
-    const lock = transform({ input }, ({ input }) => ({
+    const owner = lockOwnerStep({ workflow: "mark-delivery-shipped" })
+    const lock = transform({ input, owner }, ({ input, owner }) => ({
+      ownerId: owner,
       key: deliveryLockKey(input.order_id),
       // A second press waits for the first, then no-ops.
       timeout: 10,
@@ -80,7 +83,10 @@ export const markDeliveryShippedWorkflow = createWorkflow(
       }
     )
 
-    const unlock = transform({ input }, ({ input }) => ({ key: deliveryLockKey(input.order_id) }))
+    const unlock = transform({ input, owner }, ({ input, owner }) => ({
+      key: deliveryLockKey(input.order_id),
+      ownerId: owner,
+    }))
     releaseLockStep(unlock)
 
     const result = transform(

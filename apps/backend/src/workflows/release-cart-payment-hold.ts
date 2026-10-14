@@ -7,6 +7,7 @@ import {
   WorkflowResponse,
 } from "@medusajs/framework/workflows-sdk"
 import { acquireLockStep, releaseLockStep } from "@medusajs/medusa/core-flows"
+import { lockOwnerStep } from "./steps/lock-owner"
 
 export type ReleaseCartPaymentHoldInput = { cart_id: string }
 
@@ -71,10 +72,19 @@ export const releaseCartPaymentHoldStep = createStep(
 export const releaseCartPaymentHoldWorkflow = createWorkflow(
   "release-cart-payment-hold",
   function (input: ReleaseCartPaymentHoldInput) {
-    const lock = transform({ input }, ({ input }) => ({ key: input.cart_id, timeout: 5, ttl: 30 }))
+    const owner = lockOwnerStep({ workflow: "release-cart-payment-hold" })
+    const lock = transform({ input, owner }, ({ input, owner }) => ({
+      ownerId: owner,
+      key: input.cart_id,
+      timeout: 5,
+      ttl: 30,
+    }))
     acquireLockStep(lock)
     const released = releaseCartPaymentHoldStep(input)
-    const unlock = transform({ input }, ({ input }) => ({ key: input.cart_id }))
+    const unlock = transform({ input, owner }, ({ input, owner }) => ({
+      key: input.cart_id,
+      ownerId: owner,
+    }))
     releaseLockStep(unlock)
     return new WorkflowResponse(released)
   }

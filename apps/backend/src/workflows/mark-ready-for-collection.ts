@@ -8,6 +8,7 @@ import { acquireLockStep, emitEventStep, releaseLockStep } from "@medusajs/medus
 import { ClickCollectEvents, collectLockKey } from "../lib/click-collect"
 import { prepareReadyForCollectionStep } from "./steps/click-collect/prepare-ready-for-collection"
 import { updateOrderMetadataStep } from "./steps/click-collect/update-order-metadata"
+import { lockOwnerStep } from "./steps/lock-owner"
 
 export type MarkReadyForCollectionInput = { order_id: string }
 
@@ -20,7 +21,9 @@ export type MarkReadyForCollectionInput = { order_id: string }
 export const markReadyForCollectionWorkflow = createWorkflow(
   "mark-ready-for-collection",
   function (input: MarkReadyForCollectionInput) {
-    const lock = transform({ input }, ({ input }) => ({
+    const owner = lockOwnerStep({ workflow: "mark-ready-for-collection" })
+    const lock = transform({ input, owner }, ({ input, owner }) => ({
+      ownerId: owner,
       key: collectLockKey(input.order_id),
       timeout: 10,
       ttl: 30,
@@ -44,7 +47,10 @@ export const markReadyForCollectionWorkflow = createWorkflow(
       }
     )
 
-    const unlock = transform({ input }, ({ input }) => ({ key: collectLockKey(input.order_id) }))
+    const unlock = transform({ input, owner }, ({ input, owner }) => ({
+      key: collectLockKey(input.order_id),
+      ownerId: owner,
+    }))
     releaseLockStep(unlock)
 
     const result = transform({ input, prepared }, ({ input, prepared }) => ({

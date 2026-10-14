@@ -15,6 +15,7 @@ import { ClickCollectEvents, collectLockKey } from "../lib/click-collect"
 import { captureOrderPaymentsStep } from "./steps/click-collect/capture-order-payments"
 import { prepareCollectionStep } from "./steps/click-collect/prepare-collection"
 import { updateOrderMetadataStep } from "./steps/click-collect/update-order-metadata"
+import { lockOwnerStep } from "./steps/lock-owner"
 
 export type MarkCollectedInput = {
   order_id: string
@@ -36,7 +37,9 @@ export type MarkCollectedInput = {
 export const markCollectedWorkflow = createWorkflow(
   "mark-collected",
   function (input: MarkCollectedInput) {
-    const lock = transform({ input }, ({ input }) => ({
+    const owner = lockOwnerStep({ workflow: "mark-collected" })
+    const lock = transform({ input, owner }, ({ input, owner }) => ({
+      ownerId: owner,
       key: collectLockKey(input.order_id),
       // A second press waits for the first (capture + fulfilment), then no-ops.
       timeout: 30,
@@ -91,7 +94,10 @@ export const markCollectedWorkflow = createWorkflow(
         emitEventStep(event)
       })
 
-    const unlock = transform({ input }, ({ input }) => ({ key: collectLockKey(input.order_id) }))
+    const unlock = transform({ input, owner }, ({ input, owner }) => ({
+      key: collectLockKey(input.order_id),
+      ownerId: owner,
+    }))
     releaseLockStep(unlock)
 
     const result = transform({ input, prepared }, ({ input, prepared }) => ({
