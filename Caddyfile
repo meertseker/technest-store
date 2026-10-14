@@ -17,14 +17,35 @@
 		Referrer-Policy "strict-origin-when-cross-origin"
 		-Server
 	}
+}
+
+(access_log) {
 	log {
 		output stdout
 		format json
 	}
 }
 
+# The shop's access log must never hold a Stripe client secret: Stripe sends the shopper back
+# from 3-D Secure and Klarna to /api/payment-return?payment_intent_client_secret=..., and a
+# secret is not something logs should keep. The query is logged with those two values
+# replaced; everything else about the request stays (infra/caddy/test-caddyfile.sh checks it).
+(shop_access_log) {
+	log {
+		output stdout
+		format filter {
+			wrap json
+			request>uri query {
+				replace payment_intent_client_secret REDACTED
+				replace payment_intent REDACTED
+			}
+		}
+	}
+}
+
 {$SHOP_DOMAIN} {
 	import common
+	import shop_access_log
 	# The storefront forwards CF-Connecting-IP to the backend (sign-in, registration and repair
 	# booking limits): always overwrite it so a client that bypasses Cloudflare can't choose its own IP.
 	reverse_proxy storefront:8000 {
@@ -41,6 +62,7 @@ www.{$SHOP_DOMAIN} {
 # protection in front of the admin host (Cloudflare Access, DEPLOY.md) cannot be walked around.
 api.{$SHOP_DOMAIN} {
 	import common
+	import access_log
 	@adminOnly path /admin /admin/* /app /app/* /auth/user/*
 	respond @adminOnly 404
 	reverse_proxy server:9000 {
@@ -53,6 +75,7 @@ api.{$SHOP_DOMAIN} {
 # Admin dashboard, same origin as /admin and /auth, so session cookies need no cross-site setup.
 admin.{$SHOP_DOMAIN} {
 	import common
+	import access_log
 	header X-Frame-Options "DENY"
 	redir / /app permanent
 	@notAdmin not path /app* /admin/* /auth/* /static/* /health

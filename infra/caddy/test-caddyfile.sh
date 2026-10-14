@@ -105,6 +105,18 @@ check "a visitor cannot choose the client IP" "0" "$(req "$domain" /account/logi
 check "the storefront is told a client IP" "1" "$(req "$domain" /account/login "${spoof[@]}" | grep -cE 'cf=[0-9a-f.:]+$')"
 check "www goes to the shop" "301" "$(status "www.$domain" /products/x)"
 
+echo "# access log"
+# Stripe sends the shopper back with the payment's client secret in the query string.
+secret="pi_3CaddyTest_secret_Zz9Yy8"
+req "$domain" "/api/payment-return?payment_intent=pi_3CaddyTest&payment_intent_client_secret=$secret&redirect_status=succeeded" >/dev/null
+req "$api" /store/products?caddy_log_probe=1 >/dev/null
+sleep 1
+log="$(docker logs "$id-edge" 2>&1)"
+check "the shop's access log never holds a payment's client secret" "0" "$(printf '%s\n' "$log" | grep -c "$secret")"
+check "the payment return is still logged, with the secret replaced" "1" \
+  "$(printf '%s\n' "$log" | grep '/api/payment-return' | grep 'payment_intent_client_secret=REDACTED' | grep -c 'redirect_status=succeeded')"
+check "the API host keeps its access log" "1" "$(printf '%s\n' "$log" | grep -c 'caddy_log_probe=1')"
+
 echo
 if [ "$fails" -eq 0 ]; then echo "all Caddyfile checks passed"; else
   echo "$fails check(s) failed"; docker logs "$id-edge" 2>&1 | grep -v "handled request" | tail -5 | cut -c1-300; exit 1
