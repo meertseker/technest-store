@@ -20,8 +20,9 @@ export const MAX_INPUT_PIXELS = 50_000_000
 export const OUTPUT_SIZE = 2000
 /**
  * The product's pixels are read from a copy of the original no larger than this
- * on its longer side. The output is 2000 px, so nothing is lost for a product that
- * fills the frame, and a 48 MP photo costs about 36 MB of raw RGB instead of 144 MB.
+ * on its longer side, unless the product needs more to fill the canvas (see
+ * renderReadSide). For a product that fills much of the frame a 48 MP photo
+ * costs about 36 MB of raw RGB instead of 144 MB.
  */
 export const RENDER_MAX_SIDE = 4000
 export const PADDING = 0.08
@@ -219,7 +220,7 @@ export type RenderedPhoto = {
   height: number
   /** The correction that was applied (all gains 1 when colourCorrection is off). */
   correction: Correction
-  /** Size of the (EXIF-rotated, at most RENDER_MAX_SIDE) copy the product pixels were read from. */
+  /** Size of the (EXIF-rotated, possibly downscaled) copy the product pixels were read from. */
   source: { width: number; height: number }
 }
 
@@ -229,17 +230,56 @@ const NO_CORRECTION: Correction = { gains: [1, 1, 1], white_balance: [1, 1, 1], 
  * original: the photo as uploaded. cutout: the worker's RGBA PNG (any size with
  * the same aspect ratio; only its alpha is used).
  */
+/**
+ * Longer side of the copy the product's pixels are read from: RENDER_MAX_SIDE,
+ * or more (up to the original's own size) when the product, measured on the
+ * cut-out, would otherwise have fewer pixels than the 2000 px canvas needs.
+ * So the output is the same as reading the full-size original, and only photos
+ * with a small product pay for the bigger read. Pure.
+ */
+export function renderReadSide(
+  full: { width: number; height: number },
+  /** The product's box as a fraction of the cut-out's width and height (0..1). */
+  product: { width: number; height: number } | null
+): number {
+  const fullSide = Math.max(full.width, full.height)
+  if (!product || product.width <= 0 || product.height <= 0) {
+    return Math.min(fullSide, RENDER_MAX_SIDE)
+  }
+  const needed = OUTPUT_SIZE * (1 - 2 * PADDING)
+  const productSide = Math.max(product.width * full.width, product.height * full.height)
+  // 2% margin for the box being measured on the smaller cut-out.
+  const side = Math.ceil((fullSide * needed * 1.02) / productSide)
+  return Math.min(fullSide, Math.max(RENDER_MAX_SIDE, side))
+}
+
+/** The cut-out's alpha at its own size, and the product's box as fractions of it. */
+async function cutoutProduct(cutout: Buffer) {
+  try {
+    const { data, info } = await sharp(cutout)
+      .ensureAlpha()
+      .extractChannel(3)
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+    const box = alphaBox(data, info.width, info.height)
+    return box ? { width: box.width / info.width, height: box.height / info.height } : null
+  } catch {
+    throw new MedusaError(MedusaError.Types.UNEXPECTED_STATE, "The photo worker returned an unreadable image")
+  }
+}
+
 export async function renderProductPhoto(
   original: Buffer,
   cutout: Buffer,
   options: RenderOptions = {}
 ): Promise<RenderedPhoto> {
   const full = await orientedSize(original)
+  const readSide = renderReadSide(full, await cutoutProduct(cutout))
   // Downscale (never enlarge) before the raw extraction: libvips does this on
-  // the decode path, so the full-size RGB buffer is never allocated.
+  // the decode path, so the full-size RGB buffer is not allocated when it isn't needed.
   const { data: rgb, info } = await sharp(original, { limitInputPixels: MAX_INPUT_PIXELS })
     .rotate()
-    .resize({ width: RENDER_MAX_SIDE, height: RENDER_MAX_SIDE, fit: "inside", withoutEnlargement: true })
+    .resize({ width: readSide, height: readSide, fit: "inside", withoutEnlargement: true })
     .toColourspace("srgb")
     .removeAlpha()
     .raw({ depth: "uchar" })

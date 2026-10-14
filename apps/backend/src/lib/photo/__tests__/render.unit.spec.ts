@@ -300,12 +300,31 @@ describe("photo render pipeline", () => {
       expect(smallOut.source).toEqual({ width: 1600, height: 1200 })
     })
 
-    it("judges 'product too small' on the original's pixels, not the downscaled copy", async () => {
-      // 700 px in a 6000 px photo is 467 px after downscaling: still accepted, as before.
+    // The canvas only reaches 2000 px when the product has 1680 px (2000 less padding) to give.
+    // Reading at most 4000 px of the whole photo would cost a product under ~42% of the frame
+    // some of those pixels, so the read grows (up to the original's size) until it has them.
+    it("still fills the 2000 px canvas with a product of 40% of a 4800 px photo", async () => {
+      const mid = { left: 1440, top: 1080, width: 1920, height: 1440, colour: [180, 30, 40] as Rgb }
+      const midPhoto = await makePhoto({ width: 4800, height: 3600, product: mid })
+      const midCutout = await makeCutout(await sharp(midPhoto).resize(2000, 1500).jpeg().toBuffer(), {
+        left: 600,
+        top: 450,
+        width: 800,
+        height: 600,
+      })
+      const out = await renderProductPhoto(midPhoto, midCutout)
+      expect(out).toMatchObject({ width: OUTPUT_SIZE, height: OUTPUT_SIZE })
+      expect(out.source.width).toBeGreaterThan(RENDER_MAX_SIDE)
+      expect(out.source.width).toBeLessThanOrEqual(4800)
+    })
+
+    it("reads a small product at the original's own pixels and judges 'too small' on them", async () => {
+      // 700 px in a 6000 px photo: read at full size, so the canvas is as big as before.
       const ok = { left: 2600, top: 1900, width: 700, height: 700, colour: [20, 20, 20] as Rgb }
       const okPhoto = await makePhoto({ width: 6000, height: 4500, product: ok })
       await expect(renderProductPhoto(okPhoto, await makeCutout(okPhoto, ok))).resolves.toMatchObject({
-        source: { width: 4000, height: 3000 },
+        source: { width: 6000, height: 4500 },
+        width: Math.ceil(700 / (1 - 2 * 0.08)),
       })
       // 500 px in the original is too small, as before.
       const tiny = { left: 2700, top: 2000, width: 500, height: 500, colour: [20, 20, 20] as Rgb }
