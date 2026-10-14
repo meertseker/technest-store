@@ -21,6 +21,8 @@ export const CollectMeta = {
   COLLECTED_AT: "collected_at",
   REMINDER_SENT_AT: "collection_reminder_sent_at",
   EXPIRED_AT: "collection_expired_at",
+  /** When staff last resent the "ready for collection" email (ISO time). */
+  READY_RESENT_AT: "ready_email_resent_at",
 } as const
 
 // The capture-retry job and the Stripe event handler keep their state in order metadata too.

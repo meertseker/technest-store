@@ -18,7 +18,7 @@ Every email goes through the Medusa Notification module (`channel: "email"`, pro
 | 2 | `order.placed` (core) | `{ id }` | `shop-new-order` (Click & Collect flagged in the subject) | shop |
 | 3 | `technest.payment.capture_failed` (**new**, E2 capture subscriber) | `{ order_id }` | `payment-failed` | customer (+ copy to shop) |
 | 4 | `shipment.created` (core) | `{ id, no_notification }` (fulfillment id) | `order-dispatched` | customer; skipped when `no_notification` |
-| 5 | `technest.order.ready_for_collection` (E2 workflow, E4 button) | `{ order_id }` | `ready-for-collection` | customer |
+| 5 | `technest.order.ready_for_collection` (E2 workflow, E4 button) | `{ order_id }`, or `{ order_id, resend: true, send_key }` from the board's resend | `ready-for-collection` | customer; a resend is a new email (`send_key` is part of the send-once key) |
 | 6 | `technest.order.collection_reminder` (E2 job, day 3) | `{ order_id }` | `collection-reminder` | customer |
 | 7 | `order.canceled` (core; also the day-7 auto-cancel) | `{ id }` | `order-cancelled` | customer |
 | 8 | `payment.refunded` (core) | `{ id }` (payment id) | `refund-issued` | customer |

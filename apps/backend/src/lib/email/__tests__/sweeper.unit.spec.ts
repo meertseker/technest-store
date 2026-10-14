@@ -100,6 +100,23 @@ describe("sweepFailedEmails", () => {
     expect(result).toMatchObject({ sent: 0, waiting: 0 })
   })
 
+  it("treats a resend (send key) as its own email, and sends it again with its key", async () => {
+    const s = setup([
+      row({ created_at: at(0), template: "ready-for-collection", status: "success" }),
+      row({ created_at: at(MIN), template: "ready-for-collection", data: { recipient: "customer", send_key: "resend:x" } }),
+    ])
+    await sweepFailedEmails(s.deps, at(HOUR))
+    expect(s.deliver).toHaveBeenCalledTimes(1)
+    expect(s.deliver.mock.calls[0][0]).toMatchObject({ template: "ready-for-collection", send_key: "resend:x" })
+
+    const done = setup([
+      row({ created_at: at(0), template: "ready-for-collection", data: { recipient: "customer", send_key: "resend:x" } }),
+      row({ created_at: at(MIN), template: "ready-for-collection", status: "success", data: { recipient: "customer", send_key: "resend:x" } }),
+    ])
+    await sweepFailedEmails(done.deps, at(HOUR))
+    expect(done.deliver).not.toHaveBeenCalled()
+  })
+
   it("treats each recipient of the same order as its own email", async () => {
     const s = setup([
       row({ created_at: at(0) }),

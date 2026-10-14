@@ -116,6 +116,19 @@ Response `200`: `{ "order": ClickCollectOrder }`.
 - `400 not_allowed`: not a Click & Collect order, cancelled, or already collected.
 - `409 conflict`: another press on the same order is still running. Medusa replaces the message with its generic conflict text: refresh the board and retry.
 
+### `POST /admin/click-collect/orders/:id/resend-ready`
+
+No body. Sends the "ready for collection" email again (bounced, spam, lost): emits
+`technest.order.ready_for_collection` `{ order_id, resend: true, send_key }` and records
+`ready_email_resent_at`. Each press is a new email (the send key is part of the send-once key); a
+redelivered event is not.
+
+Response `200`: `{ "order": ClickCollectOrder }`.
+
+- `400 not_allowed`: the order is not `ready` (to pick, collected or cancelled), or not a Click & Collect order.
+- `404 not_found`: unknown order.
+- `409 conflict`: another action on the same order is still running: refresh and retry.
+
 ### `POST /admin/click-collect/orders/:id/collected`
 
 No body. For a `ready` order: captures the authorised payment, fulfils all items from the
@@ -140,7 +153,7 @@ Response `200`: `{ "order": ClickCollectOrder }`.
 | Event | Payload | Emitted by | When |
 |---|---|---|---|
 | `technest.payment.capture_failed` | `{ order_id }` | the `capture-retry` job (delivery orders) and the capture step in `mark-collected` | delivery: once, when the job gives up after its last attempt; Click & Collect: each time a capture is refused at the counter |
-| `technest.order.ready_for_collection` | `{ order_id }` | `mark-ready-for-collection` workflow | first time an order is marked ready |
+| `technest.order.ready_for_collection` | `{ order_id }`; on a resend `{ order_id, resend: true, send_key }` | `mark-ready-for-collection` workflow; `resend-ready-for-collection` | first time an order is marked ready; each resend press |
 | `technest.order.collected` | `{ order_id }` | `mark-collected` workflow; `collect-outside-board` (lifecycle job) | order collected (on the board, or found handed over from the order page) |
 | `technest.order.collection_reminder` | `{ order_id }` | hourly job `click-collect-lifecycle` | once, 3 days after ready |
 | `order.canceled` (core) | `{ id }` | `cancelOrderWorkflow`, run by the hourly job | at the collection deadline, uncollected (ready or never marked ready) |
@@ -154,6 +167,7 @@ Response `200`: `{ "order": ClickCollectOrder }`.
 | `collected_at` | ISO 8601 |
 | `collection_reminder_sent_at` | ISO 8601 |
 | `collection_expired_at` | ISO 8601, set when the job cancels a ready order at its deadline (not set for an order never marked ready) |
+| `ready_email_resent_at` | ISO 8601, the last resend of the ready email |
 | `collected_outside_board` | `{ fulfillment_id, at }`: handed over from Medusa's order page; payment taken by the lifecycle job |
 
 ## Refunds

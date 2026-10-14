@@ -74,7 +74,11 @@ export type SweepResult = {
 type Group = { key: string; rows: Row[]; first: number; last: number }
 
 const time = (v: Date | string) => (v instanceof Date ? v.getTime() : Date.parse(v))
-const keyOf = (r: Row) => `${r.template}\n${r.resource_id}\n${r.to}`
+const sendKeyOf = (r: Row) => {
+  const key = (r.data as { send_key?: unknown } | null | undefined)?.send_key
+  return typeof key === "string" && key ? key : undefined
+}
+const keyOf = (r: Row) => `${r.template}\n${r.resource_id}\n${r.to}\n${sendKeyOf(r) ?? ""}`
 const isClosed = (r: Row) => !!(r.data as { sweep?: unknown } | null | undefined)?.sweep
 
 /**
@@ -96,6 +100,7 @@ function inputOf(row: Row): SendEmailInput | null {
   const recipient = stored?.recipient
   if ((recipient !== "customer" && recipient !== "shop") || !row.template || !row.resource_id) return null
   const ids = Array.isArray(stored?.ids) ? stored.ids.filter((id): id is string => typeof id === "string") : undefined
+  const sendKey = sendKeyOf(row)
   return {
     template: row.template,
     resource_id: row.resource_id,
@@ -103,6 +108,7 @@ function inputOf(row: Row): SendEmailInput | null {
     trigger_type: row.trigger_type ?? "",
     recipient,
     ...(ids ? { ids } : {}),
+    ...(sendKey ? { send_key: sendKey } : {}),
   }
 }
 

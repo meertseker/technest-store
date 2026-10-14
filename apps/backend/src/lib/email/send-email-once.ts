@@ -15,12 +15,18 @@ export type EmailSend = {
    * Notification module stores `data` but not `content`.
    */
   content?: { subject: string; html?: string; text?: string }
+  /**
+   * Makes a deliberate second email about the same resource a separate email
+   * (e.g. staff resending "ready for collection"). Non-personal; stored in
+   * `data.send_key` by the caller so the check below can tell the sends apart.
+   */
+  send_key?: string
 }
 
 export type SendEmailOnceResult = { id?: string; skipped?: true }
 
 /**
- * Sends an email at most once per (template, resource, recipient).
+ * Sends an email at most once per (template, resource, recipient, send key).
  *
  * We deliberately don't use the Notification module's idempotency_key: in
  * 2.21.2 its resend of a FAILURE key sends the email but then fails to update
@@ -42,7 +48,7 @@ export async function sendEmailOnce(
   // Hash the recipient: lock errors ("Failed to acquire lock for key …") are
   // logged and lock keys sit in Redis, so they must not contain an address.
   const recipient = createHash("sha256").update(send.to.toLowerCase()).digest("hex").slice(0, 16)
-  const lockKey = `email:${send.template}:${send.resource_id}:${recipient}`
+  const lockKey = `email:${send.template}:${send.resource_id}:${recipient}${send.send_key ? `:${send.send_key}` : ""}`
   // The same for every attempt at this email: the mail provider drops a repeat
   // it already accepted (see modules/smtp). A hash, so it holds no address.
   const idempotencyKey = `email-${createHash("sha256").update(lockKey).digest("hex").slice(0, 32)}`
@@ -52,12 +58,17 @@ export async function sendEmailOnce(
       template: send.template,
       resource_id: send.resource_id,
     })
-    const sent = earlier.find((n) => n.status === "success")
+    const sent = earlier.find(
+      (n) =>
+        n.status === "success" &&
+        ((n.data as { send_key?: unknown } | null | undefined)?.send_key ?? undefined) === send.send_key
+    )
     if (sent) {
       return { skipped: true as const, id: sent.id }
     }
+    const { send_key: _sendKey, ...row } = send
     const [notification] = await deps.notifications.createNotifications([
-      { ...send, channel: "email", provider_data: { idempotency_key: idempotencyKey } },
+      { ...row, channel: "email", provider_data: { idempotency_key: idempotencyKey } },
     ])
     return { id: notification?.id }
   })

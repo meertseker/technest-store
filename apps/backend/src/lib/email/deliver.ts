@@ -19,10 +19,12 @@ export type SendEmailInput = {
   recipient: EmailRecipient
   /** Extra non-PII entity ids the template needs (e.g. low-stock variant ids). */
   ids?: string[]
+  /** A deliberate repeat of an email already sent (see sendEmailOnce). Non-personal. */
+  send_key?: string
 }
 
 /** What is stored with each attempt (notification.data): enough to try again, nothing personal. */
-export type StoredEmailInput = Pick<SendEmailInput, "recipient" | "ids">
+export type StoredEmailInput = Pick<SendEmailInput, "recipient" | "ids" | "send_key">
 
 /**
  * One attempt at one email: load the recipient and data fresh, render, and
@@ -38,7 +40,11 @@ export async function deliverEmail(container: MedusaContainer, input: SendEmailI
     return { skipped: true }
   }
   const content = await renderEmail(input.template as TemplateId, resolved.data)
-  const stored: StoredEmailInput = { recipient: input.recipient, ...(input.ids ? { ids: input.ids } : {}) }
+  const stored: StoredEmailInput = {
+    recipient: input.recipient,
+    ...(input.ids ? { ids: input.ids } : {}),
+    ...(input.send_key ? { send_key: input.send_key } : {}),
+  }
   return sendEmailOnce(
     {
       notifications: container.resolve(Modules.NOTIFICATION),
@@ -52,6 +58,7 @@ export async function deliverEmail(container: MedusaContainer, input: SendEmailI
       resource_id: input.resource_id,
       resource_type: input.resource_type,
       trigger_type: input.trigger_type,
+      ...(input.send_key ? { send_key: input.send_key } : {}),
     }
   )
 }

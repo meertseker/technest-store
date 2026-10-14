@@ -15,15 +15,18 @@ const TEMPLATES: Record<string, string> = {
 async function collectionEmails({
   event: { name, data },
   container,
-}: SubscriberArgs<{ order_id: string }>) {
+}: SubscriberArgs<{ order_id: string; resend?: boolean; send_key?: string }>) {
   const template = TEMPLATES[name]
   if (!template || !data?.order_id) return
+  // A resend from the board is a new email; a redelivered event is not.
+  const sendKey = data.resend === true && typeof data.send_key === "string" && data.send_key ? data.send_key : undefined
   await runEmail(container, {
     template,
     recipient: "customer",
     resource_id: data.order_id,
     resource_type: "order",
     trigger_type: name,
+    ...(sendKey ? { send_key: sendKey } : {}),
   })
 }
 
