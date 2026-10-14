@@ -14,7 +14,12 @@ export type FieldError = { field: string; message: string }
 export const LIMITS = { email: 254, name: 100, address: 200, phone: 40 } as const
 
 // local part: dot-separated atoms of ordinary address characters (no leading,
-// trailing or doubled dots); domain: hyphenated labels and a TLD of letters
+// trailing or doubled dots); domain: hyphenated labels and a TLD of letters.
+// Not looser on purpose: the backend checks the email again when it is saved on
+// the basket (Medusa's zod email check), and refuses Unicode addresses and
+// punycode TLDs ("xn--p1ai") too. Accepting them here would only turn this
+// clear message into "something went wrong". A punycode domain with a letter
+// TLD ("xn--bcher-kva.de") passes both.
 const EMAIL =
   /^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$/
 const PHONE = /^\+?[0-9][0-9\s()-]{6,19}$/

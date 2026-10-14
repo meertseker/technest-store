@@ -41,6 +41,15 @@ describe("checkout input limits (what Stripe and the backend accept)", () => {
     }
   })
 
+  // The backend validates the basket email again (Medusa's zod email check, zod 4.2): the
+  // storefront accepts what it accepts, so a shopper never gets a generic error instead.
+  it("matches the backend on internationalised addresses", () => {
+    expect(validateContact({ email: "user@xn--bcher-kva.de" })).toEqual([])
+    for (const refusedByBackend of ["user@example.xn--p1ai", "user@bücher.de"]) {
+      expect(fields(validateContact({ email: refusedByBackend })), refusedByBackend).toEqual(["email"])
+    }
+  })
+
   it("names, address lines and phone have maximum lengths, each with its own message", () => {
     const over = (n: number) => "x".repeat(n + 1)
     const errs = validateDelivery({
