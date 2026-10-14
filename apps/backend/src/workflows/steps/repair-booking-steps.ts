@@ -59,6 +59,25 @@ export const createRepairBookingStep = createStep(
   }
 )
 
+/** Soft-deletes a booking (404 when unknown); compensation restores it. */
+export const softDeleteRepairBookingStep = createStep(
+  "soft-delete-repair-booking",
+  async ({ id }: { id: string }, { container }) => {
+    const repairService: RepairModuleService = container.resolve(REPAIR_MODULE)
+    // Throws NOT_FOUND (a 404) for an unknown or already deleted booking.
+    await repairService.retrieveRepairBooking(id, { select: ["id"] })
+    await repairService.softDeleteRepairBookings(id)
+    return new StepResponse({ id }, id)
+  },
+  async (id, { container }) => {
+    if (!id) {
+      return
+    }
+    const repairService: RepairModuleService = container.resolve(REPAIR_MODULE)
+    await repairService.restoreRepairBookings(id)
+  }
+)
+
 export const updateRepairBookingStep = createStep(
   "update-repair-booking",
   async (data: UpdateRepairBookingData, { container }) => {

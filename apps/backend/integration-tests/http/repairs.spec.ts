@@ -5,7 +5,11 @@ import { seedTechNest } from "../../src/scripts/seed"
 import { TURNSTILE_VERIFIER_KEY } from "../../src/lib/turnstile"
 import { REPAIR_MODULE } from "../../src/modules/repair"
 import RepairModuleService from "../../src/modules/repair/service"
-import { updateRepairBookingStep } from "../../src/workflows/steps/repair-booking-steps"
+import { purgeExpiredRecords } from "../../src/lib/data-retention"
+import {
+  softDeleteRepairBookingStep,
+  updateRepairBookingStep,
+} from "../../src/workflows/steps/repair-booking-steps"
 import { createRepairBookingWorkflow } from "../../src/workflows/create-repair-booking"
 import { adminHeaders, storeHeaders } from "../helpers/auth"
 import { waitForBackgroundWork } from "../helpers/background"
@@ -25,6 +29,17 @@ const updateThenFailWorkflow = createWorkflow(
     return new WorkflowResponse(booking)
   }
 )
+
+const deleteThenFailWorkflow = createWorkflow(
+  "test-delete-repair-booking-then-fail",
+  function (input: { id: string }) {
+    const deleted = softDeleteRepairBookingStep(input)
+    failingStep().config({ name: "test-fail-after-repair-delete" })
+    return new WorkflowResponse(deleted)
+  }
+)
+
+const DAY = 24 * 60 * 60 * 1000
 
 type Headers = { headers: Record<string, string> }
 
@@ -229,6 +244,7 @@ medusaIntegrationTestRunner({
         expect((await fail(api.get("/admin/repair-bookings"))).status).toBe(401)
         expect((await fail(api.get(`/admin/repair-bookings/${ids.first}`))).status).toBe(401)
         expect((await fail(api.post(`/admin/repair-bookings/${ids.first}`, { status: "done" }))).status).toBe(401)
+        expect((await fail(api.delete(`/admin/repair-bookings/${ids.first}`))).status).toBe(401)
         // The store route never exposes bookings.
         expect((await fail(api.get("/store/repair-bookings", store))).status).toBe(404)
       })
@@ -270,6 +286,61 @@ medusaIntegrationTestRunner({
         expect((await fail(api.post(`/admin/repair-bookings/${ids.first}`, {}, admin))).status).toBe(400)
         expect((await fail(api.post(`/admin/repair-bookings/${ids.first}`, { status: "lost" }, admin))).status).toBe(400)
         expect((await fail(api.post("/admin/repair-bookings/rep_missing", { status: "done" }, admin))).status).toBe(404)
+      })
+
+      it("deletes a booking: gone from every lookup, 404 afterwards and for unknown ids", async () => {
+        const { data } = await api.delete(`/admin/repair-bookings/${ids.first}`, admin)
+        expect(data).toEqual({ id: ids.first, object: "repair_booking", deleted: true })
+        expect((await fail(api.get(`/admin/repair-bookings/${ids.first}`, admin))).status).toBe(404)
+        const all = await api.get("/admin/repair-bookings", admin)
+        expect(all.data.count).toBe(2)
+        expect(all.data.repair_bookings.map((b: any) => b.name)).toEqual(["Third", "Second"])
+        expect((await fail(api.delete(`/admin/repair-bookings/${ids.first}`, admin))).status).toBe(404)
+        expect((await fail(api.delete("/admin/repair-bookings/rep_missing", admin))).status).toBe(404)
+        expect((await fail(api.post(`/admin/repair-bookings/${ids.first}`, { status: "done" }, admin))).status).toBe(404)
+      })
+
+      it("delete workflow restores the booking on rollback", async () => {
+        const container = getContainer()
+        const { errors } = await deleteThenFailWorkflow(container).run({
+          input: { id: ids.second },
+          throwOnError: false,
+        })
+        expect(errors.length).toBeGreaterThan(0)
+        const { data } = await api.get(`/admin/repair-bookings/${ids.second}`, admin)
+        expect(data.repair_booking).toMatchObject({ name: "Second", status: "booked" })
+      })
+
+      it("retention: finished and deleted bookings are removed for good after REPAIR_RETENTION_DAYS", async () => {
+        const container = getContainer()
+        const repairService: RepairModuleService = container.resolve(REPAIR_MODULE)
+        await api.post(`/admin/repair-bookings/${ids.third}`, { status: "done" }, admin)
+        await api.delete(`/admin/repair-bookings/${ids.first}`, admin)
+        const everything = () =>
+          repairService.listRepairBookings({}, { select: ["id"], withDeleted: true, take: null })
+
+        // Nothing is old enough today, whatever the setting.
+        expect(await purgeExpiredRecords(container, { now: new Date(), env: { REPAIR_RETENTION_DAYS: "30" } })).toEqual({
+          repair_bookings: 0,
+          trade_applications: 0,
+        })
+        expect((await everything()).map((b) => b.id).sort()).toEqual(Object.values(ids).sort())
+
+        // 31 days on with a 30-day setting: the finished and the deleted booking go, the open one stays.
+        const later = new Date(Date.now() + 31 * DAY)
+        expect(await purgeExpiredRecords(container, { now: later, env: { REPAIR_RETENTION_DAYS: "30" } })).toEqual({
+          repair_bookings: 2,
+          trade_applications: 0,
+        })
+        expect((await everything()).map((b) => b.id)).toEqual([ids.second])
+
+        // With the default (365 days) the same date removes nothing.
+        await api.post(`/admin/repair-bookings/${ids.second}`, { status: "done" }, admin)
+        expect(await purgeExpiredRecords(container, { now: later, env: {} })).toEqual({
+          repair_bookings: 0,
+          trade_applications: 0,
+        })
+        expect((await everything()).map((b) => b.id)).toEqual([ids.second])
       })
 
       it("update workflow restores the previous values on rollback", async () => {

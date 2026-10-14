@@ -14,6 +14,8 @@ jest.mock("../../lib/payment-reconcile", () => ({
   RECONCILE_CATCH_UP_MS: 1000,
   reconcilePayments: (...a: unknown[]) => reconcile(...a),
 }))
+const purge = jest.fn()
+jest.mock("../../lib/data-retention", () => ({ purgeExpiredRecords: (...a: unknown[]) => purge(...a) }))
 const lowStockRun = jest.fn()
 jest.mock("../../workflows/emit-low-stock-digest", () => ({ emitLowStockDigestWorkflow: () => ({ run: lowStockRun }) }))
 jest.mock("../../lib/low-stock", () => ({
@@ -25,6 +27,7 @@ import { setAlertSinkForTests, type Alert } from "../../lib/alerting"
 import authorisationReleaseJob from "../authorisation-release"
 import captureRetryJob from "../capture-retry"
 import clickCollectLifecycleJob from "../click-collect-lifecycle"
+import dataRetentionJob from "../data-retention"
 import lowStockDigestJob from "../low-stock-digest"
 import paymentReconcileJob from "../payment-reconcile"
 
@@ -62,6 +65,7 @@ describe("a scheduled job that fails is reported, not only logged", () => {
     ["capture-retry", captureRetryJob, retryUncaptured],
     ["authorisation-release", authorisationReleaseJob, releaseStuck],
     ["payment-reconcile", paymentReconcileJob, reconcile],
+    ["data-retention", dataRetentionJob, purge],
   ])("%s: the run fails", async (name, job, work) => {
     const error = new Error("db down")
     work.mockRejectedValue(error)
@@ -72,6 +76,7 @@ describe("a scheduled job that fails is reported, not only logged", () => {
   it.each([
     ["capture-retry", captureRetryJob, retryUncaptured],
     ["payment-reconcile", paymentReconcileJob, reconcile],
+    ["data-retention", dataRetentionJob, purge],
   ])("%s: an overlapping run is not a failure", async (_name, job, work) => {
     work.mockRejectedValue(new Error("Timed-out acquiring lock"))
     await job(container)
