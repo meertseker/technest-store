@@ -171,7 +171,8 @@
           "enumItems": [
             "pending",
             "approved",
-            "rejected"
+            "rejected",
+            "revoked"
           ],
           "mappedType": "enum"
         },

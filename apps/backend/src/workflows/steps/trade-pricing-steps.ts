@@ -1,6 +1,5 @@
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
 import {
-  FilterablePriceListProps,
   ICustomerModuleService,
   IPricingModuleService,
 } from "@medusajs/framework/types"
@@ -10,31 +9,42 @@ import {
   PriceListType,
 } from "@medusajs/framework/utils"
 import {
+  findTradeGroupId,
+  findTradePriceListId,
+  rememberTradeGroupId,
+  rememberTradePriceListId,
+} from "../../lib/trade-pricing-refs"
+import {
   TRADE_GROUP_NAME,
   TRADE_PRICE_LIST_TITLE,
 } from "../../modules/trade/constants"
 
-/** Returns the "Trade" customer group id, creating the group if it is missing. */
+type Created = { id: string; previousRef: string | null } | null
+
+/**
+ * Returns the Trade customer group id (by its remembered id, see
+ * lib/trade-pricing-refs.ts), creating the group and remembering its id if
+ * it is missing. Compensation removes only what this step created.
+ */
 export const ensureTradeCustomerGroupStep = createStep(
   "ensure-trade-customer-group",
   async (_: void, { container }) => {
-    const customerService: ICustomerModuleService = container.resolve(Modules.CUSTOMER)
-    const [existing] = await customerService.listCustomerGroups(
-      { name: TRADE_GROUP_NAME },
-      { select: ["id"], take: 1 }
-    )
+    const existing = await findTradeGroupId(container)
     if (existing) {
-      return new StepResponse(existing.id, null)
+      return new StepResponse(existing, null as Created)
     }
+    const customerService: ICustomerModuleService = container.resolve(Modules.CUSTOMER)
     const group = await customerService.createCustomerGroups({ name: TRADE_GROUP_NAME })
-    return new StepResponse(group.id, group.id)
+    const previousRef = await rememberTradeGroupId(container, group.id)
+    return new StepResponse(group.id, { id: group.id, previousRef } as Created)
   },
-  async (createdId, { container }) => {
-    if (!createdId) {
+  async (created, { container }) => {
+    if (!created) {
       return
     }
     const customerService: ICustomerModuleService = container.resolve(Modules.CUSTOMER)
-    await customerService.deleteCustomerGroups(createdId)
+    await customerService.deleteCustomerGroups(created.id)
+    await rememberTradeGroupId(container, created.previousRef)
   }
 )
 
@@ -64,19 +74,47 @@ export const addCustomerToGroupStep = createStep(
   }
 )
 
-/** Returns the "Trade" price list id, creating it (empty, scoped to the group) if missing. */
+/**
+ * Takes a customer out of the Trade group (nothing to do when they are not in
+ * it, or the group does not exist); compensation puts them back.
+ */
+export const removeCustomerFromTradeGroupStep = createStep(
+  "remove-customer-from-trade-group",
+  async ({ customer_id }: { customer_id: string }, { container }) => {
+    const groupId = await findTradeGroupId(container)
+    if (!groupId) {
+      return new StepResponse(undefined, null)
+    }
+    const customerService: ICustomerModuleService = container.resolve(Modules.CUSTOMER)
+    const customer = await customerService.retrieveCustomer(customer_id, { relations: ["groups"] })
+    if (!customer.groups?.some((g) => g.id === groupId)) {
+      return new StepResponse(undefined, null)
+    }
+    const membership = { customer_id, customer_group_id: groupId }
+    await customerService.removeCustomerFromGroup(membership)
+    return new StepResponse(undefined, membership)
+  },
+  async (removed, { container }) => {
+    if (!removed) {
+      return
+    }
+    const customerService: ICustomerModuleService = container.resolve(Modules.CUSTOMER)
+    await customerService.addCustomerToGroup(removed)
+  }
+)
+
+/**
+ * Returns the Trade price list id, creating it (empty, scoped to the group)
+ * and remembering its id if it is missing.
+ */
 export const ensureTradePriceListStep = createStep(
   "ensure-trade-price-list",
   async ({ customer_group_id }: { customer_group_id: string }, { container }) => {
-    const pricingService: IPricingModuleService = container.resolve(Modules.PRICING)
-    const [existing] = await pricingService.listPriceLists(
-      // `title` is filterable at runtime; the public filter type just doesn't declare it.
-      { title: TRADE_PRICE_LIST_TITLE } as FilterablePriceListProps,
-      { select: ["id"], take: 1 }
-    )
+    const existing = await findTradePriceListId(container)
     if (existing) {
-      return new StepResponse(existing.id, null)
+      return new StepResponse(existing, null as Created)
     }
+    const pricingService: IPricingModuleService = container.resolve(Modules.PRICING)
     const [list] = await pricingService.createPriceLists([
       {
         title: TRADE_PRICE_LIST_TITLE,
@@ -87,13 +125,15 @@ export const ensureTradePriceListStep = createStep(
         rules: { "customer.groups.id": [customer_group_id] },
       },
     ])
-    return new StepResponse(list.id, list.id)
+    const previousRef = await rememberTradePriceListId(container, list.id)
+    return new StepResponse(list.id, { id: list.id, previousRef } as Created)
   },
-  async (createdId, { container }) => {
-    if (!createdId) {
+  async (created, { container }) => {
+    if (!created) {
       return
     }
     const pricingService: IPricingModuleService = container.resolve(Modules.PRICING)
-    await pricingService.deletePriceLists([createdId])
+    await pricingService.deletePriceLists([created.id])
+    await rememberTradePriceListId(container, created.previousRef)
   }
 )

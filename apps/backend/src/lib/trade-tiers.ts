@@ -8,24 +8,23 @@ import {
   Modules,
   PriceListStatus,
 } from "@medusajs/framework/utils"
-import {
-  exVatPence,
-  toPence,
-  TRADE_GROUP_NAME,
-  TRADE_PRICE_LIST_TITLE,
-  UK_VAT_RATE_PERCENT,
-} from "../modules/trade/constants"
+import { exVatPence, toPence, UK_VAT_RATE_PERCENT } from "../modules/trade/constants"
+import { findTradeGroupId, findTradePriceListId } from "./trade-pricing-refs"
 
-/** True when the customer is in the "Trade" customer group (an approved trade account). */
+/** True when the customer is in the Trade customer group (an approved trade account). */
 export async function isTradeCustomer(scope: MedusaContainer, customerId: string) {
+  const groupId = await findTradeGroupId(scope)
+  if (!groupId) {
+    return false
+  }
   const query = scope.resolve(ContainerRegistrationKeys.QUERY)
   const { data } = await query.graph({
     entity: "customer",
-    fields: ["id", "groups.name"],
+    fields: ["id", "groups.id"],
     filters: { id: customerId },
   })
-  const groups = (data[0]?.groups ?? []) as { name?: string | null }[]
-  return groups.some((g) => g?.name === TRADE_GROUP_NAME)
+  const groups = (data[0]?.groups ?? []) as { id?: string | null }[]
+  return groups.some((g) => g?.id === groupId)
 }
 
 export type TradeTier = {
@@ -82,11 +81,13 @@ export async function listTradeTiers(scope: MedusaContainer, productId: string) 
     .filter((id): id is string => !!id)
 
   // Only an active list is applied in the basket, so only its prices are shown.
-  const [tradeList] = await pricing.listPriceLists(
-    // `title` is filterable at runtime; the public filter type just doesn't declare it.
-    { title: TRADE_PRICE_LIST_TITLE, status: [PriceListStatus.ACTIVE] } as FilterablePriceListProps,
-    { select: ["id"], take: 1 }
-  )
+  const tradeListId = await findTradePriceListId(scope)
+  const [tradeList] = tradeListId
+    ? await pricing.listPriceLists(
+        { id: [tradeListId], status: [PriceListStatus.ACTIVE] } as FilterablePriceListProps,
+        { select: ["id"], take: 1 }
+      )
+    : []
 
   const prices = priceSetIds.length
     ? ((await pricing.listPrices(

@@ -1,5 +1,6 @@
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
 import { MedusaError } from "@medusajs/framework/utils"
+import { isTradeCustomer } from "../../lib/trade-tiers"
 import { TRADE_MODULE } from "../../modules/trade"
 import TradeModuleService from "../../modules/trade/service"
 import { BusinessType, TradeApplicationStatus } from "../../modules/trade/constants"
@@ -82,6 +83,83 @@ export const retrievePendingTradeApplicationStep = createStep(
       )
     }
     return new StepResponse({ id: application.id, customer_id: application.customer_id })
+  }
+)
+
+/** Loads an application and fails unless it is approved (the only state a revoke applies to). */
+export const retrieveApprovedTradeApplicationStep = createStep(
+  "retrieve-approved-trade-application",
+  async ({ id }: { id: string }, { container }) => {
+    const tradeService: TradeModuleService = container.resolve(TRADE_MODULE)
+    const application = await tradeService.retrieveTradeApplication(id, {
+      select: ["id", "customer_id", "status"],
+    })
+    if (application.status !== "approved") {
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        `Trade application ${id} is ${application.status}, only approved applications can be revoked`
+      )
+    }
+    return new StepResponse({ id: application.id, customer_id: application.customer_id })
+  }
+)
+
+/**
+ * An application may be deleted unless it is the approved application of a
+ * customer who is still in the Trade group: revoke first, so the account and
+ * the record never disagree. (An approved application whose customer was
+ * already taken out of the group by hand may go.)
+ */
+export const assertTradeApplicationDeletableStep = createStep(
+  "assert-trade-application-deletable",
+  async ({ id }: { id: string }, { container }) => {
+    const tradeService: TradeModuleService = container.resolve(TRADE_MODULE)
+    // Throws NOT_FOUND (a 404) for an unknown or already deleted application.
+    const application = await tradeService.retrieveTradeApplication(id, {
+      select: ["id", "customer_id", "status"],
+    })
+    if (application.status === "approved") {
+      if (await isTradeCustomer(container as never, application.customer_id)) {
+        throw new MedusaError(
+          MedusaError.Types.INVALID_DATA,
+          "This trade account is still active. Revoke it first, then delete the application."
+        )
+      }
+    }
+    return new StepResponse({ id: application.id, customer_id: application.customer_id })
+  }
+)
+
+/** Soft-deletes applications; compensation restores them. */
+export const softDeleteTradeApplicationsStep = createStep(
+  "soft-delete-trade-applications",
+  async ({ ids }: { ids: string[] }, { container }) => {
+    if (!ids.length) {
+      return new StepResponse({ ids }, [] as string[])
+    }
+    const tradeService: TradeModuleService = container.resolve(TRADE_MODULE)
+    await tradeService.softDeleteTradeApplications(ids)
+    return new StepResponse({ ids }, ids)
+  },
+  async (ids, { container }) => {
+    if (!ids?.length) {
+      return
+    }
+    const tradeService: TradeModuleService = container.resolve(TRADE_MODULE)
+    await tradeService.restoreTradeApplications(ids)
+  }
+)
+
+/** Ids of every application (any status) a customer has. Read-only. */
+export const listCustomerTradeApplicationIdsStep = createStep(
+  "list-customer-trade-application-ids",
+  async ({ customer_id }: { customer_id: string }, { container }) => {
+    const tradeService: TradeModuleService = container.resolve(TRADE_MODULE)
+    const rows = await tradeService.listTradeApplications(
+      { customer_id },
+      { select: ["id"], take: null }
+    )
+    return new StepResponse({ ids: rows.map((r) => r.id) })
   }
 )
 

@@ -2,18 +2,20 @@
 
 Owner: E1. Consumers: E3 (trade application form, "my trade status", trade tiers on the product page),
 E4 (admin review screen), E2 (trade emails, via events).
-Status: **v1 (2026-09-30)**, implemented and covered by `integration-tests/http/trade.spec.ts`. Any change is posted as `[CONTRACT]`.
+Status: **v2 (2026-10-11)**: v1 plus the `revoked` status and `POST /admin/trade-applications/:id/revoke`.
+Implemented and covered by `integration-tests/http/trade.spec.ts`. Any change is posted as `[CONTRACT]`.
 
 All store routes need the `x-publishable-api-key` header (use the SDK: `sdk.client.fetch`).
 Store trade routes also need a **logged-in customer** (session or bearer token). Without one: `401`.
 All admin routes need an admin session or token (`401` otherwise, also for a logged-in customer).
-Errors use Medusa's standard shape: `{ "type": "not_found" | "invalid_data" | "forbidden" | "unauthorized", "message": string }`.
+Errors use Medusa's standard shape: `{ "type": "not_found" | "invalid_data" | "forbidden" | "unauthorized" | "conflict", "message": string }`.
+`409 conflict` means another request is still updating the same application or customer (a double click): retry in a moment.
 Validation errors (bad body/query) are `400` `{ "type": "invalid_data", "message": "..." }`.
 
 ## Types
 
 ```ts
-type TradeApplicationStatus = "pending" | "approved" | "rejected"
+type TradeApplicationStatus = "pending" | "approved" | "rejected" | "revoked"
 type BusinessType = "sole_trader" | "partnership" | "limited_company" | "other"
 
 type TradeApplication = {
@@ -25,7 +27,7 @@ type TradeApplication = {
   business_type: BusinessType
   contact: { name: string; phone: string; email: string }
   status: TradeApplicationStatus
-  reason: string | null                 // set on rejection (shown to the customer), else null
+  reason: string | null                 // set on rejection, optionally on revocation (shown to the customer), else null
   created_at: string                    // ISO 8601
   updated_at: string                    // ISO 8601
 }
@@ -64,7 +66,7 @@ Response `200`: `{ "trade_application": TradeApplication }` with `status: "pendi
 Errors:
 - `400 invalid_data` "You already have a pending trade application" - one pending application per customer.
 - `400 invalid_data` "Your trade account is already approved" - an approved application exists.
-- A customer whose application was **rejected** may submit a new one.
+- A customer whose latest application was **rejected** or **revoked** may submit a new one.
 
 Emits `technest.trade_application.created` `{ "id": "tapp_..", "customer_id": "cus_.." }`.
 
@@ -73,6 +75,8 @@ Emits `technest.trade_application.created` `{ "id": "tapp_..", "customer_id": "c
 The logged-in customer's most recent application (by `created_at`).
 
 Response `200`: `{ "trade_application": TradeApplication | null }` (`null` = never applied; not a 404).
+Storefront wording per status: `pending` (under review), `approved` (trade prices on), `rejected` (reason, may apply
+again), `revoked` (trade account closed, reason when there is one, may apply again).
 
 ### `GET /store/products/:id/trade-tiers`
 
@@ -115,11 +119,15 @@ Response `200`:
 
 ## Trade pricing model (E4 admin, anyone entering prices)
 
-- Customer group **"Trade"** (name is exact). Approving an application adds the customer to it
-  (the approve workflow creates the group if it is missing).
+- Customer group **"Trade"**. Approving an application adds the customer to it (the approve workflow creates
+  the group if it is missing); revoking removes them. The group's id is remembered in the settings module
+  (`technest_reference`, key `trade_customer_group_id`) the first time it is created or found, and every
+  lookup afterwards is by id, so the group may be renamed in the admin. Deleting it makes the next approval
+  create a new one (and the price list rule then has to be pointed at it).
 - Price list **"Trade"**: type `override`, status `active`, rule `customer.groups.id = [<Trade group id>]`.
   Created empty and idempotently by the migration script `src/migration-scripts/trade-pricing.ts`
-  (helper `ensureTradePricing(container)` in `src/scripts/seed/trade-pricing.ts`).
+  (helper `ensureTradePricing(container)` in `src/scripts/seed/trade-pricing.ts`). Its id is remembered the
+  same way (key `trade_price_list_id`), so the list may be renamed too.
 - Tiers are ordinary price-list prices with Medusa's `min_quantity` / `max_quantity`:
   `1–9` (`min_quantity: 1, max_quantity: 9`), `10–49` (`10, 49`), `50+` (`50`, no max).
   Add them with Medusa's price list API, e.g. `POST /admin/price-lists/:id/prices/batch`
@@ -160,6 +168,17 @@ Response `200`: `{ "trade_application": TradeApplication }`.
 `400 invalid_data` if the reason is missing/blank or the application is not `pending`. `404` if missing.
 Emits `technest.trade_application.rejected` `{ "id", "customer_id", "reason" }`.
 
+### `POST /admin/trade-applications/:id/revoke`
+
+Closes an approved trade account. Body: `{ "reason"?: string }` (optional, trimmed, 0–500 chars; blank counts as
+none; unknown keys are `400`). The customer is removed from the "Trade" group in the same workflow (compensated
+on failure), so `GET /store/products/:id/trade-tiers` answers `403` and their carts price at retail from then on.
+Sets `status: "revoked"` and `reason` to the given reason or `null`. The customer may submit a new application.
+Response `200`: `{ "trade_application": TradeApplication }`.
+`400 invalid_data` if the application is not `approved`. `404` if missing. `409 conflict` if the application or
+customer is locked by another request.
+Emits `technest.trade_application.revoked` `{ "id", "customer_id" }`.
+
 ## Events (E2 emails)
 
 | Event | Payload |
@@ -167,9 +186,10 @@ Emits `technest.trade_application.rejected` `{ "id", "customer_id", "reason" }`.
 | `technest.trade_application.created` | `{ id: string, customer_id: string }` |
 | `technest.trade_application.approved` | `{ id: string, customer_id: string }` |
 | `technest.trade_application.rejected` | `{ id: string, customer_id: string, reason: string }` |
+| `technest.trade_application.revoked` | `{ id: string, customer_id: string }` (the reason, if any, is on the application) |
 
 Events are emitted only after the workflow succeeds (a rolled-back approval emits nothing).
-Submit, approve and reject are serialised with a lock (per customer / per application), so a double
-click cannot create two pending applications or approve twice.
+Submit, approve, reject and revoke are serialised with a lock (per customer / per application), so a double
+click cannot create two pending applications or approve twice; the loser of the race gets `409`.
 
 Load the application (contact email etc.) with `query.graph({ entity: "trade_application", fields: ["*"], filters: { id } })`.

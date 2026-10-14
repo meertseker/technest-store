@@ -4,6 +4,9 @@ import {
   Modules,
 } from "@medusajs/framework/utils"
 import { ICustomerModuleService, IPricingModuleService } from "@medusajs/framework/types"
+import { deleteCustomersWorkflow } from "@medusajs/medusa/core-flows"
+import { purgeExpiredRecords } from "../../src/lib/data-retention"
+import { tradeApplicationLockKey, tradeCustomerLockKey } from "../../src/workflows/steps/trade-locks"
 import { seedTechNest } from "../../src/scripts/seed"
 import { ensureTradePricing } from "../../src/scripts/seed/trade-pricing"
 import { TRADE_MODULE } from "../../src/modules/trade"
@@ -11,6 +14,7 @@ import TradeModuleService from "../../src/modules/trade/service"
 import { approveTradeApplicationWorkflow } from "../../src/workflows/approve-trade-application"
 import { getProductTradeTiersWorkflow } from "../../src/workflows/get-product-trade-tiers"
 import { rejectTradeApplicationWorkflow } from "../../src/workflows/reject-trade-application"
+import { revokeTradeApplicationWorkflow } from "../../src/workflows/revoke-trade-application"
 import { submitTradeApplicationWorkflow } from "../../src/workflows/submit-trade-application"
 import { adminHeaders, storeHeaders } from "../helpers/auth"
 import { customerHeaders } from "../helpers/customer"
@@ -49,6 +53,24 @@ medusaIntegrationTestRunner({
 
     const as = (name: string) => ({ headers: customers[name].headers })
     const fail = (p: Promise<unknown>): Promise<any> => p.catch((e: any) => e.response)
+    let approvedId: string
+
+    const groupsOf = async (customerId: string) => {
+      const customerService: ICustomerModuleService = getContainer().resolve(Modules.CUSTOMER)
+      const customer = await customerService.retrieveCustomer(customerId, { relations: ["groups"] })
+      return (customer.groups ?? []).map((g) => g.name)
+    }
+
+    /** Unit price the basket charges `who` for `quantity` of the tiered variant. */
+    const unitPrice = async (who: string, quantity: number) => {
+      const { data } = await api.post("/store/carts", { region_id: regionId }, as(who))
+      const { data: withItem } = await api.post(
+        `/store/carts/${data.cart.id}/line-items`,
+        { variant_id: variants[0].id, quantity },
+        as(who)
+      )
+      return withItem.cart.items[0].unit_price
+    }
 
     beforeAll(async () => {
       const container = getContainer()
@@ -96,7 +118,8 @@ medusaIntegrationTestRunner({
       )
 
       const { data: traderApp } = await api.post("/store/trade-applications", application(), as("trader"))
-      await api.post(`/admin/trade-applications/${traderApp.trade_application.id}/approve`, {}, admin)
+      approvedId = traderApp.trade_application.id
+      await api.post(`/admin/trade-applications/${approvedId}/approve`, {}, admin)
 
       const { data: bobApp } = await api.post(
         "/store/trade-applications",
@@ -231,6 +254,8 @@ medusaIntegrationTestRunner({
           api.get(`/admin/trade-applications/${pendingId}`, config),
           api.post(`/admin/trade-applications/${pendingId}/approve`, {}, config),
           api.post(`/admin/trade-applications/${pendingId}/reject`, { reason: "x" }, config),
+          api.post(`/admin/trade-applications/${approvedId}/revoke`, {}, config),
+          api.delete(`/admin/trade-applications/${pendingId}`, config),
         ]
         // No credentials, and a logged-in customer is not an admin.
         for (const config of [undefined, as("alice")]) {
@@ -240,6 +265,7 @@ medusaIntegrationTestRunner({
         }
         const tradeService: TradeModuleService = getContainer().resolve(TRADE_MODULE)
         expect((await tradeService.retrieveTradeApplication(pendingId)).status).toBe("pending")
+        expect((await tradeService.retrieveTradeApplication(approvedId)).status).toBe("approved")
       })
 
       it("lists with status filter and pagination", async () => {
@@ -266,12 +292,6 @@ medusaIntegrationTestRunner({
     })
 
     describe("admin: approve", () => {
-      const groupsOf = async (customerId: string) => {
-        const customerService: ICustomerModuleService = getContainer().resolve(Modules.CUSTOMER)
-        const customer = await customerService.retrieveCustomer(customerId, { relations: ["groups"] })
-        return (customer.groups ?? []).map((g) => g.name)
-      }
-
       it("approves, adds the customer to the Trade group and emits approved", async () => {
         const { data } = await api.post(`/admin/trade-applications/${pendingId}/approve`, {}, admin)
         expect(data.trade_application).toMatchObject({ id: pendingId, status: "approved", reason: null })
@@ -375,6 +395,218 @@ medusaIntegrationTestRunner({
       })
     })
 
+    describe("admin: revoke", () => {
+      /** Puts the fixture trader back to "approved and in the group" inside a test. */
+      const reinstateTrader = async () => {
+        const tradeService: TradeModuleService = getContainer().resolve(TRADE_MODULE)
+        await tradeService.updateTradeApplications({ id: approvedId, status: "approved", reason: null })
+        if (!(await groupsOf(customers.trader.customerId)).length) {
+          const customerService: ICustomerModuleService = getContainer().resolve(Modules.CUSTOMER)
+          await customerService.addCustomerToGroup({
+            customer_id: customers.trader.customerId,
+            customer_group_id: tradeGroupId,
+          })
+        }
+      }
+
+      it("revokes an approved account: status, group, tiers, basket price and re-apply", async () => {
+        const { data } = await api.post(
+          `/admin/trade-applications/${approvedId}/revoke`,
+          { reason: "  Account closed at the customer's request  " },
+          admin
+        )
+        expect(data.trade_application).toMatchObject({
+          id: approvedId,
+          status: "revoked",
+          reason: "Account closed at the customer's request",
+        })
+        expect(events.emitted("technest.trade_application.revoked")).toEqual([
+          { id: approvedId, customer_id: customers.trader.customerId },
+        ])
+        expect(await groupsOf(customers.trader.customerId)).toEqual([])
+
+        const me = await api.get("/store/trade-applications/me", as("trader"))
+        expect(me.data.trade_application).toMatchObject({ id: approvedId, status: "revoked" })
+
+        const tiers = await fail(api.get(`/store/products/${productId}/trade-tiers`, as("trader")))
+        expect(tiers.status).toBe(403)
+        expect(await unitPrice("trader", 10)).toBe(variants[0].retail)
+
+        const again = await api.post("/store/trade-applications", application(), as("trader"))
+        expect(again.data.trade_application.status).toBe("pending")
+        const latest = await api.get("/store/trade-applications/me", as("trader"))
+        expect(latest.data.trade_application.id).toBe(again.data.trade_application.id)
+
+        const revoked = await api.get("/admin/trade-applications?status=revoked", admin)
+        expect(revoked.data.trade_applications.map((a: any) => a.id)).toEqual([approvedId])
+      })
+
+      it("accepts no reason, an empty body and a blank reason (stored as null)", async () => {
+        for (const body of [undefined, {}, { reason: "" }, { reason: "   " }]) {
+          await reinstateTrader()
+          const { data } = await api.post(`/admin/trade-applications/${approvedId}/revoke`, body, admin)
+          expect(data.trade_application).toMatchObject({ status: "revoked", reason: null })
+          expect(await groupsOf(customers.trader.customerId)).toEqual([])
+        }
+      })
+
+      it("validates the body", async () => {
+        for (const body of [{ reason: "x".repeat(501) }, { reason: 5 }, { note: "x" }]) {
+          const err = await fail(api.post(`/admin/trade-applications/${approvedId}/revoke`, body, admin))
+          expect(err.status).toBe(400)
+        }
+        const tradeService: TradeModuleService = getContainer().resolve(TRADE_MODULE)
+        expect((await tradeService.retrieveTradeApplication(approvedId)).status).toBe("approved")
+        expect(await groupsOf(customers.trader.customerId)).toEqual(["Trade"])
+      })
+
+      it("only revokes approved applications", async () => {
+        const err = await fail(api.post(`/admin/trade-applications/${pendingId}/revoke`, {}, admin))
+        expect(err.status).toBe(400)
+        expect(err.data.type).toBe("invalid_data")
+        expect((await fail(api.post("/admin/trade-applications/tapp_missing/revoke", {}, admin))).status).toBe(404)
+        await api.post(`/admin/trade-applications/${approvedId}/revoke`, {}, admin)
+        expect((await fail(api.post(`/admin/trade-applications/${approvedId}/revoke`, {}, admin))).status).toBe(400)
+      })
+
+      it("still revokes when the customer was already taken out of the group by hand", async () => {
+        const customerService: ICustomerModuleService = getContainer().resolve(Modules.CUSTOMER)
+        await customerService.removeCustomerFromGroup({
+          customer_id: customers.trader.customerId,
+          customer_group_id: tradeGroupId,
+        })
+        const { data } = await api.post(`/admin/trade-applications/${approvedId}/revoke`, {}, admin)
+        expect(data.trade_application.status).toBe("revoked")
+      })
+
+      it("rolls back the status and the group membership when a later step fails", async () => {
+        const container = getContainer()
+        events.failNext("technest.trade_application.revoked")
+        const { errors } = await revokeTradeApplicationWorkflow(container).run({
+          input: { id: approvedId, reason: "No" },
+          throwOnError: false,
+        })
+        expect(errors.length).toBeGreaterThan(0)
+        const tradeService: TradeModuleService = container.resolve(TRADE_MODULE)
+        expect(await tradeService.retrieveTradeApplication(approvedId)).toMatchObject({ status: "approved", reason: null })
+        expect(await groupsOf(customers.trader.customerId)).toEqual(["Trade"])
+        expect((await api.get(`/store/products/${productId}/trade-tiers`, as("trader"))).status).toBe(200)
+      })
+    })
+
+    describe("admin: delete, and personal data retention", () => {
+      const DAY = 24 * 60 * 60 * 1000
+      const tradeService = () => getContainer().resolve<TradeModuleService>(TRADE_MODULE)
+      const stored = (filters: Record<string, unknown> = {}) =>
+        tradeService().listTradeApplications(filters, { select: ["id"], take: null, withDeleted: true })
+
+      it("refuses to delete an active trade account, deletes it once revoked", async () => {
+        const active = await fail(api.delete(`/admin/trade-applications/${approvedId}`, admin))
+        expect(active.status).toBe(400)
+        expect(active.data.message).toMatch(/revoke/i)
+        expect((await tradeService().retrieveTradeApplication(approvedId)).status).toBe("approved")
+
+        await api.post(`/admin/trade-applications/${approvedId}/revoke`, {}, admin)
+        const { data } = await api.delete(`/admin/trade-applications/${approvedId}`, admin)
+        expect(data).toEqual({ id: approvedId, object: "trade_application", deleted: true })
+        expect((await fail(api.get(`/admin/trade-applications/${approvedId}`, admin))).status).toBe(404)
+        expect((await fail(api.delete(`/admin/trade-applications/${approvedId}`, admin))).status).toBe(404)
+        expect((await fail(api.delete("/admin/trade-applications/tapp_missing", admin))).status).toBe(404)
+
+        // Gone for the customer too: they may apply afresh.
+        const me = await api.get("/store/trade-applications/me", as("trader"))
+        expect(me.data.trade_application).toBeNull()
+      })
+
+      it("deletes a pending application and a rejected one", async () => {
+        await api.delete(`/admin/trade-applications/${pendingId}`, admin)
+        const list = await api.get("/admin/trade-applications", admin)
+        expect(list.data.trade_applications.map((a: any) => a.id)).toEqual([approvedId])
+        const { data: again } = await api.post("/store/trade-applications", application(), as("bob"))
+        await api.post(`/admin/trade-applications/${again.trade_application.id}/reject`, { reason: "No" }, admin)
+        const { data } = await api.delete(`/admin/trade-applications/${again.trade_application.id}`, admin)
+        expect(data.deleted).toBe(true)
+      })
+
+      it("deletes a customer's applications when the customer account is deleted", async () => {
+        const container = getContainer()
+        await deleteCustomersWorkflow(container).run({ input: { ids: [customers.bob.customerId] } })
+        await waitForBackgroundWork(container)
+        expect(await tradeService().listTradeApplications({ customer_id: customers.bob.customerId })).toEqual([])
+        // Soft-deleted, so the retention job can remove it for good later.
+        expect(await stored({ customer_id: customers.bob.customerId })).toHaveLength(1)
+        // Other customers' applications are untouched.
+        expect((await tradeService().retrieveTradeApplication(approvedId)).status).toBe("approved")
+      })
+
+      it("retention: rejected, revoked and deleted applications are removed for good after TRADE_RETENTION_DAYS", async () => {
+        const container = getContainer()
+        await api.post(`/admin/trade-applications/${pendingId}/reject`, { reason: "No" }, admin)
+        await api.post(`/admin/trade-applications/${approvedId}/revoke`, {}, admin)
+        const { data: fresh } = await api.post("/store/trade-applications", application(), as("carol"))
+        await api.delete(`/admin/trade-applications/${fresh.trade_application.id}`, admin)
+        const { data: open } = await api.post("/store/trade-applications", application(), as("alice"))
+
+        expect(await purgeExpiredRecords(container, { now: new Date(), env: { TRADE_RETENTION_DAYS: "30" } })).toEqual({
+          repair_bookings: 0,
+          trade_applications: 0,
+        })
+        expect((await stored()).map((a) => a.id).sort()).toEqual(
+          [pendingId, approvedId, fresh.trade_application.id, open.trade_application.id].sort()
+        )
+
+        const later = new Date(Date.now() + 31 * DAY)
+        expect(await purgeExpiredRecords(container, { now: later, env: { TRADE_RETENTION_DAYS: "30" } })).toEqual({
+          repair_bookings: 0,
+          trade_applications: 3,
+        })
+        expect((await stored()).map((a) => a.id)).toEqual([open.trade_application.id])
+      })
+    })
+
+    describe("busy locks answer 409, not 500", () => {
+      const holding = async (key: string, run: () => Promise<unknown>) => {
+        const locking = getContainer().resolve(Modules.LOCKING)
+        await locking.acquire(key, { ownerId: "test-holder", expire: 60 })
+        try {
+          return await run()
+        } finally {
+          await locking.release(key, { ownerId: "test-holder" })
+        }
+      }
+
+      it("approve, reject, revoke and delete while the application is locked", async () => {
+        await holding(tradeApplicationLockKey(pendingId), async () => {
+          for (const request of [
+            api.post(`/admin/trade-applications/${pendingId}/approve`, {}, admin),
+            api.post(`/admin/trade-applications/${pendingId}/reject`, { reason: "x" }, admin),
+            api.delete(`/admin/trade-applications/${pendingId}`, admin),
+          ]) {
+            const err = await fail(request)
+            expect(err.status).toBe(409)
+            expect(err.data).toEqual({ type: "conflict", message: expect.stringMatching(/another request/i) })
+          }
+        })
+        await holding(tradeApplicationLockKey(approvedId), async () => {
+          expect((await fail(api.post(`/admin/trade-applications/${approvedId}/revoke`, {}, admin))).status).toBe(409)
+        })
+        expect((await tradeService().retrieveTradeApplication(pendingId)).status).toBe("pending")
+        expect((await tradeService().retrieveTradeApplication(approvedId)).status).toBe("approved")
+      })
+
+      it("a new application while the customer is locked", async () => {
+        await holding(tradeCustomerLockKey(customers.carol.customerId), async () => {
+          const err = await fail(api.post("/store/trade-applications", application(), as("carol")))
+          expect(err.status).toBe(409)
+          expect(err.data.type).toBe("conflict")
+        })
+        const me = await api.get("/store/trade-applications/me", as("carol"))
+        expect(me.data.trade_application).toBeNull()
+      })
+
+      const tradeService = () => getContainer().resolve<TradeModuleService>(TRADE_MODULE)
+    })
+
     describe("trade pricing", () => {
       it("creates the Trade group and price list once (idempotent)", async () => {
         const container = getContainer()
@@ -456,19 +688,31 @@ medusaIntegrationTestRunner({
       })
 
       it("charges trade customers the tier price in the basket", async () => {
-        const unitPrice = async (who: string, quantity: number) => {
-          const { data } = await api.post("/store/carts", { region_id: regionId }, as(who))
-          const { data: withItem } = await api.post(
-            `/store/carts/${data.cart.id}/line-items`,
-            { variant_id: variants[0].id, quantity },
-            as(who)
-          )
-          return withItem.cart.items[0].unit_price
-        }
         expect(await unitPrice("trader", 5)).toBe(7.5)
         expect(await unitPrice("trader", 10)).toBe(7)
         expect(await unitPrice("trader", 60)).toBe(6)
         expect(await unitPrice("carol", 10)).toBe(variants[0].retail)
+      })
+
+      it("keeps approvals and tiers working after the group and price list are renamed", async () => {
+        await api.post(`/admin/customer-groups/${tradeGroupId}`, { name: "Trade accounts" }, admin)
+        await api.post(`/admin/price-lists/${priceListId}`, { title: "Wholesale" }, admin)
+
+        // Existing trade customers keep their prices.
+        expect((await api.get(`/store/products/${productId}/trade-tiers`, as("trader"))).status).toBe(200)
+        expect(await unitPrice("trader", 10)).toBe(7)
+
+        // A new approval joins the renamed group instead of creating a second "Trade" group.
+        await api.post(`/admin/trade-applications/${pendingId}/approve`, {}, admin)
+        expect(await groupsOf(customers.bob.customerId)).toEqual(["Trade accounts"])
+        const customerService: ICustomerModuleService = getContainer().resolve(Modules.CUSTOMER)
+        expect(await customerService.listCustomerGroups({ name: "Trade" })).toHaveLength(0)
+
+        const { data } = await api.get(`/store/products/${productId}/trade-tiers`, as("bob"))
+        const first = data.variants.find((v: any) => v.variant_id === variants[0].id)
+        expect(first.tiers).toHaveLength(3)
+        expect(await unitPrice("bob", 10)).toBe(7)
+        expect(await unitPrice("bob", 60)).toBe(6)
       })
     })
   },

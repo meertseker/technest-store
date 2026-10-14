@@ -7,6 +7,10 @@ import {
   TradeApplicationStatus,
 } from "../../modules/trade/constants"
 
+/** 409 body when another review or application for the same record is still running. */
+export const TRADE_BUSY_MESSAGE =
+  "This trade application is being updated by another request. Try again in a moment."
+
 type ListOptions = {
   filters: { id?: string; customer_id?: string; status?: TradeApplicationStatus[] }
   /** Field name, "-" prefix for descending. */

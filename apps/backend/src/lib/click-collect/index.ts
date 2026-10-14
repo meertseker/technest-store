@@ -66,14 +66,7 @@ export function collectionDeadlineOf(order: {
 /** Lock key shared by every Click & Collect mutation of one order. */
 export const collectLockKey = (orderId: string) => `technest-click-collect:${orderId}`
 
-/**
- * True for the error the locking providers throw when a lock is still held
- * by another run after the wait. Both providers (in-memory: plain Error,
- * Redis: MedusaError CONFLICT) say "Failed to acquire lock for key ..." from
- * acquire() and "Timed-out acquiring lock." from execute().
- */
-export const isLockBusyError = (e: unknown) =>
-  /Failed to acquire lock|Timed-out acquiring lock/.test((e as Error | undefined)?.message ?? "")
+export { isLockBusyError } from "../lock-busy"
 
 // Uppercase letters and digits without the look-alikes 0 O 1 I L.
 export const COLLECTION_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"

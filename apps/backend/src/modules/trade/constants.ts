@@ -1,4 +1,4 @@
-export const TRADE_APPLICATION_STATUSES = ["pending", "approved", "rejected"] as const
+export const TRADE_APPLICATION_STATUSES = ["pending", "approved", "rejected", "revoked"] as const
 export type TradeApplicationStatus = (typeof TRADE_APPLICATION_STATUSES)[number]
 
 export const BUSINESS_TYPES = [
@@ -9,7 +9,13 @@ export const BUSINESS_TYPES = [
 ] as const
 export type BusinessType = (typeof BUSINESS_TYPES)[number]
 
-/** Exact name of the customer group and price list that carry trade pricing. */
+/**
+ * Display names the customer group and price list that carry trade pricing
+ * are created with. Once created their ids are kept in the settings module
+ * (`lib/trade-pricing-refs.ts`) and the names are only a fallback for a
+ * database that has the group or list but no stored id, so renaming either
+ * in the admin breaks nothing.
+ */
 export const TRADE_GROUP_NAME = "Trade"
 export const TRADE_PRICE_LIST_TITLE = "Trade"
 
@@ -26,6 +32,7 @@ export const TRADE_EVENTS = {
   CREATED: "technest.trade_application.created",
   APPROVED: "technest.trade_application.approved",
   REJECTED: "technest.trade_application.rejected",
+  REVOKED: "technest.trade_application.revoked",
 } as const
 
 export const TRADE_APPLICATION_FIELDS = [

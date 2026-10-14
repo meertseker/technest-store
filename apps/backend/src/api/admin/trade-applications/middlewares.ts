@@ -30,6 +30,12 @@ export const AdminRejectTradeApplication = z.strictObject({
 })
 export type AdminRejectTradeApplication = z.infer<typeof AdminRejectTradeApplication>
 
+/** Revoke: the reason is optional (blank counts as none) and at most 500 chars. */
+export const AdminRevokeTradeApplication = z.strictObject({
+  reason: z.string().trim().max(500).optional(),
+})
+export type AdminRevokeTradeApplication = z.infer<typeof AdminRevokeTradeApplication>
+
 export const adminTradeMiddlewares: MiddlewareRoute[] = [
   {
     method: ["GET"],
@@ -45,5 +51,10 @@ export const adminTradeMiddlewares: MiddlewareRoute[] = [
     method: ["POST"],
     matcher: "/admin/trade-applications/:id/reject",
     middlewares: [validateAndTransformBody(AdminRejectTradeApplication)],
+  },
+  {
+    method: ["POST"],
+    matcher: "/admin/trade-applications/:id/revoke",
+    middlewares: [validateAndTransformBody(AdminRevokeTradeApplication)],
   },
 ]
