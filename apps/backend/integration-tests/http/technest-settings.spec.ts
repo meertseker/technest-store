@@ -173,6 +173,25 @@ medusaIntegrationTestRunner({
         expect(data.settings).toEqual(DEFAULTS)
       })
 
+      it("POST answers 409 (not 500) while another save holds the settings lock", async () => {
+        const locking = getContainer().resolve(Modules.LOCKING)
+        await locking.acquire("technest-settings", { ownerId: "test-holder", expire: 60 })
+        try {
+          const err = await api
+            .post("/admin/technest-settings", { klarna_min_basket_pence: 2500 }, admin)
+            .catch((e: { response: { status: number; data: { type: string; message: string } } }) => e.response)
+          expect(err.status).toBe(409)
+          expect(err.data).toEqual({ type: "conflict", message: expect.stringMatching(/another request/i) })
+        } finally {
+          await locking.release("technest-settings", { ownerId: "test-holder" })
+        }
+        const { data } = await api.get("/admin/technest-settings", admin)
+        expect(data.settings).toEqual(DEFAULTS)
+        // Once the lock is free the save goes through.
+        const ok = await api.post("/admin/technest-settings", { klarna_min_basket_pence: 2500 }, admin)
+        expect(ok.data.settings.klarna_min_basket_pence).toBe(2500)
+      })
+
       it("POST accepts the bounds 0 and 100000", async () => {
         const { data } = await api.post(
           "/admin/technest-settings",

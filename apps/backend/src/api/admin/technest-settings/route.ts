@@ -2,6 +2,7 @@ import type {
   AuthenticatedMedusaRequest,
   MedusaResponse,
 } from "@medusajs/framework/http"
+import { runOrConflict } from "../../../lib/lock-busy"
 import { getTechnestSettings } from "../../../modules/settings/get-settings"
 import { updateTechnestSettingsWorkflow } from "../../../workflows/update-technest-settings"
 import type { AdminUpdateTechnestSettings } from "./middlewares"
@@ -16,6 +17,9 @@ export async function POST(
   req: AuthenticatedMedusaRequest<AdminUpdateTechnestSettings>,
   res: MedusaResponse
 ) {
-  await updateTechnestSettingsWorkflow(req.scope).run({ input: req.validatedBody })
+  await runOrConflict(
+    () => updateTechnestSettingsWorkflow(req.scope).run({ input: req.validatedBody }),
+    "The settings are being saved by another request. Try again in a moment."
+  )
   res.json({ settings: await getTechnestSettings(req.scope) })
 }
