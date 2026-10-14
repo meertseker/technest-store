@@ -25,6 +25,13 @@ Errors use Medusa's standard shape: `{ "type": "not_found" | "not_allowed" | "in
   payment cancel, so the backend retries it once and logs the order/payment ids if it still fails.
   An uncollected order whose payment is already captured (a Collected press that failed after the
   capture) is never cancelled automatically, because that would refund it: it is logged for staff.
+- Handed over with Medusa's own order page instead of the board (a pickup order's fulfilment
+  marked delivered or shipped there): the hourly `click-collect-lifecycle` job captures the payment
+  (same capture step, under the order's lock, never twice), sets `collected_at` and
+  `collected_outside_board = { fulfillment_id, at }`, emits `technest.order.collected`, raises one
+  Sentry alert and sends the shop one `shop-payment-notice` email so staff learn to use the board.
+  A fulfilment that is only created (not delivered/shipped) is left alone. If no payment is left to
+  capture, nothing is marked collected and the job reports the order every hour until staff act.
 - The signed Stripe webhook authorises; "Collected" captures, and the capture is recorded from
   Stripe's response to the capture call. Nothing on the board is refunded automatically.
 
@@ -134,7 +141,7 @@ Response `200`: `{ "order": ClickCollectOrder }`.
 |---|---|---|---|
 | `technest.payment.capture_failed` | `{ order_id }` | the `capture-retry` job (delivery orders) and the capture step in `mark-collected` | delivery: once, when the job gives up after its last attempt; Click & Collect: each time a capture is refused at the counter |
 | `technest.order.ready_for_collection` | `{ order_id }` | `mark-ready-for-collection` workflow | first time an order is marked ready |
-| `technest.order.collected` | `{ order_id }` | `mark-collected` workflow | order collected |
+| `technest.order.collected` | `{ order_id }` | `mark-collected` workflow; `collect-outside-board` (lifecycle job) | order collected (on the board, or found handed over from the order page) |
 | `technest.order.collection_reminder` | `{ order_id }` | hourly job `click-collect-lifecycle` | once, 3 days after ready |
 | `order.canceled` (core) | `{ id }` | `cancelOrderWorkflow`, run by the hourly job | at the collection deadline, uncollected (ready or never marked ready) |
 
@@ -147,6 +154,7 @@ Response `200`: `{ "order": ClickCollectOrder }`.
 | `collected_at` | ISO 8601 |
 | `collection_reminder_sent_at` | ISO 8601 |
 | `collection_expired_at` | ISO 8601, set when the job cancels a ready order at its deadline (not set for an order never marked ready) |
+| `collected_outside_board` | `{ fulfillment_id, at }`: handed over from Medusa's order page; payment taken by the lifecycle job |
 
 ## Refunds
 

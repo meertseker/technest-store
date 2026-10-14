@@ -33,6 +33,7 @@ Every email goes through the Medusa Notification module (`channel: "email"`, pro
 | 17 | `technest.trade_application.revoked` (E1, `POST /admin/trade-applications/:id/revoke`) | `{ id, customer_id }` | `trade-application-revoked` | customer (only if `revoked`; shows the stored `reason` when there is one; says they may apply again) |
 | 18 | Stripe `charge.dispute.created` (through `payment.webhook_received`, `src/subscribers/stripe-events.ts`) | dispute id + order id | `shop-payment-dispute` | shop only; once per dispute |
 | 19 | Stripe `charge.refunded` for a refund made outside the admin, `payment_intent.canceled` not made by us (same subscriber) | refund or intent id + order id | `shop-payment-notice` (`kind`: `external_refund`, `hold_released`) | shop only; once per refund / intent |
+| 20 | (no event) the hourly `click-collect-lifecycle` job, after capturing a pickup order handed over from Medusa's order page | fulfilment id + order id | `shop-payment-notice` (`kind`: `collected_outside_board`) | shop only; once per fulfilment |
 
 **Order metadata the emails read (written by the Click & Collect code, docs/contracts/click-collect.md):** `collection_code` (shown in "Ready for collection"; falls back to the order number), `ready_for_collection_at` (ISO time; "we'll hold it until" = +7 days), and `collection_expired_at` (set by the day-7 job just before it cancels, so the `order-cancelled` email says "not collected").
 

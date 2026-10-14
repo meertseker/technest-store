@@ -8,6 +8,7 @@ import {
   type CollectStatus,
   toClickCollectOrder,
 } from "."
+import type { HandedOverFulfillment } from "../../workflows/steps/click-collect/prepare-outside-board"
 
 export type ListClickCollectOrdersInput = {
   status: CollectStatus
@@ -88,21 +89,34 @@ export async function listClickCollectOrders(
   }
 }
 
+export type UncollectedOrderRow = {
+  id: string
+  created_at: string | Date
+  metadata: Record<string, unknown> | null
+  fulfillments?: HandedOverFulfillment[] | null
+}
+
 /**
- * Every Click & Collect order not collected yet, ready or not (id, metadata
- * and order time only), for the lifecycle job. The list stays small: orders
+ * Every Click & Collect order not collected yet, ready or not (id, metadata,
+ * order time and fulfilment dates only), for the lifecycle job. The list stays small: orders
  * leave it when collected or, at the latest, when the job cancels them at
  * their collection deadline.
  */
-export async function listUncollectedOrders(
-  container: MedusaContainer
-): Promise<{ id: string; created_at: string | Date; metadata: Record<string, unknown> | null }[]> {
+export async function listUncollectedOrders(container: MedusaContainer): Promise<UncollectedOrderRow[]> {
   const methodIds = await pickupShippingMethodIds(container)
   if (!methodIds.length) return []
   const query = container.resolve(ContainerRegistrationKeys.QUERY)
   const { data } = await query.graph({
     entity: "order",
-    fields: ["id", "metadata", "created_at"],
+    fields: [
+      "id",
+      "metadata",
+      "created_at",
+      "fulfillments.id",
+      "fulfillments.shipped_at",
+      "fulfillments.delivered_at",
+      "fulfillments.canceled_at",
+    ],
     filters: {
       status: { $nin: ["canceled", "draft"] },
       shipping_methods: { shipping_method_id: methodIds },
@@ -110,5 +124,5 @@ export async function listUncollectedOrders(
     } as never,
     pagination: { order: { created_at: "ASC" } },
   })
-  return data as unknown as { id: string; created_at: string | Date; metadata: Record<string, unknown> | null }[]
+  return data as unknown as UncollectedOrderRow[]
 }
