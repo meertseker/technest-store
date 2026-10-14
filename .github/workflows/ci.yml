@@ -113,6 +113,59 @@ jobs:
       - name: Build
         run: pnpm --filter @technest/storefront build
 
+  # Browser tests against production builds of both apps (scripts/e2e-prod.sh): basket and
+  # checkout, accounts and trade, the checkout boundary, at 375 px and 1280 px. No secrets:
+  # the backend runs in development mode with the manual payment provider.
+  e2e-prod:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: technest
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+      mailpit:
+        image: axllent/mailpit:v1.21
+        ports: ["1025:1025", "8025:8025"]
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/technest
+      E2E_BACKEND_LOG: ${{ github.workspace }}/e2e-backend.log
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Playwright's Chromium
+        working-directory: apps/storefront
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Build both apps, seed, run the browser tests
+        run: bash scripts/e2e-prod.sh
+      - name: Keep the logs and failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-prod-${{ github.run_number }}
+          path: |
+            e2e-backend.log
+            apps/storefront/test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
   emails:
     runs-on: ubuntu-latest
     timeout-minutes: 10

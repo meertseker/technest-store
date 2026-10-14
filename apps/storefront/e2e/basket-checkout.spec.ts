@@ -177,6 +177,12 @@ test.describe("basket and checkout", () => {
       !payment_providers.some((p: { id: string }) => p.id === "pp_system_default"),
       "needs the manual provider (dev); Stripe orders are covered by E2"
     )
+    // A production build never offers the manual provider (resolvePaymentMode), so there
+    // this order needs Stripe test mode: payment.spec.ts with E2E_STRIPE=1.
+    test.skip(
+      process.env.E2E_PROD === "1",
+      "a production build never offers the manual provider; Stripe orders: payment.spec.ts (E2E_STRIPE=1)"
+    )
     const variant = (await listProducts(page)).filter((p) => !isAddon(p)).flatMap((p) => p.variants).find(inStock)!
     await seedCart(page, [variant.id])
 
