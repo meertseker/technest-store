@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs"
 import { renderToStaticMarkup } from "react-dom/server"
 import { createElement, Fragment } from "react"
 import { describe, expect, it } from "vitest"
@@ -112,6 +113,20 @@ describe("settings-driven wording", () => {
 })
 
 describe("cookie policy", () => {
+  it("lists every cookie the server code sets by name", () => {
+    const names = ESSENTIAL_COOKIES.map((c) => c.name).join(" ")
+    const sources = ["../data/cookies.ts", "../../middleware.ts"].map((f) => readFileSync(new URL(f, import.meta.url), "utf8")).join("\n")
+    const set = Array.from(sources.matchAll(/cookies\.set\(\s*"([^"]+)"/g), (m) => m[1])
+    expect(set.length).toBeGreaterThan(3)
+    for (const n of set) expect(names, n).toContain(n)
+  })
+
+  it("says how long the order cookie and the basket cookie last", () => {
+    const row = (name: string) => ESSENTIAL_COOKIES.find((c) => c.name === name)
+    expect(row("_technest_order")?.lasts).toBe("1 day")
+    expect(row("_medusa_cart_id")?.lasts).toMatch(/7 days.*each time.*basket/i)
+  })
+
   it("lists every cookie the storefront code sets", () => {
     const names = ESSENTIAL_COOKIES.map((c) => c.name).join(" ")
     for (const n of [

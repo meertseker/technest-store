@@ -6,7 +6,18 @@ type CookieRow = { name: string; by: string; purpose: string; lasts: string }
 
 /** Every cookie the site can set. Keep in step with the code (see src/lib/data/cookies.ts). */
 export const ESSENTIAL_COOKIES: CookieRow[] = [
-  { name: "_medusa_cart_id", by: "Tech Nest", purpose: "Remembers your basket.", lasts: "7 days" },
+  {
+    name: "_medusa_cart_id",
+    by: "Tech Nest",
+    purpose: "Remembers your basket.",
+    lasts: "7 days, starting again each time you change your basket",
+  },
+  {
+    name: "_technest_order",
+    by: "Tech Nest",
+    purpose: "Lets the browser you ordered on show your order confirmation in full. Set only when you place an order.",
+    lasts: "1 day",
+  },
   { name: "_medusa_jwt", by: "Tech Nest", purpose: "Keeps you signed in to your account.", lasts: "7 days" },
   {
     name: "_medusa_cache_id",
