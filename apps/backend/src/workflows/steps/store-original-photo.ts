@@ -1,6 +1,7 @@
 import { MedusaError, Modules } from "@medusajs/framework/utils"
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
 import { publicFileUrl } from "../../lib/photo/public-url"
+import { retrieveStoredFile } from "../../lib/photo/stored-file"
 
 export type StoreOriginalPhotoInput = {
   /** An existing File Module file (e.g. from POST /admin/uploads). Never deleted by this workflow. */
@@ -36,9 +37,8 @@ export const storeOriginalPhotoStep = createStep(
     if (input.file_id && !input.upload) {
       let file: { id: string; url: string } | undefined
       try {
-        file = await fileModule.retrieveFile(input.file_id)
-        // retrieveFile doesn't prove the object exists for every provider; reading it does.
-        await fileModule.getAsBuffer(input.file_id)
+        // retrieveFile doesn't prove the object exists for every provider; opening it does.
+        file = await retrieveStoredFile(fileModule, input.file_id)
       } catch {
         file = undefined
       }
