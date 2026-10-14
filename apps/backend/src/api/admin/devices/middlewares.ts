@@ -10,15 +10,25 @@ const slug = z
   .string()
   .regex(DEVICE_SLUG_PATTERN, "Slug must be lowercase kebab-case")
 
+export const DEVICE_TEXT_MAX = 100
+export const DEVICE_ALIASES_MAX = 20
+
+const text = z.string().trim().min(1).max(DEVICE_TEXT_MAX)
+
+/** Served to the public by /store/devices: https only, so no javascript:/data: links. */
+const httpsUrl = z
+  .url({ protocol: /^https$/, hostname: z.regexes.domain })
+  .max(2048)
+
 const deviceFields = {
-  brand: z.string().trim().min(1),
-  series: z.string().trim().min(1),
-  model: z.string().trim().min(1),
+  brand: text,
+  series: text,
+  model: text,
   type: z.enum(DEVICE_TYPES),
   slug: slug.optional(),
-  aliases: z.array(z.string().trim().min(1)).optional(),
+  aliases: z.array(text).max(DEVICE_ALIASES_MAX).optional(),
   release_year: z.number().int().min(1990).max(2100).nullable().optional(),
-  image_url: z.url().nullable().optional(),
+  image_url: httpsUrl.nullable().optional(),
 }
 
 export const AdminCreateDevice = z.strictObject(deviceFields)

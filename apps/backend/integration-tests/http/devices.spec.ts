@@ -100,6 +100,31 @@ medusaIntegrationTestRunner({
         expect(err.status).toBe(400)
       })
 
+      it("bounds the text fields and only takes https image links", async () => {
+        const bad = [
+          newDevice({ model: "Script", image_url: "javascript:alert(1)" }),
+          newDevice({ model: "Plain", image_url: "http://cdn.example/x.png" }),
+          newDevice({ model: "Long brand", brand: "b".repeat(101) }),
+          newDevice({ model: "Many aliases", aliases: Array.from({ length: 21 }, (_, i) => `a${i}`) }),
+          newDevice({ model: "Long alias", aliases: ["a".repeat(101)] }),
+        ]
+        for (const body of bad) {
+          const err = await api.post("/admin/devices", body, admin).catch((e: any) => e.response)
+          expect(err.status).toBe(400)
+          expect(err.data.type).toBe("invalid_data")
+        }
+        const ok = await api.post(
+          "/admin/devices",
+          newDevice({ model: "Pictured", image_url: "https://cdn.example/pictured.png" }),
+          admin
+        )
+        expect(ok.data.device.image_url).toBe("https://cdn.example/pictured.png")
+        const update = await api
+          .post(`/admin/devices/${ok.data.device.id}`, { image_url: "javascript:alert(1)" }, admin)
+          .catch((e: any) => e.response)
+        expect(update.status).toBe(400)
+      })
+
       it("requires admin auth", async () => {
         const err = await api.get("/admin/devices").catch((e: any) => e.response)
         expect(err.status).toBe(401)
