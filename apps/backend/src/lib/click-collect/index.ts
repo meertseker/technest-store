@@ -2,6 +2,7 @@ import { randomInt } from "crypto"
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
 import { CaptureRetryMeta } from "../capture-retry/constants"
+import { PaymentNoticeMeta } from "../stripe-events/constants"
 import { isPickupOrder, toPence } from "../email/order-email-data"
 import { collectionDeadline } from "./deadline"
 
@@ -22,10 +23,11 @@ export const CollectMeta = {
   EXPIRED_AT: "collection_expired_at",
 } as const
 
-// The capture-retry job keeps its state in order metadata too.
+// The capture-retry job and the Stripe event handler keep their state in order metadata too.
 const COLLECT_STATE_KEYS: readonly string[] = [
   ...Object.values(CollectMeta),
   ...Object.values(CaptureRetryMeta),
+  ...Object.values(PaymentNoticeMeta),
 ]
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>

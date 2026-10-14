@@ -386,16 +386,20 @@ Ayrıntılı kurallar: `docs/contracts/payments.md`.
    - URL: `https://api.technest.co.uk/hooks/payment/stripe_stripe`
    - Olaylar: `payment_intent.amount_capturable_updated`, `payment_intent.succeeded`,
      `payment_intent.payment_failed`, `payment_intent.canceled`, `payment_intent.processing`,
-     `payment_intent.requires_action`, `payment_intent.partially_funded`
+     `payment_intent.requires_action`, `payment_intent.partially_funded`, `charge.refunded`,
+     `charge.dispute.created`, `charge.dispute.updated`, `charge.dispute.closed`
    - Kaydedince **Signing secret** (`whsec_…`) → `.env`: `STRIPE_WEBHOOK_SECRET`.
      Test modu ve canlı mod ayrı uç nokta ve ayrı secret ister.
 3. **Settings → Payment methods**: Kart ve **Klarna** açık. (Klarna'yı sepet tutarına göre kod açıp
    kapatır; Stripe'ta kapalıysa hiç görünmez.) [LEAD?] Apple Pay / Google Pay de açılsın mı?
 4. `docker compose up -d server worker` → Stripe → Webhooks → uç noktada **Send test webhook**:
    `200` dönmeli. İmzasız istekler `400 Invalid webhook signature` alır (bu normaldir).
-5. Siparişi "ödendi" yapan **yalnızca** imzalı webhook'tur. İadeler **yalnızca** admin sipariş
-   sayfasından yapılır; Stripe panelinden yapılan iade sisteme geri yansımaz (sahip rehberi,
-   `docs/owner/tr/08-orders-and-refunds.md`).
+5. Tarayıcı hiçbir siparişi "ödendi" yapmaz: yetkilendirme sunucuda doğrulanır (imzalı webhook
+   onaylar), tahsilat (capture) Stripe'ın capture yanıtından kaydedilir. İadeler admin sipariş
+   sayfasından yapılır (sahip rehberi, `docs/owner/tr/08-orders-and-refunds.md`). Stripe
+   panelinden yapılan iade, itiraz (chargeback) ve Stripe'ta düşen kart blokesi `charge.refunded`,
+   `charge.dispute.*` ve `payment_intent.canceled` olaylarıyla siparişe yazılır, Sentry'ye bildirilir
+   ve dükkâna e-postayla iletilir (`docs/contracts/payments.md` bölüm 3).
 
 ---
 

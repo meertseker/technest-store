@@ -6,6 +6,8 @@ import * as orderConfirmation from "./templates/order-confirmation"
 import * as orderDispatched from "./templates/order-dispatched"
 import * as passwordReset from "./templates/password-reset"
 import * as paymentFailed from "./templates/payment-failed"
+import * as shopPaymentDispute from "./templates/shop-payment-dispute"
+import * as shopPaymentNotice from "./templates/shop-payment-notice"
 import * as readyForCollection from "./templates/ready-for-collection"
 import * as refundIssued from "./templates/refund-issued"
 import * as returnReceived from "./templates/return-received"
@@ -38,6 +40,8 @@ const templates = {
   "ready-for-collection": readyForCollection,
   "collection-reminder": collectionReminder,
   "payment-failed": paymentFailed,
+  "shop-payment-dispute": shopPaymentDispute,
+  "shop-payment-notice": shopPaymentNotice,
   "trade-application-received": tradeApplicationReceived,
   "trade-application-approved": tradeApplicationApproved,
   "trade-application-rejected": tradeApplicationRejected,

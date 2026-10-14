@@ -25,8 +25,8 @@ Errors use Medusa's standard shape: `{ "type": "not_found" | "not_allowed" | "in
   payment cancel, so the backend retries it once and logs the order/payment ids if it still fails.
   An uncollected order whose payment is already captured (a Collected press that failed after the
   capture) is never cancelled automatically, because that would refund it: it is logged for staff.
-- Only the signed Stripe webhook marks an order paid; capturing an authorisation here does not
-  replace it. Nothing on the board is refunded automatically.
+- The signed Stripe webhook authorises; "Collected" captures, and the capture is recorded from
+  Stripe's response to the capture call. Nothing on the board is refunded automatically.
 
 ## Board columns
 

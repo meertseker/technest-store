@@ -51,7 +51,9 @@ Rules:
   `klarna_min_basket_pence` against the cart total in pence for hints like
   "Klarna available on orders over £30". That is display only; the session flag is authoritative.
 - The browser never marks anything paid: cart completion authorises from a server-side
-  retrieve of the PaymentIntent, and the signed webhook confirms it.
+  retrieve of the PaymentIntent, and the signed webhook confirms it. Captures (delivery orders
+  after `order.placed`, Click & Collect at "Collected") are recorded from the response of
+  Stripe's capture call, not from a webhook.
 
 ## 2. Refunds (admin, E4)
 
@@ -70,15 +72,32 @@ No custom route. Rules (all covered by `integration-tests/http/refunds.spec.ts`)
 | Not logged in as admin | `401` |
 
 Every successful refund emits core `payment.refunded` `{ id }` (payment id), once per refund. The
-`refund-issued` email subscriber (`docs/contracts/emails.md` #8) listens to it. Refunds made in
-the Stripe dashboard are **not** synced back to Medusa: always refund from the admin.
+`refund-issued` email subscriber (`docs/contracts/emails.md` #8) listens to it. Always refund from
+the admin. A refund made in the Stripe dashboard is picked up from `charge.refunded` (section 3)
+and written to Medusa after the fact.
 
 ## 3. Stripe webhook (E4 / lead: Stripe dashboard)
 
 - Endpoint: `https://api.<domain>/hooks/payment/stripe_stripe`, signing secret → `STRIPE_WEBHOOK_SECRET`.
 - Events to send: `payment_intent.amount_capturable_updated`, `payment_intent.succeeded`,
   `payment_intent.payment_failed`, `payment_intent.canceled`, `payment_intent.processing`,
-  `payment_intent.requires_action`, `payment_intent.partially_funded`.
+  `payment_intent.requires_action`, `payment_intent.partially_funded`, `charge.refunded`,
+  `charge.dispute.created`, `charge.dispute.updated`, `charge.dispute.closed`.
+- Medusa's own handler acts on `amount_capturable_updated` and `succeeded` only (authorise and,
+  for an uncompleted cart, complete it). Our subscriber `src/subscribers/stripe-events.ts`
+  (`payment.webhook_received`, signature checked again on the queued copy with a 24 hour
+  tolerance) handles the rest, matching the event to the order through the payment whose
+  `data.id` is the PaymentIntent id; events for intents Medusa doesn't know are logged and ignored:
+
+  | Event | What happens |
+  |---|---|
+  | `charge.dispute.created` (or the first `updated`/`closed` seen for a dispute) | order `metadata.dispute = { id, status, reason, amount_pence, currency, due_by, livemode, opened_at }`, one Sentry alert, `shop-payment-dispute` email (order, amount, reason, respond-by date, Stripe link) |
+  | `charge.dispute.updated` / `closed` | `metadata.dispute.status` updated (`closed_at` on close); no alert, no email |
+  | `charge.refunded` | `amount_refunded` above the payment's Medusa refunds was refunded outside the admin. If Medusa captured enough, the refund is written to the payment (`metadata.stripe_refund_id`, a note), with the order transaction, the collection's refunded amount and core `payment.refunded` (so the customer gets `refund-issued`). Otherwise only noted. Either way: `metadata.external_refunds[]`, one Sentry alert, `shop-payment-notice` email. Refunds made in the admin produce no change. |
+  | `payment_intent.canceled` | ignored when Medusa cancelled the payment itself or the order is cancelled; otherwise (expired hold, dashboard cancel) `metadata.payment_hold_released`, one Sentry alert, `shop-payment-notice` email: the order can't be captured |
+
+  All of it runs under the order's lock and is idempotent: a redelivered event changes nothing
+  and sends no second email.
 - Requests without a valid `Stripe-Signature` over the raw body (5 minute tolerance) get
   `400 { "type": "invalid_data", "message": "Invalid webhook signature" }` and are not queued.
   Valid ones get `200` and are processed in the worker (Stripe's library verifies again there).

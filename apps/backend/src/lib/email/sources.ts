@@ -3,6 +3,7 @@ import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/util
 import { collection, paymentFailed } from "./collection-sources"
 import * as lifecycle from "./lifecycle-sources"
 import { lowStockDigest, repairBooking, tradeApplicationCustomer, tradeApplicationShop } from "./trade-sources"
+import { paymentDispute, paymentNotice } from "./payment-notice-sources"
 import { loadOrderEmailData, safeFirstName, shopNotifyEmail } from "./order-email-data"
 
 export type EmailRecipient = "customer" | "shop"
@@ -60,6 +61,8 @@ const sources: Record<string, Source> = {
   "shop-trade-application": tradeApplicationShop,
   "shop-repair-booking": repairBooking,
   "shop-low-stock-digest": lowStockDigest,
+  "shop-payment-dispute": paymentDispute,
+  "shop-payment-notice": paymentNotice,
 }
 
 /** null = nothing to send (e.g. guest customer, order without an email). */

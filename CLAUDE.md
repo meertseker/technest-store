@@ -75,7 +75,8 @@ store/
   Convert at the boundary and name pence fields `*_pence` or document them.
 - Retail prices include VAT (region is tax-inclusive, 20% UK VAT). Trade prices are shown ex-VAT with a label.
 - Show delivery cost on the product page and in the basket before checkout (no drip pricing).
-- Only the signed Stripe webhook marks an order as paid. The browser never does.
+- The browser never marks an order as paid: authorisation comes from the server (a retrieve of the
+  PaymentIntent, confirmed by the signed webhook), and a capture is recorded from Stripe's response.
 - Capture: Stripe runs with `capture: false`. Delivery orders are captured right after `order.placed`.
   Click & Collect is captured when staff press "Collected". Uncollected after 7 days: cancel and release
   the authorisation. Reminder after 3 days.

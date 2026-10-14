@@ -77,3 +77,31 @@ export type PaymentFailedData = OrderRef & {
   /** Delivery orders are charged after ordering; Click & Collect at the counter. Default delivery. */
   fulfilment?: "delivery" | "collection"
 }
+
+/** A chargeback opened at Stripe. Shop only. */
+export type ShopPaymentDisputeData = {
+  display_id: number | string
+  amount_pence: number
+  /** Stripe's reason code, e.g. "fraudulent", "product_not_received". */
+  reason: string
+  /** Stripe's dispute status code, e.g. "needs_response". */
+  status: string
+  /** "Friday 24 October" in shop time; null when Stripe gave no deadline. */
+  due_by?: string | null
+  dispute_url: string
+  admin_order_url: string
+}
+
+export type ShopPaymentNoticeKind = "external_refund" | "hold_released" | "collected_outside_board"
+
+/** Something happened to an order's payment outside the admin. Shop only. */
+export type ShopPaymentNoticeData = {
+  kind: ShopPaymentNoticeKind
+  display_id: number | string
+  amount_pence: number
+  admin_order_url: string
+  /** hold_released: Stripe's cancellation reason code, null when it gave none. */
+  reason?: string | null
+  /** external_refund: true when Medusa had not captured enough to write the refund to the order. */
+  unrecorded?: boolean
+}

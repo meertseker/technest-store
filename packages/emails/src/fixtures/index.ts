@@ -71,6 +71,21 @@ export const fixtures: Record<TemplateId, Record<string, unknown>> = {
   "ready-for-collection": collection,
   "collection-reminder": collection,
   "payment-failed": { display_id: 1042, first_name: "Sam", order_url: order.order_url, total_pence: 1447 },
+  "shop-payment-dispute": {
+    display_id: 1042,
+    amount_pence: 1447,
+    reason: "fraudulent",
+    status: "needs_response",
+    due_by: "Friday 24 October",
+    dispute_url: "https://dashboard.stripe.com/test/disputes/dp_example",
+    admin_order_url: "https://admin.technest.co.uk/app/orders/order_1",
+  },
+  "shop-payment-notice": {
+    kind: "external_refund",
+    display_id: 1042,
+    amount_pence: 499,
+    admin_order_url: "https://admin.technest.co.uk/app/orders/order_1",
+  },
   "trade-application-received": { first_name: "Jane" },
   "trade-application-approved": { first_name: "Jane" },
   "trade-application-rejected": {

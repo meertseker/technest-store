@@ -31,6 +31,8 @@ Every email goes through the Medusa Notification module (`channel: "email"`, pro
 | 15 | `technest.repair_booking.created` (E1, docs/contracts/repairs.md) | `{ id }` | `shop-repair-booking` | shop only |
 | 16 | `technest.inventory.low_stock` (hourly job `technest-low-stock-digest`, acts on the first run between 08:00 and 12:00 Europe/London each day) | `{ items: LowStockItem[] }` (see below) | `shop-low-stock-digest` | shop; skipped when `items` is empty; at most one digest per shop day |
 | 17 | `technest.trade_application.revoked` (E1, `POST /admin/trade-applications/:id/revoke`) | `{ id, customer_id }` | `trade-application-revoked` | customer (only if `revoked`; shows the stored `reason` when there is one; says they may apply again) |
+| 18 | Stripe `charge.dispute.created` (through `payment.webhook_received`, `src/subscribers/stripe-events.ts`) | dispute id + order id | `shop-payment-dispute` | shop only; once per dispute |
+| 19 | Stripe `charge.refunded` for a refund made outside the admin, `payment_intent.canceled` not made by us (same subscriber) | refund or intent id + order id | `shop-payment-notice` (`kind`: `external_refund`, `hold_released`) | shop only; once per refund / intent |
 
 **Order metadata the emails read (written by the Click & Collect code, docs/contracts/click-collect.md):** `collection_code` (shown in "Ready for collection"; falls back to the order number), `ready_for_collection_at` (ISO time; "we'll hold it until" = +7 days), and `collection_expired_at` (set by the day-7 job just before it cancels, so the `order-cancelled` email says "not collected").
 
