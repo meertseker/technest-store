@@ -14,6 +14,8 @@ import { orderPayment } from "../utils/store-order"
 process.env.TECHNEST_TEST_PAYMENT_PROVIDER = "true"
 
 jest.setTimeout(10 * 60 * 1000)
+// Money paths: a test that only passes on a retry is a real fault, not noise (no retries here).
+jest.retryTimes(0)
 
 type Headers = { headers: Record<string, string> }
 
