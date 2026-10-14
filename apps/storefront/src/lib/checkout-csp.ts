@@ -3,9 +3,9 @@
  * fresh nonce by src/middleware.ts. Rule: the only third-party script on
  * /checkout is Stripe's.
  *
- * Stripe hosts: https://docs.stripe.com/security/guide#content-security-policy
- * (Stripe.js + Payment Element, 3DS via hooks.stripe.com, Link on link.com).
- * Apple Pay / Google Pay run inside Stripe's frames, so no extra hosts.
+ * Hosts come from src/lib/csp-hosts.js, shared with the site-wide report-only
+ * policy (security-headers.js) so the two cannot drift. Apple Pay / Google Pay
+ * run inside Stripe's frames, so no extra hosts.
  *
  * Scripts: 'nonce-…' + 'strict-dynamic'. Next.js adds the nonce to its own
  * scripts when it sees this CSP on the request; scripts those load (e.g.
@@ -13,22 +13,13 @@
  * hosts stay listed for browsers without strict-dynamic support.
  */
 
-const STRIPE_JS = ["https://js.stripe.com", "https://*.js.stripe.com"]
-const LINK = ["https://link.com", "https://*.link.com"]
+import { LINK, LINK_IMAGES, STRIPE_API, STRIPE_FRAMES, STRIPE_IMAGES, STRIPE_JS, origin } from "./csp-hosts"
 
 export type CheckoutCspOptions = {
   isDev: boolean
   nonce: string
   backendUrl?: string
   imageHost?: string
-}
-
-function origin(url: string): string | null {
-  try {
-    return new URL(url).origin
-  } catch {
-    return null
-  }
 }
 
 export function buildCheckoutCsp({ isDev, nonce, backendUrl, imageHost }: CheckoutCspOptions): string {
@@ -46,19 +37,19 @@ export function buildCheckoutCsp({ isDev, nonce, backendUrl, imageHost }: Checko
       "'self'",
       "data:",
       "blob:",
-      "https://*.stripe.com",
-      "https://*.link.com",
+      ...STRIPE_IMAGES,
+      ...LINK_IMAGES,
       imageHost ? `https://${imageHost}` : null,
     ],
     "font-src": ["'self'", "data:"],
     "connect-src": [
       "'self'",
-      "https://api.stripe.com",
+      ...STRIPE_API,
       ...LINK,
       backendUrl ? origin(backendUrl) : null,
       ...(isDev ? ["ws:"] : []),
     ],
-    "frame-src": [...STRIPE_JS, "https://hooks.stripe.com", ...LINK],
+    "frame-src": [...STRIPE_FRAMES, ...LINK],
     "frame-ancestors": ["'none'"],
     "object-src": ["'none'"],
     "base-uri": ["'self'"],

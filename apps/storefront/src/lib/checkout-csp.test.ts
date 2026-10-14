@@ -55,6 +55,15 @@ describe("checkout CSP", () => {
     )
   })
 
+  it("allows no Turnstile and no Sentry on checkout (only Stripe and Link off-site)", () => {
+    expect(prod).not.toContain("challenges.cloudflare.com")
+    expect(prod).not.toContain("sentry")
+    const offsite = prod.split(/[;\s]+/).filter((v) => v.startsWith("https://"))
+    for (const host of offsite) {
+      expect(host, host).toMatch(/^https:\/\/(\*\.)?((js|api|hooks)\.)?(stripe|link)\.com$|^https:\/\/(api|images)\.technest\.co\.uk$/)
+    }
+  })
+
   it("allows product images from our image host and Stripe's", () => {
     expect(directive(prod, "img-src")).toEqual(
       expect.arrayContaining(["'self'", "https://images.technest.co.uk", "https://*.stripe.com"])
