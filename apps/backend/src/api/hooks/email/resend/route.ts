@@ -52,8 +52,16 @@ export async function POST(req: MedusaRequest<ResendEvent>, res: MedusaResponse)
   try {
     if (recipients.length) {
       const notifications = req.scope.resolve(Modules.NOTIFICATION)
+      // `status` is a column of the notification table but not part of the
+      // published filter type (the sweeper filters on it the same way).
+      const filters: Record<string, unknown> = {
+        to: recipients,
+        channel: "email",
+        status: "success",
+        created_at: { $gte: new Date(Date.now() - MATCH_WINDOW_MS) },
+      }
       const [match] = await notifications.listNotifications(
-        { to: recipients, channel: "email", status: "success", created_at: { $gte: new Date(Date.now() - MATCH_WINDOW_MS) } },
+        filters as Parameters<typeof notifications.listNotifications>[0],
         { select: ["id", "template", "resource_type", "resource_id"], order: { created_at: "DESC" }, take: 1 }
       )
       if (match) {
