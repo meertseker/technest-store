@@ -27,10 +27,15 @@ export async function GET(req: NextRequest) {
   // replaces the one they have: its outcome is shown on their own basket page.
   const cookieCartId = await getCartId()
   const ownBasket = !cookieCartId || cookieCartId === cartId
-  const backToPayment = (code: "payment_failed" | "declined" | "order_failed" | "hold_released" | "processing") =>
+  type ReturnCode = "payment_failed" | "declined" | "order_failed" | "hold_released" | "processing"
+  // The basket page has fewer notices; a payment still processing keeps its own
+  // (never "failed": the shopper must not pay again).
+  const basketCode = (code: ReturnCode) =>
+    code === "processing" ? "processing" : code === "declined" || code === "payment_failed" ? "payment_failed" : "order_failed"
+  const backToPayment = (code: ReturnCode) =>
     ownBasket
       ? seeOther(`/checkout?step=payment&payment_error=${code}`)
-      : seeOther(`/basket?error=${code === "declined" || code === "payment_failed" ? "payment_failed" : "order_failed"}`)
+      : seeOther(`/basket?error=${basketCode(code)}`)
   const rejected = () => seeOther("/checkout?step=payment&payment_error=payment_failed")
 
   if (!cartId || !paymentIntent || !paymentIntentClientSecret) {

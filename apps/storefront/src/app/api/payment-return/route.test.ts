@@ -101,6 +101,13 @@ describe("GET /api/payment-return (Stripe redirect back)", () => {
       expect(res.headers.get("location")).toBe("/basket?error=order_failed")
     })
 
+    it("a payment the bank is still processing is never shown as failed", async () => {
+      const res = await GET(url({ ...good, redirect_status: "processing" }))
+      expect(placeOrder).not.toHaveBeenCalled()
+      expect(setCartId).not.toHaveBeenCalled()
+      expect(res.headers.get("location")).toBe("/basket?error=processing")
+    })
+
     it("an error while completing does not send them to a payment step for their own basket", async () => {
       placeOrder.mockRejectedValue(new Error("Payment authorization failed."))
       const res = await GET(url({ ...good, redirect_status: "succeeded" }))
