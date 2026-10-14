@@ -1,12 +1,16 @@
 # Small-box override: a CX23 (2 vCPU, 4 GB), used for staging and for the restore drill.
 # On the server, set in /opt/technest/.env:
 #   COMPOSE_FILE=docker-compose.yml:docker-compose.staging.yml
+# NODE_OPTIONS: the heap at about 70 % of each memory limit, as in docker-compose.yml.
 services:
   server:
+    environment: { NODE_OPTIONS: --max-old-space-size=700 }
     deploy: { resources: { limits: { cpus: "1", memory: 1g } } }
   worker:
+    environment: { NODE_OPTIONS: --max-old-space-size=530 }
     deploy: { resources: { limits: { cpus: "1", memory: 768m } } }
   storefront:
+    environment: { NODE_OPTIONS: --max-old-space-size=350 }
     deploy: { resources: { limits: { cpus: "1", memory: 512m } } }
   postgres:
     deploy: { resources: { limits: { memory: 512m } } }
