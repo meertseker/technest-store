@@ -134,6 +134,7 @@ jobs:
       - name: docker compose config (dummy values)
         env:
           POSTGRES_PASSWORD: x
+          REDIS_PASSWORD: x
           JWT_SECRET: x
           COOKIE_SECRET: x
           S3_FILE_URL: x
@@ -144,6 +145,8 @@ jobs:
           GHCR_OWNER: ci
           SMTP_PASS: x
         run: docker compose --profile ops config --quiet
+      - name: Compose (networks, Redis password, heap limits, ports, image pins)
+        run: bash infra/compose/test-compose.sh
       - name: Deploy script (pull, migrate, tag, start) against a stand-in docker
         run: bash infra/deploy/test-deploy.sh
       - name: Deploy gate and key setup (what the deploy key may ask for)
