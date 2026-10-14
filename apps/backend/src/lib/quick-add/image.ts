@@ -5,8 +5,11 @@ export const MAX_ANALYZE_BYTES = 25 * 1024 * 1024
 /** Refuse decompression bombs before sharp allocates them. */
 export const MAX_ANALYZE_PIXELS = 50_000_000
 /**
- * Claude downsizes anything larger than ~1568 px on the long edge anyway, so
- * sending more only costs upload time and tokens.
+ * Long edge of the JPEG sent for analysis. The current model reads images up to
+ * 2576 px on the long edge (older models stopped at 1568 px), but a full-size
+ * image costs about three times the image tokens. Reading a label and a product
+ * type works at 1568 px, so we keep it there for cost; raise it only if
+ * small print on packaging is being misread.
  */
 export const CLAUDE_IMAGE_LONG_EDGE = 1568
 /** The API's per-image limit is 5 MB of base64; a 1568 px JPEG is far below it. */
