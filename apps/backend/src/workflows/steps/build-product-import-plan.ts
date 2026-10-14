@@ -175,10 +175,64 @@ async function loadExistingVariants(
   return result
 }
 
+/**
+ * Existing SKUs outside the part being written: only what the plan needs from
+ * other rows to judge this part (is the SKU known, its product's handle, status
+ * and number of options). The rest is left empty; those rows are not written.
+ */
+async function loadExistingVariantsLite(
+  query: Query,
+  skus: string[]
+): Promise<Map<string, ExistingVariant>> {
+  const result = new Map<string, ExistingVariant>()
+  if (!skus.length) return result
+  const { data: variants } = await query.graph({
+    entity: "product_variant",
+    fields: ["id", "sku", "manage_inventory", "product.id", "product.title", "product.handle", "product.status"],
+    filters: { sku: skus },
+  })
+  const productIds = [...new Set(variants.map((v) => v.product?.id).filter(Boolean))]
+  if (!productIds.length) return result
+  const { data: products } = await query.graph({
+    entity: "product",
+    fields: ["id", "variants.id"],
+    filters: { id: productIds },
+  })
+  const variantCount = new Map(products.map((p) => [p.id, p.variants?.length ?? 1]))
+  for (const v of variants) {
+    if (!v.sku || !v.product) continue
+    result.set(v.sku, {
+      variant_id: v.id,
+      product_id: v.product.id,
+      product_title: v.product.title,
+      product_handle: v.product.handle,
+      product_status: v.product.status,
+      variant_count: variantCount.get(v.product.id) ?? 1,
+      manage_inventory: Boolean(v.manage_inventory),
+      inventory_item_id: null,
+      level_exists: false,
+      category_ids: [],
+      devices: [],
+      safety_marking: "none",
+      wattage: null,
+      tags: [],
+      prices: [],
+    })
+  }
+  return result
+}
+
 export type BuildProductImportPlanInput = {
   csv: string
   /** Import (not preview): a file-level error fails the step, so nothing is written. */
   fail_on_file_errors?: boolean
+  /**
+   * Only this part of the file will be written: load full details for its SKUs
+   * and the light ones for the rest, so a part costs the same whatever the
+   * size of the file or of the catalogue. Rows outside the part are only good
+   * for judging the part's rows; never write them from this plan.
+   */
+  detail_part?: { index: number; size: number }
 }
 
 /**
@@ -187,7 +241,7 @@ export type BuildProductImportPlanInput = {
  */
 export const buildProductImportPlanStep = createStep(
   "build-product-import-plan",
-  async ({ csv, fail_on_file_errors }: BuildProductImportPlanInput, { container }) => {
+  async ({ csv, fail_on_file_errors, detail_part }: BuildProductImportPlanInput, { container }) => {
     const query = container.resolve(ContainerRegistrationKeys.QUERY) as unknown as Query
     const read = readImportRows(csv)
     if (fail_on_file_errors && read.file_errors.length) {
@@ -195,17 +249,24 @@ export const buildProductImportPlanStep = createStep(
     }
     const defaults = await loadDefaults(query)
 
-    const skus = [...new Set(read.rows.map((r) => r.input.sku).filter(Boolean))]
-    const [variantsBySku, { data: products }, categories, { data: devices }] =
+    const skusOf = (rows: typeof read.rows) => [...new Set(rows.map((r) => r.input.sku).filter(Boolean))]
+    const detailRows = detail_part
+      ? read.rows.slice(detail_part.index * detail_part.size, (detail_part.index + 1) * detail_part.size)
+      : read.rows
+    const detailSkus = skusOf(detailRows)
+    const detailSet = new Set(detailSkus)
+    const otherSkus = skusOf(read.rows).filter((sku) => !detailSet.has(sku))
+    const [detailed, lite, { data: products }, categories, { data: devices }] =
       await Promise.all([
-        loadExistingVariants(query, skus, defaults.location_id),
+        loadExistingVariants(query, detailSkus, defaults.location_id),
+        loadExistingVariantsLite(query, otherSkus),
         query.graph({ entity: "product", fields: ["id", "handle"] }),
         loadCategories(query),
         query.graph({ entity: "device", fields: ["id", "slug"] }),
       ])
 
     const plan = buildImportPlan(read, {
-      variantsBySku,
+      variantsBySku: new Map([...lite, ...detailed]),
       productIdByHandle: new Map(products.map((p) => [p.handle, p.id])),
       categories,
       deviceIdBySlug: new Map(devices.map((d) => [d.slug, d.id])),

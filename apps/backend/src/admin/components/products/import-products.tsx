@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { ChangeEvent, useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { sdk } from "../../lib/client"
+import { importFailureMessage } from "../../lib/import-errors"
+import { ImportProgress, importInParts } from "../../lib/import-parts"
 import { IMPORT_TEMPLATE_CSV, IMPORT_TEMPLATE_FILENAME } from "./import-template"
 import { ImportPlan, ImportResponse, PreviewResponse, PreviewRow } from "./import-types"
 
@@ -103,6 +105,7 @@ export const ImportProducts = () => {
   const [plan, setPlan] = useState<ImportPlan | null>(null)
   const [done, setDone] = useState<ImportResponse | null>(null)
   const [filter, setFilter] = useState<Filter>("all")
+  const [progress, setProgress] = useState<ImportProgress | null>(null)
 
   const preview = useMutation({
     mutationFn: (text: string) =>
@@ -117,11 +120,18 @@ export const ImportProducts = () => {
   })
 
   const commit = useMutation({
+    // One request per part of 200 rows: the whole file in one request takes longer
+    // than the proxy in front of the shop lets a request run.
     mutationFn: (text: string) =>
-      sdk.client.fetch<ImportResponse>("/admin/product-import", {
-        method: "POST",
-        body: { csv: text },
-      }),
+      importInParts(
+        (part) =>
+          sdk.client.fetch<ImportResponse>("/admin/product-import", {
+            method: "POST",
+            body: { csv: text, part },
+          }),
+        setProgress
+      ),
+    onSettled: () => setProgress(null),
     onSuccess: (result) => {
       setDone(result)
       setPlan(result.plan)
@@ -132,8 +142,10 @@ export const ImportProducts = () => {
       )
     },
     // The Import button is at the bottom of a long list; the message at the top is out of sight.
+    // A request the browser or the proxy gave up on may still be running on the server.
     onError: (error: Error) => {
-      toast.error("The import didn't run. Nothing was changed.", { description: error.message })
+      const { title, description } = importFailureMessage(error)
+      toast.error(title, { description })
     },
   })
 
@@ -176,7 +188,10 @@ export const ImportProducts = () => {
         : true
   )
   const importable = plan && !plan.file_errors.length ? plan.summary.create + plan.summary.update : 0
-  const requestError = (preview.error ?? commit.error) as Error | null
+  const commitFailure = commit.error ? importFailureMessage(commit.error) : null
+  const requestError = commitFailure
+    ? [commitFailure.title, commitFailure.description].filter(Boolean).join(" ")
+    : (preview.error as Error | null)?.message
 
   return (
     <Container className="divide-y p-0">
@@ -237,10 +252,20 @@ export const ImportProducts = () => {
         </div>
       )}
 
+      {progress && (
+        <div className="px-4 py-3 md:px-6">
+          <Text size="large" role="status" aria-atomic="true">
+            {progress.count && progress.count > 1
+              ? `Importing part ${progress.part} of ${progress.count}… Keep this page open.`
+              : "Importing… Keep this page open."}
+          </Text>
+        </div>
+      )}
+
       {(fileProblem || requestError) && (
         <div className="px-4 py-4 md:px-6">
           <Alert variant="error" role="alert">
-            {fileProblem ?? requestError?.message ?? "Something went wrong. Try again."}
+            {fileProblem ?? requestError ?? "Something went wrong. Try again."}
           </Alert>
         </div>
       )}
@@ -268,7 +293,11 @@ export const ImportProducts = () => {
               Check before importing: {plural(plan.summary.create, "new product")},{" "}
               {plural(plan.summary.update, "update")}
               {plan.summary.error ? `, ${plural(plan.summary.error, "row")} with problems` : ""}
-              {plan.summary.draft ? `, ${plural(plan.summary.draft, "draft")}` : ""}.
+              {plan.summary.draft ? `, ${plural(plan.summary.draft, "draft")}` : ""}
+              {plan.summary.existing_drafts_kept
+                ? ` (${plan.summary.existing_drafts_kept} already a draft and staying so: put "published" in the status column to make them live)`
+                : ""}
+              .
             </Text>
           )}
           {plan.file_warnings.map((w) => (

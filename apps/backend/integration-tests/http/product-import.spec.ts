@@ -165,6 +165,126 @@ medusaIntegrationTestRunner({
         })
       })
 
+      // What the admin page does: the file in parts of 200 rows, one request each, so no
+      // request comes near the proxy's 125 s limit (the whole file in one request took 150 s).
+      it("imports a 2000-row file in parts, each request well inside a minute (timed)", async () => {
+        const file = csv(
+          ...Array.from({ length: 2000 }, (_, i) => `IMP-FULL-${i},Full ${i},,,cases,2.50,,${i % 7},,,,,,,,,,`)
+        )
+        const count = await productCount()
+        const times: number[] = []
+        const answers: any[] = []
+        let parts = 1
+        for (let part = 0; part < parts; part++) {
+          const started = Date.now()
+          const answer = (await api.post("/admin/product-import", { csv: file, part }, admin)).data
+          times.push(Date.now() - started)
+          answers.push(answer)
+          parts = answer.part.count
+        }
+        console.info(`[timing] 2000-row import in ${parts} parts, ms per request: ${times.join(", ")}`)
+        expect(parts).toBe(10)
+        expect(answers[0].part).toEqual({ index: 0, count: 10, lines: { from: 2, to: 201 } })
+        expect(answers[9].part).toEqual({ index: 9, count: 10, lines: { from: 1802, to: 2001 } })
+        // Each answer carries the plan of its own part, built before that part was written.
+        expect(answers[0].plan.summary).toMatchObject({ rows: 200, create: 200, error: 0 })
+        expect(answers[9].plan.rows.map((r: any) => r.line)).toEqual(
+          Array.from({ length: 200 }, (_, i) => 1802 + i)
+        )
+        expect(answers.reduce((n, a) => n + a.plan.summary.create, 0)).toBe(2000)
+        expect(answers.reduce((n, a) => n + a.created, 0)).toBe(2000)
+        expect(answers.every((a) => a.updated === 0 && a.skipped === 0)).toBe(true)
+        expect(Math.max(...times)).toBeLessThan(60_000)
+        expect(await productCount()).toBe(count + 2000)
+        expect((await variantBySku("IMP-FULL-1999")).product.status).toBe("published")
+      })
+
+      it("keeps the parts already written when a later part fails, and refuses a part past the end", async () => {
+        const file = csv(
+          ...Array.from({ length: 250 }, (_, i) => `IMP-PT-${i},Pt ${i},,,cases,2.50,,1,,,,,,,,,CE,`)
+        )
+        const count = await productCount()
+        const first = (await api.post("/admin/product-import", { csv: file, part: 0 }, admin)).data
+        expect(first).toMatchObject({ created: 200, part: { index: 0, count: 2, lines: { from: 2, to: 201 } } })
+
+        const service = getContainer().resolve(PRODUCT_ATTRIBUTES_MODULE) as any
+        const spy = jest.spyOn(service, "createProductAttributes").mockRejectedValueOnce(new Error("boom"))
+        let failed: any
+        try {
+          failed = await api
+            .post("/admin/product-import", { csv: file, part: 1 }, admin)
+            .catch((e: any) => e.response)
+        } finally {
+          spy.mockRestore()
+        }
+        expect(failed.status).toBeGreaterThanOrEqual(400)
+        expect(await productCount()).toBe(count + 200)
+        expect(await variantBySku("IMP-PT-200")).toBeUndefined()
+
+        // Sending the parts again finishes the job; part 0 is now all updates.
+        const again0 = (await api.post("/admin/product-import", { csv: file, part: 0 }, admin)).data
+        const again1 = (await api.post("/admin/product-import", { csv: file, part: 1 }, admin)).data
+        expect(again0).toMatchObject({ created: 0, updated: 200 })
+        expect(again1).toMatchObject({ created: 50, updated: 0 })
+        expect(await productCount()).toBe(count + 250)
+
+        const past = await api
+          .post("/admin/product-import", { csv: file, part: 2 }, admin)
+          .catch((e: any) => e.response)
+        expect(past.status).toBe(400)
+        expect(past.data.message).toBe("This file has 2 parts; there is no part 3.")
+      })
+
+      it("writes a big file in chunks of 200 rows, one workflow run each", async () => {
+        const rows = Array.from(
+          { length: 450 },
+          (_, i) => `IMP-CHUNK-${i},Chunk ${i},,,cases,2.50,,1,,,,,,,,,,`
+        )
+        const result = await importCsv(csv(...rows))
+        expect(result).toMatchObject({ created: 450, updated: 0, skipped: 0 })
+        expect(result.chunks).toEqual([
+          { rows: 200, lines: { from: 2, to: 201 }, created: 200, updated: 0 },
+          { rows: 200, lines: { from: 202, to: 401 }, created: 200, updated: 0 },
+          { rows: 50, lines: { from: 402, to: 451 }, created: 50, updated: 0 },
+        ])
+        expect((await variantBySku("IMP-CHUNK-449")).product.status).toBe("published")
+      })
+
+      it("keeps the chunks already written when a later chunk fails, and a re-import finishes the job", async () => {
+        const rows = Array.from(
+          { length: 250 },
+          (_, i) => `IMP-PART-${i},Part ${i},,,cases,2.50,,1,,,,,,,,,CE,`
+        )
+        const service = getContainer().resolve(PRODUCT_ATTRIBUTES_MODULE) as any
+        const original = service.createProductAttributes.bind(service)
+        let calls = 0
+        // The second chunk's attribute write fails (every row has a safety marking, so every
+        // chunk writes attributes); the first chunk's run is already committed.
+        const spy = jest.spyOn(service, "createProductAttributes").mockImplementation((...args: any[]) => {
+          if (++calls === 2) return Promise.reject(new Error("boom"))
+          return original(...args)
+        })
+        const count = await productCount()
+        let res: any
+        try {
+          res = await api
+            .post("/admin/product-import", { csv: csv(...rows) }, admin)
+            .catch((e: any) => e.response)
+        } finally {
+          spy.mockRestore()
+        }
+        expect(res.status).toBeGreaterThanOrEqual(400)
+        expect(res.data.message).toMatch(/^200 rows \(lines 2 to 201\) were imported before a problem stopped the import/)
+        expect(res.data.message).toMatch(/import it again: rows already imported are updated, not added twice/)
+        expect(await productCount()).toBe(count + 200)
+        expect(await variantBySku("IMP-PART-199")).toBeDefined()
+        expect(await variantBySku("IMP-PART-200")).toBeUndefined()
+
+        const again = await importCsv(csv(...rows))
+        expect(again).toMatchObject({ created: 50, updated: 200, skipped: 0 })
+        expect(await productCount()).toBe(count + 250)
+      })
+
       it("refuses a file over the size and row limits", async () => {
         const tooLong = await api
           .post("/admin/product-import/preview", { csv: "sku\n" + "x".repeat(2_000_001) }, admin)

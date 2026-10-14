@@ -11,8 +11,9 @@ import {
   useQueryGraphStep,
 } from "@medusajs/medusa/core-flows"
 import { ProductStatus, ProductVariantWorkflowEvents } from "@medusajs/framework/utils"
+import { ImportChunkSummary } from "../lib/product-import/chunks"
 import { ImportPlan, PlanRow } from "../lib/product-import/plan"
-import { buildProductImportPlanStep } from "./steps/build-product-import-plan"
+import { buildProductImportPlanStep, ImportDefaults } from "./steps/build-product-import-plan"
 import { replaceDeviceLinksStep } from "./steps/replace-device-links"
 import { setImportProductCategoriesStep } from "./steps/set-import-product-categories"
 import { setImportVariantPricesStep } from "./steps/set-import-variant-prices"
@@ -25,7 +26,15 @@ export type ImportProductsResult = {
   created: number
   updated: number
   skipped: number
+  /** One entry per workflow run (the route writes a big file in chunks). */
+  chunks: ImportChunkSummary[]
+  /** Only when the request asked for one part of the file. */
+  part?: { index: number; count: number; lines: { from: number; to: number } }
 }
+
+/** A plan (or one chunk of it) with the defaults it was built against. */
+export type ImportProductRowsInput = { plan: ImportPlan; defaults: ImportDefaults }
+export type ImportProductRowsResult = { created: number; updated: number }
 
 const GBP = "gbp"
 const DEFAULT_OPTION = "Default option"
@@ -36,24 +45,22 @@ const ready = (plan: ImportPlan): Ready[] =>
   plan.file_errors.length ? [] : (plan.rows.filter((r) => r.resolved) as Ready[])
 
 /**
- * Imports a stock-list CSV: an idempotent upsert by SKU. Rows with errors are
- * skipped; every other row is written in one run, and a failure anywhere
- * rolls all of them back.
+ * Writes the importable rows of a plan: an idempotent upsert by SKU. Every
+ * row of the plan is written in one run, and a failure anywhere rolls all of
+ * them back. The route feeds it the plan of a file in chunks of
+ * IMPORT_CHUNK_ROWS, so a big file is several runs and a cut-off request
+ * keeps the chunks already written.
  *
  * Order matters for the publish guard (chargers need UKCA/CE, no vapes):
  * new products are created as drafts, attributes and device links are
  * written, then one product update sets category and final status, and the
  * guard hook checks the finished products.
  */
-// The id (and file name) is prefixed: Medusa's own CSV import is already "import-products".
-export const technestImportProductsWorkflow = createWorkflow(
-  "technest-import-products",
-  function (input: ImportProductsWorkflowInput) {
-    const planInput = transform({ input }, ({ input }) => ({
-      csv: input.csv,
-      fail_on_file_errors: true,
-    }))
-    const { plan, defaults } = buildProductImportPlanStep(planInput)
+export const technestImportProductRowsWorkflow = createWorkflow(
+  "technest-import-product-rows",
+  function (input: ImportProductRowsInput) {
+    const plan = input.plan
+    const defaults = input.defaults
 
     const createInput = transform({ plan, defaults }, ({ plan, defaults }) => ({
       products: ready(plan)
@@ -210,12 +217,49 @@ export const technestImportProductsWorkflow = createWorkflow(
     )
     batchInventoryItemLevelsWorkflow.runAsStep({ input: levels })
 
-    const result = transform({ plan, rows }, ({ plan, rows }) => ({
-      plan,
+    const result = transform({ rows }, ({ rows }) => ({
       created: rows.filter((r) => r.action === "create").length,
       updated: rows.filter((r) => r.action === "update").length,
-      skipped: plan.rows.length - rows.length,
     }))
+    return new WorkflowResponse<ImportProductRowsResult>(result)
+  }
+)
+
+/**
+ * Imports a stock-list CSV in one run: the plan, then every importable row.
+ * Rows with errors are skipped. The admin route does not use this any more
+ * (it plans once and commits in chunks); it stays for scripts and tests.
+ */
+// The id (and file name) is prefixed: Medusa's own CSV import is already "import-products".
+export const technestImportProductsWorkflow = createWorkflow(
+  "technest-import-products",
+  function (input: ImportProductsWorkflowInput) {
+    const planInput = transform({ input }, ({ input }) => ({
+      csv: input.csv,
+      fail_on_file_errors: true,
+    }))
+    const { plan, defaults } = buildProductImportPlanStep(planInput)
+    const written = technestImportProductRowsWorkflow.runAsStep({ input: { plan, defaults } })
+
+    const result = transform({ plan, written }, ({ plan, written }) => {
+      const importable = ready(plan)
+      return {
+        plan,
+        created: written.created,
+        updated: written.updated,
+        skipped: plan.rows.length - importable.length,
+        chunks: importable.length
+          ? [
+              {
+                rows: importable.length,
+                lines: { from: importable[0].line, to: importable[importable.length - 1].line },
+                created: written.created,
+                updated: written.updated,
+              },
+            ]
+          : [],
+      }
+    })
     return new WorkflowResponse<ImportProductsResult>(result)
   }
 )

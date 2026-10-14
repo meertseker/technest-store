@@ -45,8 +45,18 @@ Rules:
 - **Chargers and power products** (Chargers & Cables, Power Banks, Gaming > Charging and children) without
   UKCA/CE are imported as **drafts with a warning** instead of published.
 - An existing SKU on a product with **several variants** only gets its price and stock updated (warning).
-- Rows with errors are skipped; the rest are imported in one workflow run (all or nothing for those rows).
+- An existing SKU whose product is a **draft** stays a draft when the `status` column is blank, with a warning
+  (`existing_draft_kept: true`, counted in `summary.existing_drafts_kept`). This is what the leftovers of an
+  interrupted import look like: put `published` in the column to make them live (the safety guard still applies).
+- Rows with errors are skipped; the rest are imported in chunks of 200 rows, each its own workflow run
+  (all or nothing within a chunk). If a later chunk fails, the chunks before it stay imported and the
+  error says so (`N rows (lines a to b) were imported before a problem stopped the import ...`); importing
+  the same file again finishes the job.
 - Re-importing the same file changes nothing (idempotent upsert by SKU).
+- A 2000-row file takes two minutes or more server-side, longer than the proxy lets a request run, so the
+  admin page sends it in **parts** of 200 data rows (`part: 0, 1, ...`), one request each (about 15 s each).
+  If the page reports a network error or a timeout, the import may still be running: check the product
+  list before importing again (re-importing is safe).
 
 ## Admin API
 
@@ -54,9 +64,23 @@ Both take `{ "csv": string }` (max 2,000,000 chars; body limit 5 MB).
 
 `POST /admin/product-import/preview` -> `200 { "plan": ImportPlan }`. Writes nothing.
 
-`POST /admin/product-import` -> `200 { "plan": ImportPlan, "created": number, "updated": number, "skipped": number }`.
-The plan is rebuilt on the server (the client's preview is never trusted). A file-level error
-(no `sku` column, duplicate column, no rows, > 2000 rows, broken quotes) -> `400 invalid_data`.
+`POST /admin/product-import` takes `{ "csv": string, "part"?: number }` ->
+`200 { "plan": ImportPlan, "created": number, "updated": number, "skipped": number,
+"chunks": { "rows": number, "lines": { "from": number, "to": number }, "created": number, "updated": number }[],
+"part"?: { "index": number, "count": number, "lines": { "from": number, "to": number } } }`.
+
+With `part` (0-based; what the admin page sends): the plan is built from the whole file, then only data rows
+`part*200` to `part*200+199` (by position in the file) are written, in one workflow run; `created`/`updated`/
+`skipped` count that part only, `plan` holds that part's rows only (with their own summary; the page puts the
+parts together) and `part.count` says how many parts the file has. Full details (prices, stock, attributes) are
+loaded for the part's SKUs only, so a part takes about as long whatever the size of the file or the catalogue. Send part 0 first, then the
+rest in order. A part past the end -> `400 invalid_data` ("This file has N parts; there is no part M."). A part
+that fails rolls back on its own; earlier parts stay written. Without `part`, the whole file is written in
+one request as below.
+The plan is rebuilt on the server (the client's preview is never trusted), then written in chunks of 200
+rows (one `chunks` entry each). A file-level error (no `sku` column, duplicate column, no rows, > 2000 rows,
+broken quotes) -> `400 invalid_data`. A chunk that fails after earlier chunks were written -> the error of
+the failing chunk (usually `400 invalid_data`) with a message that names the lines already imported.
 
 ```ts
 type ImportPlan = {
@@ -70,9 +94,11 @@ type ImportPlan = {
     status: "draft" | "published" | null   // status after the import; null for error rows
     errors: string[]          // plain-English, owner-facing
     warnings: string[]
+    existing_draft_kept: boolean  // existing draft + blank status column: stays a draft
     input: object             // the parsed row
     resolved?: object         // internal ids the workflow writes (not for display)
   }[]
-  summary: { rows: number; create: number; update: number; error: number; with_warnings: number; draft: number }
+  summary: { rows: number; create: number; update: number; error: number; with_warnings: number; draft: number;
+             existing_drafts_kept: number }
 }
 ```
