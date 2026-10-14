@@ -17,6 +17,7 @@ import {
   sessionDecision,
   toPence,
   toStripeSessionView,
+  intentIdFromSecret,
 } from "./helpers"
 
 describe("money at the boundary", () => {
@@ -303,5 +304,15 @@ describe("sessionErrorMessage", () => {
     expect(sessionErrorMessage(refused(500, "An unknown error occurred."))).toBe(SESSION_FAILED)
     expect(sessionErrorMessage(new Error("fetch failed"))).toBe(SESSION_FAILED)
     expect(sessionErrorMessage(refused(400, ""))).toBe(SESSION_FAILED)
+  })
+})
+
+describe("intentIdFromSecret", () => {
+  it("takes the intent id out of a client secret and nothing else", () => {
+    expect(intentIdFromSecret("pi_3Abc_secret_xyz")).toBe("pi_3Abc")
+    expect(intentIdFromSecret("pi_1_secret_2")).toBe("pi_1")
+    for (const bad of [null, undefined, "", "pi_1", "seti_1_secret_2", "pi_1 x_secret_2"]) {
+      expect(intentIdFromSecret(bad), String(bad)).toBeNull()
+    }
   })
 })

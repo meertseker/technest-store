@@ -131,6 +131,20 @@ export function toStripeSessionView(session: SessionLike | null): StripeSessionV
   }
 }
 
+/**
+ * The PaymentIntent id inside a client secret ("pi_123_secret_abc" -> "pi_123"),
+ * or null. Lets the browser name the intent it holds without sending the secret.
+ */
+export function intentIdFromSecret(secret: string | null | undefined): string | null {
+  if (typeof secret !== "string") return null
+  const id = secret.split("_secret_")[0]
+  return isIntentId(id) && secret.startsWith(`${id}_secret_`) ? id : null
+}
+
+export function isIntentId(value: unknown): value is string {
+  return typeof value === "string" && /^pi_[A-Za-z0-9]{1,255}$/.test(value)
+}
+
 // ---------------------------------------------------------------------------
 // Klarna copy
 

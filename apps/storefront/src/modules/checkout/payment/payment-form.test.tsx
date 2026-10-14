@@ -21,14 +21,15 @@ vi.mock("@stripe/react-stripe-js", () => ({
   useElements: () => ({}),
 }))
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }))
-vi.mock("./actions", () => ({ completeOrder: vi.fn(), preparePaymentSession: vi.fn() }))
+vi.mock("./actions", () => ({ completeOrder: vi.fn(), preparePaymentSession: vi.fn(), replaceCancelledPayment: vi.fn() }))
 
-import { completeOrder, preparePaymentSession } from "./actions"
+import { completeOrder, preparePaymentSession, replaceCancelledPayment } from "./actions"
 import { NETWORK_ERROR, ORDER_FAILED } from "./helpers"
 import PaymentForm, { type PaymentFormProps } from "./payment-form"
 
 const complete = vi.mocked(completeOrder)
 const prepare = vi.mocked(preparePaymentSession)
+const replace = vi.mocked(replaceCancelledPayment)
 
 const base: PaymentFormProps = {
   mode: "stripe",
@@ -46,6 +47,7 @@ beforeEach(() => {
   refresh.mockReset()
   complete.mockReset()
   prepare.mockReset()
+  replace.mockReset()
 })
 afterEach(cleanup)
 
@@ -142,13 +144,31 @@ describe("PaymentForm (Stripe)", () => {
     confirmPayment.mockResolvedValue({
       error: { type: "invalid_request_error", code: "payment_intent_unexpected_state", payment_intent: { status: "canceled" } },
     })
+    replace.mockResolvedValue({ ok: true })
     render(<PaymentForm {...base} />)
     await waitFor(() => expect((placeButton() as HTMLButtonElement).disabled).toBe(false))
     fireEvent.click(placeButton())
     expect((await screen.findByTestId("error-summary")).textContent).toContain("basket changed")
-    // the page is refreshed so the server sees the dead session and creates a new one
+    // the dead intent is replaced on the server first (only its id is sent, never the secret),
+    // then the page is refreshed and mounts the new one
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1))
+    expect(replace).toHaveBeenCalledWith("pi_1")
+    expect(replace.mock.invocationCallOrder[0]).toBeLessThan(refresh.mock.invocationCallOrder[0])
     expect(complete).not.toHaveBeenCalled()
+  })
+
+  it("when the cancelled intent can't be replaced, says why and does not remount the dead one", async () => {
+    confirmPayment.mockResolvedValue({
+      error: { type: "invalid_request_error", code: "payment_intent_unexpected_state", payment_intent: { status: "canceled" } },
+    })
+    replace.mockResolvedValue({ ok: false, message: "We couldn't load the secure payment form." })
+    render(<PaymentForm {...base} />)
+    await waitFor(() => expect((placeButton() as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(placeButton())
+    await waitFor(() =>
+      expect(screen.getByTestId("error-summary").textContent).toContain("We couldn't load the secure payment form.")
+    )
+    expect(refresh).not.toHaveBeenCalled()
   })
 
   it("initiates the session when the total changed, then refreshes", async () => {

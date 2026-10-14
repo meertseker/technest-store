@@ -8,12 +8,13 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import type { FieldError } from "@lib/checkout/validate"
 import ErrorSummary from "@modules/checkout/sections/error-summary"
-import { completeOrder, preparePaymentSession } from "./actions"
+import { completeOrder, preparePaymentSession, replaceCancelledPayment } from "./actions"
 import {
   NETWORK_ERROR,
   SESSION_FAILED,
   classifyConfirmResult,
   formatPenceExact,
+  intentIdFromSecret,
   klarnaPaymentNote,
   type StripeSessionView,
 } from "./helpers"
@@ -219,9 +220,20 @@ function StripeCheckout({
       return
     }
     if (outcome.kind === "stale") {
-      // the server sees the dead session on re-render and creates a new one (SessionLoader)
-      setPhase("idle")
+      // The session can still look valid to the server (same total, "authorized"), so a
+      // plain refresh would mount the same dead intent: replace it first, then refresh.
       fail(outcome.message)
+      let res: Awaited<ReturnType<typeof replaceCancelledPayment>>
+      try {
+        res = await replaceCancelledPayment(intentIdFromSecret(session.client_secret) ?? "")
+      } catch {
+        res = { ok: false, message: SESSION_FAILED }
+      }
+      setPhase("idle")
+      if (!res.ok) {
+        fail(res.message)
+        return
+      }
       router.refresh()
       return
     }

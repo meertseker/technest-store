@@ -4,7 +4,19 @@ import { CHECKOUT_CART_FIELDS } from "@lib/data/basket"
 import { initiatePaymentSession, placeOrder, retrieveCart } from "@lib/data/cart"
 import { reportUnexpected } from "@lib/monitoring/report"
 import { unstable_rethrow } from "next/navigation"
-import { HOLD_RELEASED, ORDER_FAILED, PAYMENT_NOT_AUTHORISED, SESSION_FAILED, sessionErrorMessage, providerForMode, sessionDecision } from "./helpers"
+import {
+  HOLD_RELEASED,
+  ORDER_FAILED,
+  PAYMENT_NOT_AUTHORISED,
+  SESSION_FAILED,
+  STRIPE_PROVIDER_ID,
+  findSession,
+  intentIdFromSecret,
+  isIntentId,
+  providerForMode,
+  sessionDecision,
+  sessionErrorMessage,
+} from "./helpers"
 import { getPaymentMode } from "./mode"
 
 /**
@@ -53,6 +65,40 @@ export async function preparePaymentSession(): Promise<PaymentActionResult> {
   if (!provider) return { ok: false, message: SESSION_FAILED }
   try {
     await ensureSession(cart, provider)
+    return { ok: true }
+  } catch (e) {
+    await reportUnexpected(e, "checkout.payment-session")
+    return { ok: false, message: sessionErrorMessage(e) }
+  }
+}
+
+/**
+ * Stripe reported the form's PaymentIntent as cancelled (for example the backend
+ * released the hold after refusing the order). The payment session can still
+ * read "authorized" for the same total, so the page would mount the dead intent
+ * again; this starts a new session instead. Only when the cancelled intent is
+ * still the basket's own: if another tab already replaced it, the page simply
+ * picks up the new one. The browser sends the intent id, never the secret.
+ */
+export async function replaceCancelledPayment(intentId: string): Promise<PaymentActionResult> {
+  if (!isIntentId(intentId)) return { ok: false, message: SESSION_FAILED }
+  let cart: Awaited<ReturnType<typeof loadCart>>
+  try {
+    cart = await loadCart()
+  } catch {
+    return { ok: false, message: SESSION_FAILED }
+  }
+  if (!cart) return { ok: false, message: CART_GONE }
+  if ((await getPaymentMode(cart.region_id ?? "")) !== "stripe") return { ok: false, message: SESSION_FAILED }
+  try {
+    const current = findSession(cart.payment_collection, STRIPE_PROVIDER_ID)
+    const secret = current?.data?.client_secret
+    if (current && intentIdFromSecret(typeof secret === "string" ? secret : null) !== intentId) {
+      // already replaced (another tab, or a total change): make sure it is usable
+      await ensureSession(cart, STRIPE_PROVIDER_ID)
+    } else {
+      await initiatePaymentSession(cart, { provider_id: STRIPE_PROVIDER_ID })
+    }
     return { ok: true }
   } catch (e) {
     await reportUnexpected(e, "checkout.payment-session")

@@ -19,7 +19,7 @@ vi.mock("@sentry/nextjs", () => ({ captureException: (...a: unknown[]) => captur
 /** What reaches monitoring: [error, where it was handled] */
 const reported = () => captureException.mock.calls.map(([error, hint]) => [error, hint?.tags?.handled_in])
 
-import { completeOrder, preparePaymentSession } from "./actions"
+import { completeOrder, preparePaymentSession, replaceCancelledPayment } from "./actions"
 import { ORDER_FAILED, PAYMENT_NOT_AUTHORISED, SESSION_FAILED } from "./helpers"
 
 const backendDown = Object.assign(new Error("Service Unavailable"), { status: 503 })
@@ -101,5 +101,67 @@ describe("an order the backend refused because the payment was not authorised", 
     await expect(completeOrder()).resolves.toEqual({ ok: false, message: PAYMENT_NOT_AUTHORISED })
     expect(PAYMENT_NOT_AUTHORISED).not.toContain("authorised but")
     expect(reported()).toEqual([])
+  })
+})
+
+// Stripe answers "canceled" when the intent behind the form was cancelled elsewhere, for
+// example by the backend releasing the hold after a refused order. The payment session can
+// still read "authorized" for the same total, so the page alone would mount the dead intent
+// again: the form asks for that intent to be replaced.
+describe("replacing a payment intent that Stripe reports as cancelled", () => {
+  const live = (secret: string) => ({
+    ...cart,
+    payment_collection: {
+      amount: 10,
+      payment_sessions: [
+        { provider_id: "pp_stripe_stripe", status: "authorized", amount: 10, data: { client_secret: secret } },
+      ],
+    },
+  })
+
+  it("creates a new payment session when the cancelled intent is still the basket's own", async () => {
+    retrieveCart.mockResolvedValue(live("pi_dead_secret_abc"))
+    await expect(replaceCancelledPayment("pi_dead")).resolves.toEqual({ ok: true })
+    expect(initiatePaymentSession).toHaveBeenCalledTimes(1)
+    expect(initiatePaymentSession.mock.calls[0][1]).toEqual({ provider_id: "pp_stripe_stripe" })
+  })
+
+  it("leaves a session alone that another tab already replaced", async () => {
+    retrieveCart.mockResolvedValue(live("pi_new_secret_def"))
+    await expect(replaceCancelledPayment("pi_dead")).resolves.toEqual({ ok: true })
+    expect(initiatePaymentSession).not.toHaveBeenCalled()
+  })
+
+  it("refuses anything that is not a payment intent id, without touching the basket", async () => {
+    for (const bad of ["", "pi_dead_secret_abc", "seti_1", "pi_1 ", 42 as unknown as string]) {
+      await expect(replaceCancelledPayment(bad)).resolves.toEqual({ ok: false, message: SESSION_FAILED })
+    }
+    expect(retrieveCart).not.toHaveBeenCalled()
+    expect(initiatePaymentSession).not.toHaveBeenCalled()
+  })
+
+  it("does nothing outside Stripe mode", async () => {
+    getPaymentMode.mockResolvedValue("manual")
+    retrieveCart.mockResolvedValue(live("pi_dead_secret_abc"))
+    await expect(replaceCancelledPayment("pi_dead")).resolves.toEqual({ ok: false, message: SESSION_FAILED })
+    expect(initiatePaymentSession).not.toHaveBeenCalled()
+  })
+
+  it("a refused new session shows the backend's reason (an ordinary refusal, no alert)", async () => {
+    retrieveCart.mockResolvedValue(live("pi_dead_secret_abc"))
+    initiatePaymentSession.mockRejectedValue(Object.assign(new Error("Add another item to your basket."), { status: 400 }))
+    await expect(replaceCancelledPayment("pi_dead")).resolves.toEqual({
+      ok: false,
+      message: "Add another item to your basket.",
+    })
+    expect(reported()).toEqual([])
+  })
+
+  it("a backend failure while replacing reaches monitoring", async () => {
+    retrieveCart.mockResolvedValue(live("pi_dead_secret_abc"))
+    const error = Object.assign(new Error("Service unavailable."), { status: 503 })
+    initiatePaymentSession.mockRejectedValue(error)
+    await expect(replaceCancelledPayment("pi_dead")).resolves.toEqual({ ok: false, message: SESSION_FAILED })
+    expect(reported()).toEqual([[error, "checkout.payment-session"]])
   })
 })
