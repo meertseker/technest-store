@@ -1,22 +1,25 @@
 import { medusaIntegrationTestRunner } from "@medusajs/test-utils"
-import { Modules } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import {
   createOrderFulfillmentWorkflow,
   createOrderShipmentWorkflow,
   createOrderWorkflow,
+  updateRegionsWorkflow,
 } from "@medusajs/medusa/core-flows"
 import { collectLockKey } from "../../src/lib/click-collect"
 import { seedTechNest } from "../../src/scripts/seed"
 import { captureDeliveryOrderWorkflow } from "../../src/workflows/capture-delivery-order"
-import { adminHeaders } from "../helpers/auth"
+import { adminHeaders, storeHeaders } from "../helpers/auth"
+import { waitForBackgroundWork } from "../helpers/background"
 import {
   orderOf,
   placeAuthorisedOrder,
   recordEvents,
   settle,
   shippingOptionIdsByCode,
+  TEST_PROVIDER_ID,
 } from "../helpers/orders"
-import { resetPaymentRecorder } from "../helpers/recording-payment-provider"
+import { recordedPaymentCalls, resetPaymentRecorder } from "../helpers/recording-payment-provider"
 
 process.env.TECHNEST_TEST_PAYMENT_PROVIDER = "true"
 
@@ -29,23 +32,78 @@ medusaIntegrationTestRunner({
   env: {},
   testSuite: ({ api, getContainer }) => {
     let admin: Headers
+    let store: Headers
     let regionId: string
+    let locationId: string
     let options: Record<string, string>
     let events: ReturnType<typeof recordEvents>
+    // A seeded product with tracked stock, for orders placed through the cart.
+    let variantId: string
+    let inventoryItemId: string
 
     beforeAll(async () => {
       const container = getContainer()
       const seeded = await seedTechNest(container)
       regionId = seeded.region.id
+      locationId = seeded.stockLocation.id
+      await updateRegionsWorkflow(container).run({
+        input: { selector: { id: regionId }, update: { payment_providers: [TEST_PROVIDER_ID] } },
+      })
       options = await shippingOptionIdsByCode(container)
       admin = await adminHeaders(api, container)
+      store = await storeHeaders(container)
+      const { data } = await container.resolve(ContainerRegistrationKeys.QUERY).graph({
+        entity: "product",
+        fields: ["variants.id", "variants.manage_inventory", "variants.inventory_items.inventory_item_id"],
+        filters: { handle: "clear-shockproof-case" },
+      })
+      const variant = (data[0] as any).variants[0]
+      expect(variant.manage_inventory).toBe(true)
+      variantId = variant.id
+      inventoryItemId = variant.inventory_items[0].inventory_item_id
       events = recordEvents(container, ["shipment.created"])
+      await waitForBackgroundWork(container)
     })
 
     beforeEach(() => {
       resetPaymentRecorder()
       events.clear()
     })
+    afterEach(() => waitForBackgroundWork(getContainer()))
+
+    /** Units on the shelf and units set aside for orders, at the shop. */
+    const stock = async () => {
+      const [level] = await getContainer()
+        .resolve(Modules.INVENTORY)
+        .listInventoryLevels({ inventory_item_id: inventoryItemId, location_id: locationId })
+      return { on_shelf: Number(level.stocked_quantity), set_aside: Number(level.reserved_quantity) }
+    }
+    const reservationsOf = async (orderId: string) => {
+      const order = await getContainer().resolve(Modules.ORDER).retrieveOrder(orderId, { relations: ["items"] })
+      return getContainer()
+        .resolve(Modules.INVENTORY)
+        .listReservationItems({ line_item_id: (order.items ?? []).map((i) => i.id) })
+    }
+
+    /**
+     * A delivery order as a shopper places it: cart with a real, tracked variant, address,
+     * Standard delivery, payment authorised by the recording provider, completed. The
+     * order.placed capture then runs in the background, as in production.
+     */
+    async function placeDeliveryOrderThroughCart(quantity = 2) {
+      const address = { first_name: "Sam", last_name: "Smith", address_1: "1 High St", city: "London", postal_code: "SE16 1AA", country_code: "gb" }
+      const { data: created } = await api.post("/store/carts", { region_id: regionId, email: "shopper@example.com" }, store)
+      const cartId = created.cart.id as string
+      await api.post(`/store/carts/${cartId}/line-items`, { variant_id: variantId, quantity }, store)
+      await api.post(`/store/carts/${cartId}`, { shipping_address: address, billing_address: address }, store)
+      await api.post(`/store/carts/${cartId}/shipping-methods`, { option_id: options["standard"] }, store)
+      const { data: pc } = await api.post("/store/payment-collections", { cart_id: cartId }, store)
+      await api.post(`/store/payment-collections/${pc.payment_collection.id}/payment-sessions`, { provider_id: TEST_PROVIDER_ID }, store)
+      const { data } = await api.post(`/store/carts/${cartId}/complete`, {}, store)
+      if (data.type !== "order") throw new Error(`setup: cart did not complete: ${JSON.stringify(data.error ?? data)}`)
+      await waitForBackgroundWork(getContainer())
+      return data.order.id as string
+    }
 
     const deliveryOrder = () =>
       placeAuthorisedOrder(getContainer(), {
@@ -67,8 +125,17 @@ medusaIntegrationTestRunner({
       })
     const list = (status: string) =>
       api.get(`/admin/delivery-orders?status=${status}`, admin).catch((e: any) => e.response)
-    const ship = (id: string) =>
-      api.post(`/admin/delivery-orders/${id}/shipped`, {}, admin).catch((e: any) => e.response)
+    const ship = (id: string, body: Record<string, unknown> = {}) =>
+      api.post(`/admin/delivery-orders/${id}/shipped`, body, admin).catch((e: any) => e.response)
+    const labelsOf = async (orderId: string) => {
+      const query = getContainer().resolve(ContainerRegistrationKeys.QUERY)
+      const { data } = await query.graph({
+        entity: "order",
+        fields: ["fulfillments.id", "fulfillments.labels.tracking_number", "fulfillments.labels.tracking_url"],
+        filters: { id: orderId },
+      })
+      return ((data[0] as any).fulfillments ?? []).flatMap((f: any) => f.labels ?? [])
+    }
 
     it("lists delivery orders to pack, oldest first, never pickup orders", async () => {
       const { order: a } = await deliveryOrder()
@@ -277,6 +344,64 @@ medusaIntegrationTestRunner({
       expect(data.count).toBe(1)
     })
 
+    it("an order placed through the shop: paid on placing, units set aside, then taken off the shelf when shipped", async () => {
+      const before = await stock()
+      const orderId = await placeDeliveryOrderThroughCart(2)
+
+      // Placing it took the money (order.placed capture) and set the units aside.
+      expect(recordedPaymentCalls().filter((c) => c.method === "capturePayment")).toHaveLength(1)
+      expect(await stock()).toEqual({ on_shelf: before.on_shelf, set_aside: before.set_aside + 2 })
+      expect(await reservationsOf(orderId)).toHaveLength(1)
+      const { data: toPack } = await list("to_pack")
+      expect(toPack.orders.find((o: any) => o.id === orderId)).toMatchObject({ payment_status: "paid" })
+
+      const res = await ship(orderId)
+      expect(res.status).toBe(200)
+      await settle()
+      expect(events.for("shipment.created")).toHaveLength(1)
+      expect(await stock()).toEqual({ on_shelf: before.on_shelf - 2, set_aside: before.set_aside })
+      expect(await reservationsOf(orderId)).toHaveLength(0)
+      expect((await list("shipped")).data.orders.map((o: any) => o.id)).toContain(orderId)
+    })
+
+    it("two presses at once ship once: one does the work, the other waits and no-ops", async () => {
+      const { order } = await paidDeliveryOrder()
+
+      const [a, b] = await Promise.all([ship(order.id), ship(order.id)])
+
+      expect([a.status, b.status]).toEqual([200, 200])
+      expect([a.data.already_shipped, b.data.already_shipped].sort()).toEqual([false, true])
+      expect(a.data.fulfillment_id).toBe(b.data.fulfillment_id)
+      await settle()
+      expect(events.for("shipment.created")).toHaveLength(1)
+      const live = ((await orderOf(getContainer(), order.id)).fulfillments ?? []).filter((f: any) => !f.canceled_at)
+      expect(live).toHaveLength(1)
+    })
+
+    it("a failure after packing but before the shipment undoes the packing: nothing ships, stock is untouched", async () => {
+      const before = await stock()
+      const orderId = await placeDeliveryOrderThroughCart(1)
+      const fulfillment = getContainer().resolve(Modules.FULFILLMENT) as any
+      const spy = jest.spyOn(fulfillment, "updateFulfillment").mockRejectedValueOnce(new Error("carrier system down"))
+      try {
+        const res = await ship(orderId)
+        expect(res.status).toBeGreaterThanOrEqual(400)
+      } finally {
+        spy.mockRestore()
+      }
+      await settle()
+      expect(events.for("shipment.created")).toHaveLength(0)
+      const live = ((await orderOf(getContainer(), orderId)).fulfillments ?? []).filter((f: any) => !f.canceled_at)
+      expect(live).toHaveLength(0)
+      expect(await stock()).toEqual({ on_shelf: before.on_shelf, set_aside: before.set_aside + 1 })
+      expect(await reservationsOf(orderId)).toHaveLength(1)
+      expect((await list("to_pack")).data.orders.map((o: any) => o.id)).toContain(orderId)
+
+      // The next press, with the carrier back, ships it.
+      expect((await ship(orderId)).status).toBe(200)
+      expect(await stock()).toEqual({ on_shelf: before.on_shelf - 1, set_aside: before.set_aside })
+    })
+
     it("answers 409 while the order's payment is being taken", async () => {
       const { order } = await paidDeliveryOrder()
       await getContainer()
@@ -325,7 +450,54 @@ medusaIntegrationTestRunner({
       expect(res.status).toBe(404)
     })
 
-    it("status is required and must be to_pack or shipped; the body must be empty", async () => {
+    it("puts the tracking number and link on the parcel, where the dispatched email reads them", async () => {
+      const { order } = await paidDeliveryOrder()
+      const res = await ship(order.id, {
+        tracking_number: "RM 123456789 GB",
+        tracking_url: "https://www.royalmail.com/track-your-item#/tracking-results/RM123456789GB",
+      })
+      expect(res.status).toBe(200)
+      expect(await labelsOf(order.id)).toEqual([
+        expect.objectContaining({
+          tracking_number: "RM 123456789 GB",
+          tracking_url: "https://www.royalmail.com/track-your-item#/tracking-results/RM123456789GB",
+        }),
+      ])
+      await settle()
+      expect(events.for("shipment.created")).toHaveLength(1)
+    })
+
+    it("ships without tracking, and with a number but no link", async () => {
+      const { order } = await paidDeliveryOrder()
+      expect((await ship(order.id, { tracking_number: "ABC-123" })).status).toBe(200)
+      expect(await labelsOf(order.id)).toEqual([expect.objectContaining({ tracking_number: "ABC-123" })])
+      const { order: plain } = await paidDeliveryOrder()
+      expect((await ship(plain.id)).status).toBe(200)
+      expect(await labelsOf(plain.id)).toEqual([])
+    })
+
+    it("refuses a tracking link that is not http(s), a bad number, or a link without a number; nothing ships", async () => {
+      const { order } = await paidDeliveryOrder()
+      for (const body of [
+        { tracking_number: "RM1", tracking_url: "javascript:alert(1)" },
+        { tracking_number: "RM1", tracking_url: "ftp://x.test/1" },
+        { tracking_number: "RM1", tracking_url: "www.royalmail.com/track" },
+        { tracking_number: "RM1", tracking_url: "https://x.test/" + "a".repeat(500) },
+        { tracking_number: "<b>1</b>" },
+        { tracking_number: "x".repeat(65) },
+        { tracking_number: "" },
+        { tracking_url: "https://x.test/1" },
+        { tracking_number: 123 },
+      ]) {
+        const res = await ship(order.id, body)
+        expect([body, res.status]).toEqual([body, 400])
+      }
+      await settle()
+      expect(events.for("shipment.created")).toHaveLength(0)
+      expect((await orderOf(getContainer(), order.id)).fulfillments ?? []).toHaveLength(0)
+    })
+
+    it("status is required and must be to_pack or shipped; the body takes only tracking fields", async () => {
       expect((await list("packed")).status).toBe(400)
       expect((await api.get("/admin/delivery-orders", admin).catch((e: any) => e.response)).status).toBe(400)
       const { order } = await deliveryOrder()

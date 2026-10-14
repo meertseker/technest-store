@@ -264,6 +264,68 @@ medusaIntegrationTestRunner({
       expect(v.stock).toBe(3)
     })
 
+    /** A product made on Medusa's own page: one variant, nothing else filled in. */
+    const bareVariant = async (variant: Record<string, unknown>) => {
+      const res = await api
+        .post(
+          "/admin/products",
+          {
+            title: `Bare ${Math.random().toString(36).slice(2, 8)}`,
+            status: "draft",
+            options: [{ title: "Size", values: ["One"] }],
+            variants: [{ title: "One", options: { Size: "One" }, prices: [], ...variant }],
+          },
+          admin
+        )
+        .catch((e: any) => e.response)
+      expect([res.status, res.data?.message]).toEqual([200, undefined])
+      const p = res.data.product
+      return { url: `/admin/products/${p.id}/variants/${p.variants[0].id}/price-stock`, variantId: p.variants[0].id as string }
+    }
+    const pricesOf = async (id: string) => {
+      const { data } = await getContainer().resolve(ContainerRegistrationKeys.QUERY).graph({
+        entity: "product_variant",
+        fields: ["price_set.prices.amount", "price_set.prices.currency_code"],
+        filters: { id },
+      })
+      return ((data[0] as any).price_set?.prices ?? [])
+        .map((p: any) => ({ amount: Number(p.amount), currency_code: p.currency_code }))
+        .sort((a: any, b: any) => a.currency_code.localeCompare(b.currency_code))
+    }
+
+    it("refuses a stock number for a variant whose stock is not tracked, and says so", async () => {
+      const bare = await bareVariant({ manage_inventory: false })
+      const res = await post({ stock: 3 }, bare.url)
+      expect({ status: res.status, message: res.data.message }).toEqual({
+        status: 400,
+        message: expect.stringMatching(/not tracked here/),
+      })
+      // Its price can still be set from here.
+      const priced = await post({ price_pence: 250 }, bare.url)
+      expect(priced.status).toBe(200)
+      expect(priced.data).toEqual({ variant_id: bare.variantId, price_pence: 250, stock: null })
+    })
+
+    it("gives a variant without a GBP price one, and leaves its other currencies alone", async () => {
+      const bare = await bareVariant({ manage_inventory: false, prices: [{ currency_code: "eur", amount: 3 }] })
+      expect(await pricesOf(bare.variantId)).toEqual([{ amount: 3, currency_code: "eur" }])
+
+      const res = await post({ price_pence: 549 }, bare.url)
+
+      expect(res.status).toBe(200)
+      expect(res.data.price_pence).toBe(549)
+      expect(await pricesOf(bare.variantId)).toEqual([
+        { amount: 3, currency_code: "eur" },
+        { amount: 5.49, currency_code: "gbp" },
+      ])
+      // Saving again changes that same price rather than adding another.
+      expect((await post({ price_pence: 599 }, bare.url)).status).toBe(200)
+      expect(await pricesOf(bare.variantId)).toEqual([
+        { amount: 3, currency_code: "eur" },
+        { amount: 5.99, currency_code: "gbp" },
+      ])
+    })
+
     it("needs an admin", async () => {
       const res = await api.post(url(), { stock: 1 }).catch((e: any) => e.response)
       expect(res.status).toBe(401)
