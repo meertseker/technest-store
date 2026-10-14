@@ -5,12 +5,15 @@
 #   docker compose pull && docker compose run --rm migrate && docker compose up -d --remove-orphans
 # Secrets live in /opt/technest/.env (chmod 600), never in git. See .env.production.template.
 # POSTGRES_PASSWORD goes into DATABASE_URL unencoded: generate it hex-only (openssl rand -hex 32).
+# REDIS_PASSWORD goes into REDIS_URL the same way: hex-only too.
+# Two networks: `edge` (caddy, storefront, server) and `data` (server, worker, postgres, redis,
+# backup, migrate). Only the server is on both, so the storefront can't reach Postgres or Redis.
 
 name: technest
 
 x-defaults: &defaults
   restart: unless-stopped
-  networks: [internal]
+  networks: [data]
   # journald, not json-file: a container's json-file log is deleted when a deploy recreates
   # the container, and with it every trace of the payments and webhooks before the deploy.
   # Read with `docker compose logs` or `journalctl CONTAINER_TAG=technest-server`; retention
@@ -22,7 +25,7 @@ x-defaults: &defaults
 x-backend-env: &backend-env
   NODE_ENV: production
   DATABASE_URL: postgres://technest:${POSTGRES_PASSWORD:?}@postgres:5432/technest?sslmode=disable
-  REDIS_URL: redis://redis:6379
+  REDIS_URL: redis://:${REDIS_PASSWORD:?}@redis:6379
   JWT_SECRET: ${JWT_SECRET:?}
   COOKIE_SECRET: ${COOKIE_SECRET:?}
   STORE_CORS: https://${SHOP_DOMAIN:-technest.co.uk}
@@ -77,6 +80,7 @@ services:
   caddy:
     <<: *defaults
     image: caddy:2.10-alpine
+    networks: [edge]
     ports: ["80:80", "443:443", "443:443/udp"]
     environment:
       SHOP_DOMAIN: ${SHOP_DOMAIN:-technest.co.uk}
@@ -97,6 +101,7 @@ services:
       <<: *backend-env
       MEDUSA_WORKER_MODE: server
       DISABLE_MEDUSA_ADMIN: "false"
+    networks: [edge, data]
     # Medusa finishes the requests in flight on SIGTERM; Docker's default 10 s would cut a
     # checkout or a capture in the middle of a deploy.
     stop_grace_period: 60s
@@ -125,7 +130,7 @@ services:
   migrate:
     image: ghcr.io/${GHCR_OWNER:?}/technest-backend:${IMAGE_TAG:-main}
     profiles: [ops]
-    networks: [internal]
+    networks: [data]
     environment:
       <<: *backend-env
     # --all-or-nothing: a failed migration reverts the ones this run applied.
@@ -144,8 +149,9 @@ services:
   storefront:
     <<: *defaults
     image: ghcr.io/${GHCR_OWNER:?}/technest-storefront:${IMAGE_TAG:-main}
+    networks: [edge]
     environment:
-      # Server-side calls should use the internal network instead of going out through
+      # Server-side calls should use the edge network instead of going out through
       # Cloudflare. Needs the storefront to read MEDUSA_BACKEND_URL on the server (asked E3).
       MEDUSA_BACKEND_URL: http://server:9000
       SENTRY_DSN: ${SENTRY_DSN_STOREFRONT:-}
@@ -172,7 +178,11 @@ services:
   redis:
     <<: *defaults
     image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "384mb", "--maxmemory-policy", "noeviction"]
+    # A password even on the private network: anything that gets a foothold on it can't
+    # read or rewrite the job queues and locks. The health check reads it from REDISCLI_AUTH.
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?}", "--appendonly", "yes", "--maxmemory", "384mb", "--maxmemory-policy", "noeviction"]
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?}
     volumes: [redis_data:/data]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -215,7 +225,8 @@ services:
     deploy: { resources: { limits: { cpus: "0.5", memory: 256m } } }
 
 networks:
-  internal: {}
+  edge: {}
+  data: {}
 
 volumes:
   pg_data: {}

@@ -47,6 +47,10 @@ Tek bir Hetzner sunucusu (boyut için bölüm 2.1), Docker Compose ile şu servi
 | `redis` | Kuyruk, olaylar, kilitler (Redis 7) | Hayır |
 | `backup` | Her gece 03:15'te veritabanı yedeği → R2 | Hayır |
 
+İki iç ağ vardır: `edge` (caddy, storefront, server) ve `data` (server, worker, postgres, redis,
+backup, migrate). İkisinde de yalnızca `server` bulunur; mağaza (storefront) Postgres'e ve Redis'e
+ulaşamaz. Redis parola ister (`REDIS_PASSWORD`, bölüm 5.1).
+
 Sunucuda **çalışmayan**, dışarıdan alınan iki hizmet (lead kararı, 2026-10-02,
 `docs/adr/0004-hosted-background-removal-and-email.md`):
 
@@ -256,8 +260,8 @@ Rastgele değerler üretmek için (her biri için ayrı çalıştırın):
 openssl rand -hex 32
 ```
 
-`POSTGRES_PASSWORD` **yalnızca hex** olmalıdır (yukarıdaki komut hex üretir), çünkü
-bağlantı adresine (`DATABASE_URL`) kodlanmadan yazılır.
+`POSTGRES_PASSWORD` ve `REDIS_PASSWORD` **yalnızca hex** olmalıdır (yukarıdaki komut hex üretir), çünkü
+bağlantı adreslerine (`DATABASE_URL`, `REDIS_URL`) kodlanmadan yazılırlar.
 
 Aşağıdaki tablo `.env.production.template`, `docker-compose.yml` ve `apps/backend/.env.template` ile
 karşılaştırıldı (2026-09-30). "Zorunlu" = boşsa compose başlamaz ya da özellik çalışmaz.
@@ -272,6 +276,7 @@ karşılaştırıldı (2026-09-30). "Zorunlu" = boşsa compose başlamaz ya da �
 | `ACME_EMAIL` | Hayır | Let's Encrypt hesap adresi; varsayılan `hello@technest.co.uk`. Let's Encrypt süre dolumu e-postalarını Haziran 2025'te bıraktı: sertifika sorunu buradan **duyulmaz**, bölüm 9'daki izleme duyurur |
 | `COMPOSE_FILE` | — | yalnızca staging / tatbikat: `docker-compose.yml:docker-compose.staging.yml` |
 | `POSTGRES_PASSWORD` | Evet | `openssl rand -hex 32` (**yalnızca hex**) |
+| `REDIS_PASSWORD` | Evet | `openssl rand -hex 32` (**yalnızca hex**). Boşsa compose başlamaz. Çalışan bir sunucuya ilk kez eklerken: `.env`'e yazın, sonra yayınlayın; `redis`, `server` ve `worker` yeni parolayla birlikte yeniden oluşturulur |
 | `JWT_SECRET`, `COOKIE_SECRET` | Evet | `openssl rand -hex 32`, ikisi farklı |
 
 **Dosyalar ve yedek (R2, bölüm 4.4)**
