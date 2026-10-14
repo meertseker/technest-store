@@ -66,9 +66,10 @@ medusaIntegrationTestRunner({
         const [mail] = await mailTo(email, 1)
         expect(mail.Subject).toBe("Reset your Tech Nest password")
         const text = await textOf(mail.ID)
-        expect(text).toContain(
-          `https://technest.co.uk/account/reset-password?token=${token}&email=${encodeURIComponent(email)}`
-        )
+        // The link carries the token only: the address is not repeated in the URL.
+        expect(text).toContain(`https://technest.co.uk/account/reset-password?token=${token}`)
+        expect(text).not.toContain("&email=")
+        expect(text).not.toContain(encodeURIComponent(email))
 
         const stored = await getContainer()
           .resolve(Modules.NOTIFICATION)
