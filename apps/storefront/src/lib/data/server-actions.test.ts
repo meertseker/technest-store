@@ -28,7 +28,7 @@ const ACTIONS: Record<string, string[]> = {
   "lib/data/order-actions.ts": ["acceptTransferAction", "declineTransferAction"],
   "lib/data/repair-actions.ts": ["submitRepairBooking"],
   "lib/data/trade-actions.ts": ["submitTradeApplication"],
-  "modules/checkout/payment/actions.ts": ["completeOrder", "preparePaymentSession"],
+  "modules/checkout/payment/actions.ts": ["completeOrder", "preparePaymentSession", "replaceCancelledPayment"],
 }
 
 const SRC = join(__dirname, "..", "..")
