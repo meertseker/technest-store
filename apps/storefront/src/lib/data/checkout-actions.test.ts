@@ -141,13 +141,17 @@ describe("saveDelivery: a postcode the lookup does not know", () => {
   })
 })
 
-// Two backend calls save the delivery step. The method goes first: it is the
-// call the backend can refuse (basket rules, an option that no longer applies),
-// and a refusal must not leave a new address against the old method.
-describe("saveDelivery: the method is set before the address", () => {
+// Two backend calls save the delivery step, and Medusa has no call to take a
+// method off a basket. Whatever fails, the basket must never end up with the
+// new method against the old address (say the shop's Click & Collect address
+// on a home delivery).
+describe("saveDelivery: method and address change together or not at all", () => {
   const cart = { id: "cart_1", email: "sam@example.com", items: [{ id: "li_1" }] }
+  const withMethod = (optionId: string) => ({ ...cart, shipping_methods: [{ id: "sm_1", shipping_option_id: optionId }] })
   const collect = () =>
     form({ option_id: "so_collect", first_name: "Sam", last_name: "Lee", phone: "", address_1: "", address_2: "", city: "", postal_code: "" })
+  const boom = () => Object.assign(new Error("Boom."), { status: 500 })
+  const SERVICE = [{ field: "option", message: "Something went wrong saving your details. Please try again." }]
 
   beforeEach(() => {
     retrieveCart.mockResolvedValue(cart)
@@ -160,24 +164,66 @@ describe("saveDelivery: the method is set before the address", () => {
     setShippingMethod.mockResolvedValue(undefined)
   })
 
-  it("when the backend refuses the method, the address is left as it was and the shopper can retry", async () => {
-    setShippingMethod.mockRejectedValue(Object.assign(new Error("Error setting up the request: not allowed"), { status: 400 }))
-    const state = await saveDelivery(EMPTY, collect())
-    expect(setShippingMethod).toHaveBeenCalledWith({ cartId: "cart_1", shippingMethodId: "so_collect" })
-    expect(updateCart).not.toHaveBeenCalled()
-    expect(state.errors).toEqual([{ field: "option", message: "Something went wrong saving your details. Please try again." }])
-    expect(redirect).not.toHaveBeenCalled()
+  describe("a basket that already has a method", () => {
+    beforeEach(() => retrieveCart.mockResolvedValue(withMethod("so_standard")))
+
+    it("the method goes first; refused, the address is left as it was", async () => {
+      setShippingMethod.mockRejectedValue(Object.assign(new Error("Not allowed."), { status: 400 }))
+      const state = await saveDelivery(EMPTY, collect())
+      expect(setShippingMethod).toHaveBeenCalledWith({ cartId: "cart_1", shippingMethodId: "so_collect" })
+      expect(updateCart).not.toHaveBeenCalled()
+      expect(state.errors).toEqual(SERVICE)
+      expect(redirect).not.toHaveBeenCalled()
+    })
+
+    it("when both succeed, the method call came first", async () => {
+      await expect(saveDelivery(EMPTY, collect())).rejects.toMatchObject({ to: "/checkout?step=payment" })
+      expect(setShippingMethod.mock.invocationCallOrder[0]).toBeLessThan(updateCart.mock.invocationCallOrder[0])
+    })
+
+    it("when the address save then fails, the previous method is put back", async () => {
+      updateCart.mockRejectedValue(boom())
+      const state = await saveDelivery(EMPTY, collect())
+      expect(setShippingMethod.mock.calls.map(([a]) => a.shippingMethodId)).toEqual(["so_collect", "so_standard"])
+      expect(state.errors).toEqual(SERVICE)
+      expect(redirect).not.toHaveBeenCalled()
+    })
+
+    it("the same method again needs nothing put back", async () => {
+      retrieveCart.mockResolvedValue(withMethod("so_collect"))
+      updateCart.mockRejectedValue(boom())
+      await saveDelivery(EMPTY, collect())
+      expect(setShippingMethod).toHaveBeenCalledTimes(1)
+    })
+
+    it("if putting the method back fails too, the shopper still gets the error and can retry", async () => {
+      updateCart.mockRejectedValue(boom())
+      setShippingMethod.mockResolvedValueOnce(undefined).mockRejectedValueOnce(boom())
+      const state = await saveDelivery(EMPTY, collect())
+      expect(setShippingMethod).toHaveBeenCalledTimes(2)
+      expect(state.errors).toEqual(SERVICE)
+    })
   })
 
-  it("when both succeed, the method call came first", async () => {
-    await expect(saveDelivery(EMPTY, collect())).rejects.toMatchObject({ to: "/checkout?step=payment" })
-    expect(setShippingMethod.mock.invocationCallOrder[0]).toBeLessThan(updateCart.mock.invocationCallOrder[0])
-  })
+  describe("a basket without a method yet", () => {
+    it("the address goes first, so a failure leaves no method behind", async () => {
+      updateCart.mockRejectedValue(boom())
+      const state = await saveDelivery(EMPTY, collect())
+      expect(setShippingMethod).not.toHaveBeenCalled()
+      expect(state.errors).toEqual(SERVICE)
+      expect(redirect).not.toHaveBeenCalled()
+    })
 
-  it("when the address save fails after the method, the shopper stays on the delivery step", async () => {
-    updateCart.mockRejectedValue(Object.assign(new Error("Error setting up the request: boom"), { status: 500 }))
-    const state = await saveDelivery(EMPTY, collect())
-    expect(state.errors[0].message).toBe("Something went wrong saving your details. Please try again.")
-    expect(redirect).not.toHaveBeenCalled()
+    it("a refused method after the address leaves the step unfinished (address, no method)", async () => {
+      setShippingMethod.mockRejectedValue(Object.assign(new Error("Not allowed."), { status: 400 }))
+      const state = await saveDelivery(EMPTY, collect())
+      expect(updateCart.mock.invocationCallOrder[0]).toBeLessThan(setShippingMethod.mock.invocationCallOrder[0])
+      expect(state.errors).toEqual(SERVICE)
+      expect(redirect).not.toHaveBeenCalled()
+    })
+
+    it("when both succeed, the shopper moves on to payment", async () => {
+      await expect(saveDelivery(EMPTY, collect())).rejects.toMatchObject({ to: "/checkout?step=payment" })
+    })
   })
 })

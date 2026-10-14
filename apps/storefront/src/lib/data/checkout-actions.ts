@@ -137,13 +137,33 @@ export async function saveDelivery(
   const billing_address: HttpTypes.StoreAddAddress =
     input.kind === "collect" ? { ...person, country_code: STORE_COUNTRY } : shipping_address
 
-  // The method first: it is the call the backend can refuse (a basket rule, an
-  // option that no longer applies). Refused, nothing else has changed; the
-  // address write that follows is a plain save and keeps a still-valid method.
+  // Two calls, and Medusa has no call to take a method off a basket, so the
+  // order is chosen to make every failure leave a consistent basket:
+  // - with a method already set: the method first (the call the backend can
+  //   refuse: a basket rule, an option that no longer applies). If the address
+  //   save then fails, the previous method is put back.
+  // - without one: the address first. If the method is then refused, the
+  //   basket has an address and no method, so the step stays unfinished.
+  const newOptionId = choice!.id
+  const previousOptionId = cart.shipping_methods?.[0]?.shipping_option_id ?? null
   let updated: HttpTypes.StoreCart
   try {
-    await setShippingMethod({ cartId: cart.id, shippingMethodId: choice!.id })
-    updated = await updateCart({ shipping_address, billing_address })
+    if (previousOptionId) {
+      await setShippingMethod({ cartId: cart.id, shippingMethodId: newOptionId })
+      try {
+        updated = await updateCart({ shipping_address, billing_address })
+      } catch (e) {
+        if (previousOptionId !== newOptionId) {
+          await setShippingMethod({ cartId: cart.id, shippingMethodId: previousOptionId }).catch((restoreError) =>
+            reportUnexpected(restoreError, "checkout.delivery-restore")
+          )
+        }
+        throw e
+      }
+    } else {
+      updated = await updateCart({ shipping_address, billing_address })
+      await setShippingMethod({ cartId: cart.id, shippingMethodId: newOptionId })
+    }
   } catch (e) {
     await reportUnexpected(e, "checkout.delivery")
     return fail([{ field: "option", message: SERVICE_ERROR }])
