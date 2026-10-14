@@ -301,5 +301,5 @@ export const SESSION_FAILED =
 export function sessionErrorMessage(e: unknown): string {
   const { status, message } = (e ?? {}) as { status?: unknown; message?: unknown }
   if (status !== 400 || typeof message !== "string") return SESSION_FAILED
-  return message.replace(/^Error setting up the request: /, "").trim() || SESSION_FAILED
+  return message.trim() || SESSION_FAILED
 }

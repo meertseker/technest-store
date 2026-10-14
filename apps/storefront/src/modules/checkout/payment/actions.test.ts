@@ -79,7 +79,7 @@ describe("placing an order for a basket the payment webhook already completed", 
 
 describe("an order that could not be placed reaches monitoring", () => {
   it("a backend failure after the card step is reported", async () => {
-    const error = Object.assign(new Error("Error setting up the request: boom"), { status: 500 })
+    const error = Object.assign(new Error("Boom."), { status: 500 })
     retrieveCart.mockResolvedValue(cart)
     placeOrder.mockRejectedValue(error)
     await expect(completeOrder()).resolves.toEqual({ ok: false, message: ORDER_FAILED })

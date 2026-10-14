@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import medusaError from "@lib/util/medusa-error"
 import {
   MANUAL_PROVIDER_ID,
   NETWORK_ERROR,
@@ -291,9 +292,14 @@ describe("returnErrorMessage", () => {
 })
 
 describe("sessionErrorMessage", () => {
-  // What lib/util/medusa-error throws for a refused request: the backend's message with a prefix, and the status.
-  const refused = (status: number, message: string) =>
-    Object.assign(new Error("Error setting up the request: " + message), { status })
+  // What lib/util/medusa-error throws for a failed backend call: the backend's own message and the status.
+  const refused = (status: number, message: string) => {
+    try {
+      medusaError({ message, status, statusText: "" })
+    } catch (e) {
+      return e
+    }
+  }
 
   it("shows the backend's reason when the basket itself is refused (400)", () => {
     const reason = "£1 add-ons can't be delivered on their own. Add another item to your basket, or choose Click & Collect (free)."
@@ -303,7 +309,7 @@ describe("sessionErrorMessage", () => {
   it("keeps the connection message for anything else", () => {
     expect(sessionErrorMessage(refused(500, "An unknown error occurred."))).toBe(SESSION_FAILED)
     expect(sessionErrorMessage(new Error("fetch failed"))).toBe(SESSION_FAILED)
-    expect(sessionErrorMessage(refused(400, ""))).toBe(SESSION_FAILED)
+    expect(sessionErrorMessage(Object.assign(new Error(""), { status: 400 }))).toBe(SESSION_FAILED)
   })
 })
 

@@ -49,7 +49,7 @@ describe("saveContact", () => {
 
   it("tells a shopper who typed a trade account's email to sign in", async () => {
     // what lib/data/cart.ts throws for the backend's 401
-    updateCart.mockRejectedValue(Object.assign(new Error("Error setting up the request: Unauthorized"), { status: 401 }))
+    updateCart.mockRejectedValue(Object.assign(new Error("Unauthorized."), { status: 401 }))
     const state = await saveContact(EMPTY, form({ email: "trade@example.com" }))
     expect(state.errors).toEqual([
       {
@@ -61,7 +61,7 @@ describe("saveContact", () => {
   })
 
   it("any other failure is the generic message, never the backend's text", async () => {
-    updateCart.mockRejectedValue(Object.assign(new Error("Error setting up the request: column x"), { status: 500 }))
+    updateCart.mockRejectedValue(Object.assign(new Error("Column x."), { status: 500 }))
     const state = await saveContact(EMPTY, form({ email: "sam@example.com" }))
     expect(state.errors).toEqual([
       { field: "email", message: "Something went wrong saving your details. Please try again." },
