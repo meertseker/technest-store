@@ -133,6 +133,7 @@ Response `200`: `{ "order": ClickCollectOrder }`.
 - `400 not_allowed`: the order is not `ready` (to pick, collected or cancelled), or not a Click & Collect order.
 - `404 not_found`: unknown order.
 - `409 conflict`: another action on the same order is still running: refresh and retry.
+- `429 too_many_requests`: the ready email was resent less than 10 minutes ago (`ready_email_resent_at`); nothing is sent.
 
 ### `POST /admin/click-collect/orders/:id/collected`
 

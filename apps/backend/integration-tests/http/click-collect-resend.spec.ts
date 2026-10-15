@@ -88,6 +88,17 @@ medusaIntegrationTestRunner({
       await settle(o.email, 1500)
       expect(await readyMails(o.email, 3)).toHaveLength(2)
 
+      // Pressed again within 10 minutes of the last resend: refused, nothing sent.
+      const soon = await post(o.id, "resend-ready")
+      expect(soon.status).toBe(429)
+      expect(soon.data.type).toBe("too_many_requests")
+      await settle(o.email, 1500)
+      expect(await readyMails(o.email, 3)).toHaveLength(2)
+
+      // Ten minutes on, it can be resent again.
+      await getContainer()
+        .resolve(Modules.ORDER)
+        .updateOrders(o.id, { metadata: { ready_email_resent_at: new Date(Date.now() - 11 * 60 * 1000).toISOString() } })
       expect((await post(o.id, "resend-ready")).status).toBe(200)
       await waitForBackgroundWork(getContainer())
       expect(await readyMails(o.email, 3)).toHaveLength(3)
