@@ -14,7 +14,8 @@ import {
 export const ensureTradePricingWorkflow = createWorkflow(
   "ensure-trade-pricing",
   function () {
-    acquireLockStep({ key: TRADE_PRICING_SETUP_LOCK_KEY, ...TRADE_LOCK_OPTIONS })
+    const setupLock = transform({}, () => ({ key: TRADE_PRICING_SETUP_LOCK_KEY, ...TRADE_LOCK_OPTIONS }))
+    acquireLockStep(setupLock)
     const groupId = ensureTradeCustomerGroupStep()
     const listInput = transform({ groupId }, ({ groupId }) => ({ customer_group_id: groupId }))
     const priceListId = ensureTradePriceListStep(listInput)

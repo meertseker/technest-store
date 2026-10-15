@@ -41,7 +41,8 @@ export const approveTradeApplicationWorkflow = createWorkflow(
     const application = retrievePendingTradeApplicationStep(input)
     // Held to the end, so a group this run creates (and might roll back) is
     // never picked up by a concurrent approval.
-    acquireLockStep({ key: TRADE_PRICING_SETUP_LOCK_KEY, ...TRADE_LOCK_OPTIONS }).config({
+    const setupLock = transform({ input }, () => ({ key: TRADE_PRICING_SETUP_LOCK_KEY, ...TRADE_LOCK_OPTIONS }))
+    acquireLockStep(setupLock).config({
       name: "acquire-trade-pricing-setup-lock",
     })
     const groupId = ensureTradeCustomerGroupStep()
