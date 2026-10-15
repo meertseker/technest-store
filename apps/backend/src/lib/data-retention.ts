@@ -9,8 +9,10 @@ import type TradeModuleService from "../modules/trade/service"
  * fault text) and trade applications (company, contact). Both are kept only
  * as long as the shop needs them:
  *
- * - a repair booking marked `done` is removed REPAIR_RETENTION_DAYS after it
- *   was last updated (the completion),
+ * - a repair booking is removed REPAIR_RETENTION_DAYS after it was last
+ *   updated, whatever its status: `done` ones after completion, and `new` or
+ *   `booked` ones nobody followed up (an abandoned enquiry is personal data
+ *   too),
  * - a `rejected` or `revoked` trade application is removed
  *   TRADE_RETENTION_DAYS after the decision,
  * - a row staff deleted (soft delete) is removed for good after the same
@@ -56,7 +58,7 @@ export async function purgeExpiredRecords(
   let repairBookings = 0
   const finished = ids(
     await repair.listRepairBookings(
-      { status: ["done"], updated_at: { $lt: repairCutoff } },
+      { updated_at: { $lt: repairCutoff } },
       { select: ["id"], take: null }
     )
   )

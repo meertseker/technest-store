@@ -32,7 +32,7 @@ describe("retentionDays", () => {
 })
 
 describe("purgeExpiredRecords", () => {
-  it("hard-deletes finished repair bookings and closed trade applications past their retention", async () => {
+  it("hard-deletes repair bookings of any status and closed trade applications past their retention", async () => {
     const { container, repair, trade } = fakeContainer()
     repair.listRepairBookings.mockResolvedValueOnce([{ id: "rep_old" }, { id: "rep_old2" }]).mockResolvedValueOnce([])
     trade.listTradeApplications.mockResolvedValueOnce([{ id: "tapp_old" }]).mockResolvedValueOnce([])
@@ -44,7 +44,7 @@ describe("purgeExpiredRecords", () => {
 
     expect(result).toEqual({ repair_bookings: 2, trade_applications: 1 })
     expect(repair.listRepairBookings).toHaveBeenCalledWith(
-      { status: ["done"], updated_at: { $lt: daysAgo(30) } },
+      { updated_at: { $lt: daysAgo(30) } },
       expect.objectContaining({ select: ["id"], take: null })
     )
     expect(repair.deleteRepairBookings).toHaveBeenCalledWith(["rep_old", "rep_old2"])

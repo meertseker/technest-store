@@ -5,7 +5,7 @@ import { seedTechNest } from "../../src/scripts/seed"
 import { TURNSTILE_VERIFIER_KEY } from "../../src/lib/turnstile"
 import { REPAIR_MODULE } from "../../src/modules/repair"
 import RepairModuleService from "../../src/modules/repair/service"
-import { purgeExpiredRecords } from "../../src/lib/data-retention"
+import { purgeExpiredRecordsWorkflow } from "../../src/workflows/purge-expired-records"
 import {
   softDeleteRepairBookingStep,
   updateRepairBookingStep,
@@ -311,36 +311,35 @@ medusaIntegrationTestRunner({
         expect(data.repair_booking).toMatchObject({ name: "Second", status: "booked" })
       })
 
-      it("retention: finished and deleted bookings are removed for good after REPAIR_RETENTION_DAYS", async () => {
+      it("retention: bookings untouched for REPAIR_RETENTION_DAYS are removed for good, whatever their status", async () => {
         const container = getContainer()
         const repairService: RepairModuleService = container.resolve(REPAIR_MODULE)
         await api.post(`/admin/repair-bookings/${ids.third}`, { status: "done" }, admin)
-        await api.delete(`/admin/repair-bookings/${ids.first}`, admin)
-        const everything = () =>
-          repairService.listRepairBookings({}, { select: ["id"], withDeleted: true, take: null })
+        // first: new, second: booked, third: done, plus a fourth that staff deleted.
+        const { data: fourth } = await api.post("/store/repair-bookings", booking({ name: "Fourth" }), fromIp())
+        await api.delete(`/admin/repair-bookings/${fourth.repair_booking.id}`, admin)
+        const everything = async () =>
+          (await repairService.listRepairBookings({}, { select: ["id"], withDeleted: true, take: null }))
+            .map((b) => b.id)
+            .sort()
+        const purge = async (at: Date, env: Record<string, string>) =>
+          (await purgeExpiredRecordsWorkflow(container).run({ input: { now: at.toISOString(), env } })).result
+        const none = { repair_bookings: 0, trade_applications: 0 }
+        const all = [...Object.values(ids), fourth.repair_booking.id].sort()
 
         // Nothing is old enough today, whatever the setting.
-        expect(await purgeExpiredRecords(container, { now: new Date(), env: { REPAIR_RETENTION_DAYS: "30" } })).toEqual({
-          repair_bookings: 0,
-          trade_applications: 0,
-        })
-        expect((await everything()).map((b) => b.id).sort()).toEqual(Object.values(ids).sort())
-
-        // 31 days on with a 30-day setting: the finished and the deleted booking go, the open one stays.
+        expect(await purge(new Date(), { REPAIR_RETENTION_DAYS: "30" })).toEqual(none)
+        // 29 days on with a 30-day setting: still nothing.
+        expect(await purge(new Date(Date.now() + 29 * DAY), { REPAIR_RETENTION_DAYS: "30" })).toEqual(none)
+        // 31 days on with the default (365 days): nothing either.
         const later = new Date(Date.now() + 31 * DAY)
-        expect(await purgeExpiredRecords(container, { now: later, env: { REPAIR_RETENTION_DAYS: "30" } })).toEqual({
-          repair_bookings: 2,
-          trade_applications: 0,
-        })
-        expect((await everything()).map((b) => b.id)).toEqual([ids.second])
+        expect(await purge(later, {})).toEqual(none)
+        expect(await everything()).toEqual(all)
 
-        // With the default (365 days) the same date removes nothing.
-        await api.post(`/admin/repair-bookings/${ids.second}`, { status: "done" }, admin)
-        expect(await purgeExpiredRecords(container, { now: later, env: {} })).toEqual({
-          repair_bookings: 0,
-          trade_applications: 0,
-        })
-        expect((await everything()).map((b) => b.id)).toEqual([ids.second])
+        // 31 days on with a 30-day setting: the finished and the deleted one go,
+        // and so do the new and the booked one nobody touched since.
+        expect(await purge(later, { REPAIR_RETENTION_DAYS: "30" })).toEqual({ repair_bookings: 4, trade_applications: 0 })
+        expect(await everything()).toEqual([])
       })
 
       it("update workflow restores the previous values on rollback", async () => {
