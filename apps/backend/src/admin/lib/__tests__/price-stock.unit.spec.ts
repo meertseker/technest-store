@@ -1,4 +1,4 @@
-import { isStaleStockError, priceStockBody, stockInputToNumber, variantRows } from "../price-stock"
+import { inputsToRefresh, isStaleStockError, priceStockBody, stockInputToNumber, variantRows } from "../price-stock"
 
 describe("variantRows", () => {
   it("flattens products into one row per variant with the plain GBP price in pence", () => {
@@ -119,5 +119,20 @@ describe("isStaleStockError", () => {
     expect(isStaleStockError(Object.assign(new Error("Something else"), { status: 400 }))).toBe(false)
     expect(isStaleStockError(new Error("no status"))).toBe(false)
     expect(isStaleStockError(null)).toBe(false)
+  })
+})
+
+describe("inputsToRefresh", () => {
+  it("refreshes only the stock field when only the stock moved (a typed price survives a 409 reload)", () => {
+    expect(inputsToRefresh({ price_pence: 499, stock: 5 }, { price_pence: 499, stock: 4 })).toEqual({ price: false, stock: true })
+  })
+
+  it("refreshes the price when the server price changed", () => {
+    expect(inputsToRefresh({ price_pence: 499, stock: 5 }, { price_pence: 549, stock: 5 })).toEqual({ price: true, stock: false })
+    expect(inputsToRefresh({ price_pence: null, stock: null }, { price_pence: 100, stock: 1 })).toEqual({ price: true, stock: true })
+  })
+
+  it("refreshes nothing when the row is unchanged", () => {
+    expect(inputsToRefresh({ price_pence: 499, stock: 5 }, { price_pence: 499, stock: 5 })).toEqual({ price: false, stock: false })
   })
 })

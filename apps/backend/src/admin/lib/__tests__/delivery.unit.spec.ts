@@ -72,4 +72,14 @@ describe("trackingInput", () => {
     expect(trackingInput("RM1", "javascript:alert(1)")).toMatchObject({ ok: false, error: expect.stringMatching(/https/i) })
     expect(trackingInput("RM1", "https://x.test/" + "a".repeat(500))).toMatchObject({ ok: false })
   })
+
+  it("refuses a link with a space inside, as the server does", () => {
+    expect(trackingInput("RM1", "https://track.example/RM1 23")).toMatchObject({ ok: false, error: expect.stringMatching(/space/i) })
+    expect(trackingInput("RM1", "https://track.example/RM1	23")).toMatchObject({ ok: false })
+  })
+
+  it("names both schemes it accepts", () => {
+    expect(trackingInput("RM1", "ftp://x.test/1")).toMatchObject({ ok: false, error: expect.stringMatching(/http:\/\/ or https:\/\//) })
+    expect(trackingInput("RM1", "http://x.test/1")).toMatchObject({ ok: true })
+  })
 })

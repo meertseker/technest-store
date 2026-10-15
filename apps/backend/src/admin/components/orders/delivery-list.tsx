@@ -200,7 +200,7 @@ export function DeliveryOrderCard({ order }: { order: DeliveryOrder }) {
           const tracking = trackingInput(trackingNumber, trackingUrl)
           if (!tracking.ok) {
             setTrackingError(tracking.error)
-            return
+            return false
           }
           setTrackingError(null)
           setConfirming(false)

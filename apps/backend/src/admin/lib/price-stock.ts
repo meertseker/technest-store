@@ -105,6 +105,18 @@ export function priceStockBody(
   return body
 }
 
+/**
+ * Which inputs to reset after the row came back from the server: only the
+ * values the server changed. After a 409 only the stock moved, so a price the
+ * shop typed (and that was never saved) stays in its field.
+ */
+export function inputsToRefresh(
+  before: Pick<VariantRow, "price_pence" | "stock">,
+  after: Pick<VariantRow, "price_pence" | "stock">
+): { price: boolean; stock: boolean } {
+  return { price: before.price_pence !== after.price_pence, stock: before.stock !== after.stock }
+}
+
 /** The server's 409: the stock moved since the page loaded. Reload the row and type it again. */
 export function isStaleStockError(error: unknown): boolean {
   return !!error && typeof error === "object" && (error as { status?: unknown }).status === 409

@@ -1,6 +1,7 @@
 import { Spinner } from "@medusajs/icons"
 import { Button, Prompt, Text, clx } from "@medusajs/ui"
 import { ReactNode } from "react"
+import { confirmClick } from "../lib/confirm"
 
 // Small building blocks shared by the Tech Nest admin pages. The owner uses the
 // admin on a phone, so every primary action is at least 44px tall (min-h-11)
@@ -146,7 +147,8 @@ export function ConfirmDialog({
   confirmText: string
   cancelText?: string
   variant?: "confirmation" | "danger"
-  onConfirm: () => void
+  /** Return false to keep the dialog open (e.g. a field in it needs fixing). */
+  onConfirm: () => boolean | void
   onCancel: () => void
   /** Optional fields between the question and the buttons (e.g. a tracking number). */
   children?: ReactNode
@@ -163,7 +165,7 @@ export function ConfirmDialog({
           <Prompt.Cancel className={clx(TAP, "w-full sm:w-auto")} onClick={onCancel}>
             {cancelText}
           </Prompt.Cancel>
-          <Prompt.Action className={clx(TAP, "w-full sm:w-auto")} onClick={onConfirm}>
+          <Prompt.Action className={clx(TAP, "w-full sm:w-auto")} onClick={confirmClick(onConfirm)}>
             {confirmText}
           </Prompt.Action>
         </Prompt.Footer>

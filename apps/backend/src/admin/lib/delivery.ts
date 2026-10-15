@@ -83,6 +83,8 @@ export type TrackingBody = { tracking_number?: string; tracking_url?: string }
 /** What the server accepts (docs/contracts/delivery-orders.md): letters, digits, spaces, dashes. */
 export const TRACKING_NUMBER_RE = /^[A-Za-z0-9 -]{1,64}$/
 export const TRACKING_URL_MAX = 500
+/** Same rule as the server: http(s), no whitespace anywhere. */
+export const TRACKING_URL_RE = /^https?:\/\/\S+$/i
 
 /**
  * The optional tracking fields of the "Packed & shipped" dialog, checked the way
@@ -99,8 +101,11 @@ export function trackingInput(
   if (!TRACKING_NUMBER_RE.test(n)) {
     return { ok: false, error: "A tracking number has only letters, numbers, spaces and dashes (up to 64)." }
   }
-  if (u && !(/^https?:\/\//i.test(u) && u.length <= TRACKING_URL_MAX)) {
-    return { ok: false, error: "The tracking link must start with https:// and be under 500 characters." }
+  if (u && !(TRACKING_URL_RE.test(u) && u.length <= TRACKING_URL_MAX)) {
+    return {
+      ok: false,
+      error: "The tracking link must start with http:// or https://, have no spaces, and be under 500 characters.",
+    }
   }
   return { ok: true, body: u ? { tracking_number: n, tracking_url: u } : { tracking_number: n } }
 }

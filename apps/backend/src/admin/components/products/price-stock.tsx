@@ -6,6 +6,7 @@ import { sdk } from "../../lib/client"
 import { errorMessage, plural } from "../../lib/format"
 import { penceToPoundsInput, poundsInputToPence } from "../../lib/pence"
 import {
+  inputsToRefresh,
   isStaleStockError,
   PRICE_STOCK_FIELDS,
   priceStockBody,
@@ -35,10 +36,16 @@ function VariantRowCard({ row }: { row: VariantRow }) {
   const [saved, setSaved] = useState<PriceStockResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Fresh values from the server (after a refetch) win over what was typed before.
+  // A value the server changed (after a refetch) wins over what was typed before; a value
+  // it did not change keeps what was typed (after a 409 only the stock moved).
+  const [shown, setShown] = useState({ price_pence: row.price_pence, stock: row.stock })
   useEffect(() => {
-    setPrice(row.price_pence === null ? "" : penceToPoundsInput(row.price_pence))
-    setStock(row.stock === null ? "" : String(row.stock))
+    const next = { price_pence: row.price_pence, stock: row.stock }
+    const refresh = inputsToRefresh(shown, next)
+    if (!refresh.price && !refresh.stock) return
+    if (refresh.price) setPrice(row.price_pence === null ? "" : penceToPoundsInput(row.price_pence))
+    if (refresh.stock) setStock(row.stock === null ? "" : String(row.stock))
+    setShown(next)
     setSaved(null)
   }, [row.price_pence, row.stock])
 
@@ -46,9 +53,8 @@ function VariantRowCard({ row }: { row: VariantRow }) {
   const stockNumber = stock.trim() === "" ? null : stockInputToNumber(stock)
   const priceInvalid = price.trim() !== "" && (pricePence === null || pricePence < 1)
   const stockInvalid = stock.trim() !== "" && stockNumber === null
-  const priceChanged = pricePence !== null && pricePence !== row.price_pence
-  const stockChanged = stockNumber !== null && stockNumber !== row.stock
-  const canSave = !priceInvalid && !stockInvalid && (priceChanged || stockChanged)
+  const body = priceStockBody(row, { price_pence: pricePence, stock: stockNumber })
+  const canSave = !priceInvalid && !stockInvalid && Object.keys(body).length > 0
 
   const save = useMutation({
     mutationFn: () =>
@@ -56,7 +62,7 @@ function VariantRowCard({ row }: { row: VariantRow }) {
         `/admin/products/${row.product_id}/variants/${row.variant_id}/price-stock`,
         {
           method: "POST",
-          body: priceStockBody(row, { price_pence: pricePence, stock: stockNumber }),
+          body,
         }
       ),
     onMutate: () => setError(null),
