@@ -1,4 +1,5 @@
 import { importFailureMessage } from "../import-errors"
+import { ImportStoppedError } from "../import-parts"
 
 /** What @medusajs/js-sdk throws for a non-2xx answer. */
 class FetchError extends Error {
@@ -31,6 +32,17 @@ describe("importFailureMessage", () => {
     const m = importFailureMessage(new FetchError(message, "Bad Request", 400))
     expect(m.title).toBe("The import stopped part-way.")
     expect(m.description).toBe(message)
+  })
+
+  it("keeps the rows already imported in the message when a later part was cut off or lost", () => {
+    const message =
+      "600 rows (lines 2 to 601) were imported before a problem stopped the import; the rows after them were not. timeout"
+    for (const cause of [new FetchError("<html>timeout</html>", "Timeout", 504), new TypeError("Failed to fetch")]) {
+      const m = importFailureMessage(new ImportStoppedError(message, cause))
+      expect(m.title).toBe("The import stopped part-way. Its last part may still be running.")
+      expect(m.description).toContain("lines 2 to 601")
+      expect(m.description).toMatch(/check the product list/i)
+    }
   })
 
   it("says nothing was changed for an ordinary refusal", () => {

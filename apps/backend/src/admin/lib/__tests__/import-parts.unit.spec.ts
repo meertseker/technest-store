@@ -95,13 +95,13 @@ describe("importInParts", () => {
       if (part === 1) throw new FetchError("<html>timeout</html>", "Timeout", 524)
       return answer(part, 200, 0)
     }).catch((e) => e)
-    expect(importFailureMessage(error).title).toBe(
-      "The import may still be running. Check the product list before retrying."
-    )
+    expect(importFailureMessage(error).title).toBe("The import stopped part-way. Its last part may still be running.")
+    expect(importFailureMessage(error).description).toMatch(/^200 rows/)
     const network = await importInParts(async (part) => {
       if (part === 1) throw new TypeError("Failed to fetch")
       return answer(part, 200, 0)
     }).catch((e) => e)
     expect(importFailureMessage(network).title).toMatch(/may still be running/)
+    expect(importFailureMessage(network).description).toMatch(/^200 rows/)
   })
 })
