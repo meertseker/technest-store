@@ -228,9 +228,11 @@ export type BuildProductImportPlanInput = {
   fail_on_file_errors?: boolean
   /**
    * Only this part of the file will be written: load full details for its SKUs
-   * and the light ones for the rest, so a part costs the same whatever the
-   * size of the file or of the catalogue. Rows outside the part are only good
-   * for judging the part's rows; never write them from this plan.
+   * and the light ones for the rest, so the heavy loading (prices, stock,
+   * attributes) stays the size of one part. Each part still parses the whole
+   * file and reads every handle, category and device, so its time grows
+   * slowly with the file and the catalogue. Rows outside the part are only
+   * good for judging the part's rows; never write them from this plan.
    */
   detail_part?: { index: number; size: number }
 }
