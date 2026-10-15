@@ -23,6 +23,10 @@ export const CollectMeta = {
   EXPIRED_AT: "collection_expired_at",
   /** When staff last resent the "ready for collection" email (ISO time). */
   READY_RESENT_AT: "ready_email_resent_at",
+  /** `{ at }`: part of the order was handed over from Medusa's order page; staff were alerted once. */
+  PARTLY_HANDED_OVER: "partly_handed_over",
+  /** `{ [action]: ISO time }`: the hourly job's first failure per action, so each is reported once. */
+  JOB_FAILED: "collection_job_failed",
 } as const
 
 // The capture-retry job and the Stripe event handler keep their state in order metadata too.

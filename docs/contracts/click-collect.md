@@ -25,13 +25,18 @@ Errors use Medusa's standard shape: `{ "type": "not_found" | "not_allowed" | "in
   payment cancel, so the backend retries it once and logs the order/payment ids if it still fails.
   An uncollected order whose payment is already captured (a Collected press that failed after the
   capture) is never cancelled automatically, because that would refund it: it is logged for staff.
-- Handed over with Medusa's own order page instead of the board (a pickup order's fulfilment
-  marked delivered or shipped there): the hourly `click-collect-lifecycle` job captures the payment
+- Handed over with Medusa's own order page instead of the board (fulfilments marked delivered or
+  shipped there that cover every unit of every line): the hourly `click-collect-lifecycle` job captures the payment
   (same capture step, under the order's lock, never twice), sets `collected_at` and
   `collected_outside_board = { fulfillment_id, at }`, emits `technest.order.collected`, raises one
   Sentry alert and sends the shop one `shop-payment-notice` email so staff learn to use the board.
-  A fulfilment that is only created (not delivered/shipped) is left alone. If no payment is left to
-  capture, nothing is marked collected and the job reports the order every hour until staff act.
+  A fulfilment that is only created (not delivered/shipped) is left alone. If only part of the
+  order was handed over that way, nothing is captured: the order stays on the board, the
+  reminder and collection deadline still apply, and staff get one Sentry alert
+  (`partly_handed_over`). If no payment is left to capture, nothing is marked collected; the job
+  logs it every hour and reports it to Sentry once (`collection_job_failed`), and no reminder or
+  cancellation follows (Medusa won't cancel an order with live fulfilments, and the goods have left).
+  Any failure of the job for an order is reported once per action the same way.
 - The signed Stripe webhook authorises; "Collected" captures, and the capture is recorded from
   Stripe's response to the capture call. Nothing on the board is refunded automatically.
 
@@ -169,6 +174,8 @@ Response `200`: `{ "order": ClickCollectOrder }`.
 | `collection_expired_at` | ISO 8601, set when the job cancels a ready order at its deadline (not set for an order never marked ready) |
 | `ready_email_resent_at` | ISO 8601, the last resend of the ready email |
 | `collected_outside_board` | `{ fulfillment_id, at }`: handed over from Medusa's order page; payment taken by the lifecycle job |
+| `partly_handed_over` | `{ at }`: part of the order was handed over from Medusa's order page; staff alerted once, not charged |
+| `collection_job_failed` | `{ collect_outside_board?, partly_handed_over?, expire?, remind? }`: ISO time of the job's first failure per action (each reported once) |
 
 ## Refunds
 

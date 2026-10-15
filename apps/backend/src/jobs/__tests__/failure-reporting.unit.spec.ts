@@ -66,7 +66,7 @@ describe("a scheduled job that fails is reported, not only logged", () => {
     expireRun.mockRejectedValueOnce(error).mockResolvedValueOnce({ result: { expired: true } })
     await clickCollectLifecycleJob(container)
     expect(expireRun).toHaveBeenCalledTimes(2)
-    expect(alerts).toEqual([{ error, tags: { source: "job:click-collect-lifecycle", order_id: "order_1" } }])
+    expect(alerts).toEqual([{ error, tags: { source: "job:click-collect-lifecycle", order_id: "order_1", action: "expire" } }])
   })
 
   it.each([

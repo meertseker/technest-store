@@ -8,7 +8,11 @@ import {
   type CollectStatus,
   toClickCollectOrder,
 } from "."
-import type { HandedOverFulfillment } from "../../workflows/steps/click-collect/prepare-outside-board"
+import {
+  HAND_OVER_FIELDS,
+  type HandedOverFulfillment,
+  type OrderLine,
+} from "../../workflows/steps/click-collect/prepare-outside-board"
 
 export type ListClickCollectOrdersInput = {
   status: CollectStatus
@@ -104,6 +108,7 @@ export type UncollectedOrderRow = {
   id: string
   created_at: string | Date
   metadata: Record<string, unknown> | null
+  items?: OrderLine[] | null
   fulfillments?: HandedOverFulfillment[] | null
 }
 
@@ -111,7 +116,7 @@ const UNCOLLECTED_PAGE = 100
 
 /**
  * Every Click & Collect order not collected yet, ready or not (id, metadata,
- * order time and fulfilment dates only), oldest first, for the lifecycle job.
+ * order time, lines and fulfilments only), oldest first, for the lifecycle job.
  * The list stays small: orders leave it when collected or, at the latest, when
  * the job cancels them at their collection deadline. Read a page at a time.
  */
@@ -119,15 +124,7 @@ export async function listUncollectedOrders(container: MedusaContainer): Promise
   const optionIds = await pickupShippingOptionIds(container)
   if (!optionIds.length) return []
   const where = pickupOrderWhere(optionIds, { [CollectMeta.COLLECTED_AT]: null })
-  const fields = [
-    "id",
-    "metadata",
-    "created_at",
-    "fulfillments.id",
-    "fulfillments.shipped_at",
-    "fulfillments.delivered_at",
-    "fulfillments.canceled_at",
-  ]
+  const fields = ["id", "metadata", "created_at", ...HAND_OVER_FIELDS]
   const all: UncollectedOrderRow[] = []
   for (let skip = 0; ; skip += UNCOLLECTED_PAGE) {
     const [ids, count] = await pickupOrderIds(container, where, {

@@ -2,7 +2,7 @@
 // delivered") instead of the Collected button on the board: nothing there takes the payment. The
 // hourly lifecycle job must notice, take the payment once, mark the order collected and tell the shop.
 import { medusaIntegrationTestRunner } from "@medusajs/test-utils"
-import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { updateRegionsWorkflow } from "@medusajs/medusa/core-flows"
 import clickCollectLifecycleJob from "../../src/jobs/click-collect-lifecycle"
 import { setAlertSinkForTests, type Alert } from "../../src/lib/alerting"
@@ -77,10 +77,10 @@ medusaIntegrationTestRunner({
       await waitForBackgroundWork(getContainer())
     })
 
-    async function placePickupOrder() {
+    async function placePickupOrder(quantity = 1) {
       const { data: created } = await api.post("/store/carts", { region_id: regionId, email: "shopper@example.com" }, store)
       const cartId = created.cart.id as string
-      await api.post(`/store/carts/${cartId}/line-items`, { variant_id: variantId, quantity: 1 }, store)
+      await api.post(`/store/carts/${cartId}/line-items`, { variant_id: variantId, quantity }, store)
       await api.post(`/store/carts/${cartId}`, { shipping_address: ADDRESS, billing_address: ADDRESS }, store)
       await api.post(`/store/carts/${cartId}/shipping-methods`, { option_id: options["click-collect"] }, store)
       const { data: pc } = await api.post("/store/payment-collections", { cart_id: cartId }, store)
@@ -97,10 +97,14 @@ medusaIntegrationTestRunner({
     }
 
     /** Medusa's own order page: "Fulfill items", then optionally "Mark as delivered". */
-    async function fulfilNatively(order: { id: string; items: { id: string; quantity: number }[] }, deliver: boolean) {
+    async function fulfilNatively(
+      order: { id: string; items: { id: string; quantity: number }[] },
+      deliver: boolean,
+      quantityOf: (item: { quantity: number }) => number = (i) => i.quantity
+    ) {
       const { data } = await api.post(
         `/admin/orders/${order.id}/fulfillments?fields=id,*fulfillments`,
-        { items: order.items.map((i) => ({ id: i.id, quantity: i.quantity })), location_id: locationId },
+        { items: order.items.map((i) => ({ id: i.id, quantity: quantityOf(i) })), location_id: locationId },
         admin
       )
       const fulfillmentId = data.order.fulfillments[0].id as string
@@ -170,6 +174,41 @@ medusaIntegrationTestRunner({
       expect(collectStatusOf(meta)).toBe("to_pick")
       expect(meta.collected_outside_board).toBeUndefined()
       expect(alerts).toHaveLength(0)
+    })
+
+    it("an order only partly handed over from the order page is not charged in full: staff are alerted once and it stays on the board", async () => {
+      const order = await placePickupOrder(2)
+      await fulfilNatively(order, true, () => 1)
+
+      await runJob()
+      await runJob()
+
+      expect(captures()).toHaveLength(0)
+      const meta = await metadataOf(order.id)
+      expect(collectStatusOf(meta)).toBe("to_pick")
+      expect(meta.collected_outside_board).toBeUndefined()
+      expect(meta.partly_handed_over).toEqual({ at: expect.any(String) })
+      expect(alerts).toHaveLength(1)
+      expect(alerts[0].tags).toMatchObject({ order_id: order.id })
+    })
+
+    it("a handed-over order whose payment can no longer be taken is reported once, not every hour", async () => {
+      const order = await placePickupOrder()
+      await fulfilNatively(order, true)
+      // The card hold is gone (lapsed or released at Stripe).
+      const payment = await orderPayment(getContainer(), order.id)
+      await getContainer().resolve(Modules.PAYMENT).cancelPayment(payment.id)
+      resetPaymentRecorder()
+
+      await runJob()
+      await runJob()
+      await runJob()
+
+      expect(captures()).toHaveLength(0)
+      expect(alerts).toHaveLength(1)
+      const meta = await metadataOf(order.id)
+      expect(collectStatusOf(meta)).not.toBe("collected")
+      expect(meta.collection_job_failed).toEqual({ collect_outside_board: expect.any(String) })
     })
   },
 })
