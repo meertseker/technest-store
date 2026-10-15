@@ -18,8 +18,32 @@ export type HoldReleasedState = "ours" | "order_cancelled" | "known" | "due"
 
 export type PrepareHoldReleasedOutput = { state: HoldReleasedState; patch: Record<string, unknown> }
 
-const result = (state: HoldReleasedState, patch: Record<string, unknown> = {}) =>
-  new StepResponse<PrepareHoldReleasedOutput>({ state, patch })
+/** The decision, from the payment and order as read under the lock. */
+export function decideHoldReleased(
+  input: PrepareHoldReleasedInput,
+  payment: { canceled_at?: unknown },
+  order: { status?: unknown; metadata?: Record<string, unknown> | null },
+  now = Date.now()
+): PrepareHoldReleasedOutput {
+  if (payment.canceled_at) return { state: "ours", patch: {} }
+  if (order.status === "canceled") return { state: "order_cancelled", patch: {} }
+  const meta = order.metadata ?? {}
+  const started = Date.parse(String(meta[CollectMeta.CANCEL_STARTED] ?? ""))
+  if (Number.isFinite(started) && now - started < CANCEL_IN_FLIGHT_MS) return { state: "ours", patch: {} }
+  const current = meta[PaymentNoticeMeta.HOLD_RELEASED] as { payment_intent?: unknown } | undefined
+  if (current?.payment_intent === input.payment_intent) return { state: "known", patch: {} }
+  return {
+    state: "due",
+    patch: {
+      [PaymentNoticeMeta.HOLD_RELEASED]: {
+        payment_intent: input.payment_intent,
+        reason: input.reason,
+        amount_pence: input.amount_pence,
+        at: new Date(now).toISOString(),
+      },
+    },
+  }
+}
 
 /**
  * Re-reads the payment and the order under the order's lock and decides
@@ -36,24 +60,9 @@ export const prepareHoldReleasedStep = createStep(
     const payment = await container
       .resolve(Modules.PAYMENT)
       .retrievePayment(input.payment_id, { select: ["id", "canceled_at"] })
-    if (payment.canceled_at) return result("ours")
     const order = await container
       .resolve(Modules.ORDER)
       .retrieveOrder(input.order_id, { select: ["id", "status", "metadata"] })
-    if (order.status === "canceled") return result("order_cancelled")
-
-    const meta = (order.metadata ?? {}) as Record<string, unknown>
-    const started = Date.parse(String(meta[CollectMeta.CANCEL_STARTED] ?? ""))
-    if (Number.isFinite(started) && Date.now() - started < CANCEL_IN_FLIGHT_MS) return result("ours")
-    const current = meta[PaymentNoticeMeta.HOLD_RELEASED] as { payment_intent?: unknown } | undefined
-    if (current?.payment_intent === input.payment_intent) return result("known")
-    return result("due", {
-      [PaymentNoticeMeta.HOLD_RELEASED]: {
-        payment_intent: input.payment_intent,
-        reason: input.reason,
-        amount_pence: input.amount_pence,
-        at: new Date().toISOString(),
-      },
-    })
+    return new StepResponse<PrepareHoldReleasedOutput>(decideHoldReleased(input, payment, order))
   }
 )

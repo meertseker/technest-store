@@ -26,6 +26,41 @@ export type DisputeEventState = "opened" | "known" | "updated" | "stale"
 
 export type DisputeRecord = DisputeFacts & { opened_at: string; event_at: number; closed_at?: string }
 
+export type ApplyDisputeEventOutput = { state: DisputeEventState; patch: Record<string, unknown> }
+
+/** What one event does to the order's disputes (`metadata` as read under the lock). */
+export function applyDisputeEvent(
+  input: ApplyDisputeEventInput,
+  metadata: Record<string, unknown> | null | undefined,
+  now = new Date().toISOString()
+): ApplyDisputeEventOutput {
+  const disputes = ((metadata ?? {})[PaymentNoticeMeta.DISPUTES] ?? {}) as Record<string, DisputeRecord>
+  const current = disputes[input.dispute.id]
+  const closed = input.event_type === "charge.dispute.closed"
+  const write = (state: DisputeEventState, record: DisputeRecord): ApplyDisputeEventOutput => ({
+    state,
+    patch: { [PaymentNoticeMeta.DISPUTES]: { ...disputes, [input.dispute.id]: record } },
+  })
+
+  if (!current) {
+    // Also an update or close whose opening was lost: treated as the opening.
+    return write("opened", {
+      ...input.dispute,
+      opened_at: now,
+      event_at: input.event_at,
+      ...(closed ? { closed_at: now } : {}),
+    })
+  }
+  if (input.event_type === "charge.dispute.created") return { state: "known", patch: {} }
+  if (current.closed_at || input.event_at < (Number(current.event_at) || 0)) return { state: "stale", patch: {} }
+  return write("updated", {
+    ...current,
+    status: input.dispute.status,
+    event_at: input.event_at,
+    ...(closed ? { closed_at: now } : {}),
+  })
+}
+
 /**
  * Applies one dispute event to the order's `disputes` (one record per
  * dispute id), re-reading them under the order's lock so two events can't
@@ -39,33 +74,6 @@ export const applyDisputeEventStep = createStep(
     const order = await container
       .resolve(Modules.ORDER)
       .retrieveOrder(input.order_id, { select: ["id", "metadata"] })
-    const disputes = ((order.metadata ?? {})[PaymentNoticeMeta.DISPUTES] ?? {}) as Record<string, DisputeRecord>
-    const current = disputes[input.dispute.id]
-    const now = new Date().toISOString()
-    const closed = input.event_type === "charge.dispute.closed"
-    const write = (state: DisputeEventState, record: DisputeRecord) =>
-      new StepResponse({
-        state,
-        patch: { [PaymentNoticeMeta.DISPUTES]: { ...disputes, [input.dispute.id]: record } } as Record<string, unknown>,
-      })
-    const keep = (state: DisputeEventState) => new StepResponse({ state, patch: {} as Record<string, unknown> })
-
-    if (!current) {
-      // Also an update or close whose opening was lost: treated as the opening.
-      return write("opened", {
-        ...input.dispute,
-        opened_at: now,
-        event_at: input.event_at,
-        ...(closed ? { closed_at: now } : {}),
-      })
-    }
-    if (input.event_type === "charge.dispute.created") return keep("known")
-    if (current.closed_at || input.event_at < (Number(current.event_at) || 0)) return keep("stale")
-    return write("updated", {
-      ...current,
-      status: input.dispute.status,
-      event_at: input.event_at,
-      ...(closed ? { closed_at: now } : {}),
-    })
+    return new StepResponse<ApplyDisputeEventOutput>(applyDisputeEvent(input, order.metadata))
   }
 )
