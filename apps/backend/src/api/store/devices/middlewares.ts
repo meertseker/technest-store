@@ -26,7 +26,7 @@ import { listProductQueryConfig } from "@medusajs/medusa/api/store/products/quer
 import { StoreGetProductsParams } from "@medusajs/medusa/api/store/products/validators"
 import ProductDeviceLink from "../../../links/product-device"
 import { DEVICE_TYPES } from "../../../modules/device/utils"
-import { allowProductAttributeFields } from "../products/middlewares"
+import { allowProductAttributeFields, hidePrivateAttributes } from "../products/middlewares"
 
 const typeList = z.preprocess(
   (value) => (value === undefined || Array.isArray(value) ? value : [value]),
@@ -116,6 +116,7 @@ export const storeDeviceMiddlewares: MiddlewareRoute[] = [
         allowUnauthenticated: true,
       }),
       allowProductAttributeFields,
+      hidePrivateAttributes,
       validateAndTransformQuery(StoreGetProductsParams, listProductQueryConfig),
       applyDeviceProductFilter,
       filterByValidSalesChannels(),

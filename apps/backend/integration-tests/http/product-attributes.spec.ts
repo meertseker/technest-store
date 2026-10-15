@@ -140,6 +140,41 @@ medusaIntegrationTestRunner({
       })
     })
 
+    it("never shows the public the reorder level, however the fields are asked for", async () => {
+      // A sample product that has an attributes row (with a reorder level).
+      const id = productId["20w-usb-c-fast-wall-charger"]
+      const requests = [
+        "/store/products?fields=+product_attributes.*&limit=100",
+        "/store/products?fields=*product_attributes&limit=100",
+        `/store/products/${id}?fields=+product_attributes.*`,
+        "/store/devices/ps5/products?fields=+product_attributes.*",
+      ]
+      for (const url of requests) {
+        const { data } = await api.get(url, store)
+        // Products without an attributes row answer null; check the ones that have one.
+        const products = (data.products ?? [data.product]).filter((p: any) => p.product_attributes)
+        if (!products.length) throw new Error(`no product with attributes in ${url}`)
+        for (const p of products) {
+          expect(p.product_attributes).not.toHaveProperty("reorder_level")
+          expect(p.product_attributes).toHaveProperty("safety_marking")
+        }
+      }
+      // Asked for by name, or as the bare relation: refused by the field
+      // allow-list, or answered without it.
+      for (const fields of ["+product_attributes.reorder_level", "+product_attributes"]) {
+        const res = await api
+          .get(`/store/products/${id}?fields=${fields}`, store)
+          .catch((e: any) => e.response)
+        expect([200, 400]).toContain(res.status)
+        if (res.status === 200) {
+          expect(res.data.product.product_attributes ?? {}).not.toHaveProperty("reorder_level")
+        }
+      }
+      // Staff still see it.
+      const { data: admin_view } = await api.get(`/admin/products/${id}/attributes`, admin)
+      expect(admin_view.product_attributes).toHaveProperty("reorder_level")
+    })
+
     it("rejects bad input and unknown products", async () => {
       const bad = await api
         .post(`/admin/products/${draftChargerId}/attributes`, { colour: "red" }, admin)
