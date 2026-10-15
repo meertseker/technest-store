@@ -180,13 +180,28 @@ async function disputeEvent(container: MedusaContainer, event: StripeEvent): Pro
 }
 
 /**
+ * What a charge's `amount_refunded` holds beyond money that was never taken.
+ * Stripe also counts a released card hold there: all of it when an uncaptured
+ * charge is cancelled, the rest when less than the hold is captured. Neither
+ * is a refund (a released hold arrives as payment_intent.canceled).
+ */
+function refundedAfterCapture(charge: Record<string, any>): number {
+  if (charge.captured === false) return 0
+  const refunded = smallestUnit(charge.amount_refunded)
+  if (charge.amount_captured === undefined || charge.amount_captured === null) return refunded
+  const released = Math.max(0, smallestUnit(charge.amount) - smallestUnit(charge.amount_captured))
+  return Math.max(0, refunded - released)
+}
+
+/**
  * charge.refunded. Stripe sends it for every refund, ours included, with the
- * charge's cumulative `amount_refunded`. Anything above what Medusa already
- * holds as refunds was refunded outside the admin (the Stripe dashboard): it
- * is written to the payment and the order like an admin refund would be (so
- * the admin can't refund it again, the order shows it, and the customer gets
- * the usual refund email), the shop is told, and a person is alerted. When
- * Medusa never captured enough to cover it, only a note is written.
+ * charge's cumulative `amount_refunded` (less any released hold, see above).
+ * Anything above what Medusa already holds as refunds was refunded outside
+ * the admin (the Stripe dashboard): it is written to the payment and the
+ * order like an admin refund would be (so the admin can't refund it again,
+ * the order shows it, and the customer gets the usual refund email), the shop
+ * is told, and a person is alerted. When Medusa never captured enough to
+ * cover it, only a note is written.
  */
 async function chargeRefundedOnce(container: MedusaContainer, event: StripeEvent): Promise<StripeEventResult> {
   const charge = event.data.object
@@ -194,7 +209,7 @@ async function chargeRefundedOnce(container: MedusaContainer, event: StripeEvent
   const order = payment?.payment_collection?.order
   if (!payment || !order) return ignored(container, event, "no order for this payment")
 
-  const stripePence = smallestUnit(charge.amount_refunded)
+  const stripePence = refundedAfterCapture(charge)
   const knownPence = sumPence(payment.refunds)
   const deltaPence = stripePence - knownPence
   if (deltaPence <= 0) return { handled: "refund_known" }

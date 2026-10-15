@@ -12,7 +12,7 @@ import { adminHeaders } from "../helpers/auth"
 import { waitForBackgroundWork } from "../helpers/background"
 import { orderOf, paymentOf, placeAuthorisedOrder, recordEvents, settle, shippingOptionIdsByCode } from "../helpers/orders"
 import { recordedPaymentCalls, resetPaymentRecorder } from "../helpers/recording-payment-provider"
-import { mailWithSubject, textOf } from "../utils/mailpit"
+import { mailTo, mailWithSubject, textOf } from "../utils/mailpit"
 
 const SECRET = "whsec_integration_events"
 const RUN = Date.now()
@@ -202,16 +202,24 @@ medusaIntegrationTestRunner({
     })
 
     describe("charge.refunded", () => {
-      const charge = (intentId: string, amountRefunded: number, refunds: { id: string; amount: number }[] = []) => ({
+      const charge = (
+        intentId: string,
+        amountRefunded: number,
+        refunds: { id: string; amount: number }[] = [],
+        over: Record<string, unknown> = {}
+      ) => ({
         id: "ch_test_r",
         object: "charge",
         amount: 1347,
+        amount_captured: 1347,
+        captured: true,
         amount_refunded: amountRefunded,
         currency: "gbp",
         payment_intent: intentId,
         refunded: amountRefunded >= 1347,
         metadata: { session_id: "payses_x" },
         refunds: { object: "list", data: refunds.map((r) => ({ object: "refund", currency: "gbp", ...r })) },
+        ...over,
       })
 
       it("a refund made in the Stripe dashboard is recorded on the payment and the order, emitted once, and the shop is told", async () => {
@@ -334,6 +342,35 @@ medusaIntegrationTestRunner({
         expect(alerts).toHaveLength(1)
         expect(events.for("payment.refunded")).toHaveLength(0)
         expect(await mailWithSubject(SHOP, `Refund of £13.47 made in Stripe, not the admin: order #${o.display_id}`)).toHaveLength(1)
+      })
+      it("a card hold released before capture (Stripe marks the uncaptured charge refunded) is not taken for a refund", async () => {
+        const { order: o, intent_id, payment_id } = await order("click-collect", false)
+        // display_id repeats between tests (the database is reset), so count the shop's mail instead.
+        const shopMail = async () => (await mailTo(SHOP, 0)).length
+        const before = await shopMail()
+
+        await deliver(
+          eventJson("charge.refunded", charge(intent_id, 1347, [], { captured: false, amount_captured: 0, refunded: true }))
+        )
+        await waitForBackgroundWork(getContainer())
+        await settle()
+
+        expect((await paymentOf(getContainer(), payment_id)).refunds ?? []).toHaveLength(0)
+        expect((await metadataOf(o.id)).external_refunds).toBeUndefined()
+        expect(alerts).toHaveLength(0)
+        expect(await shopMail()).toBe(before)
+      })
+
+      it("the part of a hold released by a smaller capture is not taken for a refund", async () => {
+        // Authorised £15.00, captured £13.47: Stripe reports the released £1.53 in amount_refunded.
+        const { order: o, intent_id, payment_id } = await order("standard", true)
+
+        await deliver(eventJson("charge.refunded", charge(intent_id, 153, [], { amount: 1500, amount_captured: 1347 })))
+        await waitForBackgroundWork(getContainer())
+
+        expect((await paymentOf(getContainer(), payment_id)).refunds ?? []).toHaveLength(0)
+        expect((await metadataOf(o.id)).external_refunds).toBeUndefined()
+        expect(alerts).toHaveLength(0)
       })
     })
 
