@@ -5,6 +5,7 @@ import { toPence } from "../email/order-email-data"
 import { runEmail } from "../email/run-email"
 import { recordExternalRefundWorkflow } from "../../workflows/record-external-refund"
 import { REFUNDS_CHANGED } from "../../workflows/steps/payment/assert-refunds-unchanged"
+import { recordHoldReleasedWorkflow } from "../../workflows/record-hold-released"
 import { recordPaymentNoticeWorkflow } from "../../workflows/record-payment-notice"
 import { PaymentNoticeMeta } from "./constants"
 
@@ -276,10 +277,11 @@ async function chargeRefunded(container: MedusaContainer, event: StripeEvent): P
 }
 
 /**
- * payment_intent.canceled. Our own cancels (hold release, order cancel) mark
- * the Medusa payment cancelled first, so a cancelled intent on an uncancelled
- * payment of a live order was cancelled at Stripe: expired, or cancelled in
- * the dashboard. The order can't be captured any more; staff must know.
+ * payment_intent.canceled. A cancelled intent on a live order whose payment
+ * we didn't cancel was cancelled at Stripe: expired, or cancelled in the
+ * dashboard. The order can't be captured any more; staff must know. Decided
+ * under the order's lock (record-hold-released), because Medusa asks Stripe
+ * to cancel before it marks the payment cancelled.
  */
 async function intentCanceled(container: MedusaContainer, event: StripeEvent): Promise<StripeEventResult> {
   const intent = event.data.object
@@ -290,30 +292,27 @@ async function intentCanceled(container: MedusaContainer, event: StripeEvent): P
   const order = payment.payment_collection?.order
   if (!order || order.status === "canceled") return { handled: "order_cancelled" }
 
-  const current = (order.metadata ?? {})[PaymentNoticeMeta.HOLD_RELEASED] as { payment_intent?: unknown } | undefined
-  const resource = { id: intentId!, type: "payment_intent" }
-  if (current?.payment_intent !== intentId) {
-    const reason = code(intent.cancellation_reason)
-    await recordPaymentNoticeWorkflow(container).run({
-      input: {
-        order_id: order.id,
-        patch: {
-          [PaymentNoticeMeta.HOLD_RELEASED]: {
-            payment_intent: intentId,
-            reason,
-            amount_pence: smallestUnit(intent.amount),
-            at: new Date().toISOString(),
-          },
-        },
-      },
-    })
+  const reason = code(intent.cancellation_reason)
+  const { result } = await recordHoldReleasedWorkflow(container).run({
+    input: {
+      order_id: order.id,
+      payment_id: payment.id,
+      payment_intent: intentId!,
+      reason,
+      amount_pence: smallestUnit(intent.amount),
+    },
+  })
+  if (result.state === "ours") return { handled: "cancelled_by_us" }
+  if (result.state === "order_cancelled") return { handled: "order_cancelled" }
+  if (result.state === "due") {
     reportAlert(
       `The card hold of order ${order.id} was released at Stripe (reason: ${reason ?? "none given"}); the payment can't be captured`,
       { source: "stripe-events", event: event.type, order_id: order.id, reason: reason ?? undefined },
       `stripe-hold-released:${intentId}`
     )
   }
-  await shopEmail(container, "shop-payment-notice", event, resource, order.id)
+  // Send-once: a redelivered event sends nothing more.
+  await shopEmail(container, "shop-payment-notice", event, { id: intentId!, type: "payment_intent" }, order.id)
   return { handled: "hold_released" }
 }
 

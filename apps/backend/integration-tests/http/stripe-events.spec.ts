@@ -5,6 +5,7 @@ import { createRequire } from "module"
 import { medusaIntegrationTestRunner } from "@medusajs/test-utils"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { capturePaymentWorkflow } from "@medusajs/medusa/core-flows"
+import { collectLockKey } from "../../src/lib/click-collect"
 import { seedTechNest } from "../../src/scripts/seed"
 import { setAlertSinkForTests, type Alert } from "../../src/lib/alerting"
 import stripeEvents from "../../src/subscribers/stripe-events"
@@ -426,6 +427,40 @@ medusaIntegrationTestRunner({
         expect(alerts).toHaveLength(0)
         expect((await metadataOf(ours.order.id)).payment_hold_released).toBeUndefined()
         expect((await metadataOf(gone.order.id)).payment_hold_released).toBeUndefined()
+      })
+
+      it("is decided under the order's lock: a cancel of ours that finishes while the lock is held is not reported", async () => {
+        const { order: o, intent_id, payment_id } = await order("click-collect")
+        const locking = getContainer().resolve(Modules.LOCKING)
+        // Our cancel in flight: it holds the order's lock, Stripe has already cancelled the intent
+        // (so the event is on its way), and Medusa hasn't written canceled_at yet.
+        await locking.acquire(collectLockKey(o.id), { ownerId: "test-cancel", expire: 60 })
+        let handled: Promise<unknown>
+        try {
+          handled = deliver(eventJson("payment_intent.canceled", canceled(intent_id, null)))
+          await new Promise((r) => setTimeout(r, 1000))
+          await getContainer().resolve(Modules.PAYMENT).cancelPayment(payment_id)
+        } finally {
+          await locking.release(collectLockKey(o.id), { ownerId: "test-cancel" })
+        }
+        await handled!
+        await waitForBackgroundWork(getContainer())
+
+        expect(alerts).toHaveLength(0)
+        expect((await metadataOf(o.id)).payment_hold_released).toBeUndefined()
+      })
+
+      it("a cancel the collection deadline has started (payment not marked cancelled yet) is not reported", async () => {
+        const { order: o, intent_id } = await order("click-collect")
+        await getContainer()
+          .resolve(Modules.ORDER)
+          .updateOrders(o.id, { metadata: { payment_cancel_started_at: new Date().toISOString() } })
+
+        await deliver(eventJson("payment_intent.canceled", canceled(intent_id, null)))
+        await waitForBackgroundWork(getContainer())
+
+        expect(alerts).toHaveLength(0)
+        expect((await metadataOf(o.id)).payment_hold_released).toBeUndefined()
       })
     })
   },

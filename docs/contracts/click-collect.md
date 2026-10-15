@@ -174,6 +174,7 @@ Response `200`: `{ "order": ClickCollectOrder }`.
 | `collection_expired_at` | ISO 8601, set when the job cancels a ready order at its deadline (not set for an order never marked ready) |
 | `ready_email_resent_at` | ISO 8601, the last resend of the ready email |
 | `collected_outside_board` | `{ fulfillment_id, at }`: handed over from Medusa's order page; payment taken by the lifecycle job |
+| `payment_cancel_started_at` | ISO 8601, written by the deadline cancel before Stripe is called, so the `payment_intent.canceled` it causes isn't reported as a hold released at Stripe |
 | `partly_handed_over` | `{ at }`: part of the order was handed over from Medusa's order page; staff alerted once, not charged |
 | `collection_job_failed` | `{ collect_outside_board?, partly_handed_over?, expire?, remind? }`: ISO time of the job's first failure per action (each reported once) |
 

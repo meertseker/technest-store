@@ -27,6 +27,8 @@ export const CollectMeta = {
   PARTLY_HANDED_OVER: "partly_handed_over",
   /** `{ [action]: ISO time }`: the hourly job's first failure per action, so each is reported once. */
   JOB_FAILED: "collection_job_failed",
+  /** ISO time: the collection deadline started cancelling the order (written before Stripe is called). */
+  CANCEL_STARTED: "payment_cancel_started_at",
 } as const
 
 // The capture-retry job and the Stripe event handler keep their state in order metadata too.

@@ -81,11 +81,18 @@ export const prepareCollectionExpiryStep = createStep(
       container
         .resolve(ContainerRegistrationKeys.LOGGER)
         .warn(`Click & Collect: order ${order_id} was never marked ready and is cancelled at its deadline.`)
-      return new StepResponse<PrepareUncollectedOutput>({ due: true, patch: {} })
+      return new StepResponse<PrepareUncollectedOutput>({
+        due: true,
+        patch: { [CollectMeta.CANCEL_STARTED]: new Date(now).toISOString() },
+      })
     }
     return new StepResponse<PrepareUncollectedOutput>({
       due: true,
-      patch: { [CollectMeta.EXPIRED_AT]: new Date(now).toISOString() },
+      patch: {
+        [CollectMeta.EXPIRED_AT]: new Date(now).toISOString(),
+        // Marks the cancel as ours before Stripe is called (see record-hold-released).
+        [CollectMeta.CANCEL_STARTED]: new Date(now).toISOString(),
+      },
     })
   }
 )
