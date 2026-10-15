@@ -1,6 +1,6 @@
 import { createHmac, randomBytes } from "node:crypto"
 import { medusaIntegrationTestRunner } from "@medusajs/test-utils"
-import { Modules } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { setAlertSinkForTests, type Alert } from "../../src/lib/alerting"
 import { mailTo } from "../utils/mailpit"
 import { warmDb } from "../utils/warm-db"
@@ -89,6 +89,55 @@ medusaIntegrationTestRunner({
         expect(lines.join("\n")).toContain(sent.id)
         expect(everything).not.toContain(to)
         expect(everything).not.toContain("Order confirmed")
+      })
+
+      it("matches a late bounce to the email Resend says bounced, not a newer one to the same address", async () => {
+        const to = `e2-late-${RUN}@example.com`
+        const notifications = getContainer().resolve(Modules.NOTIFICATION) as any
+        const attempt = (resource_id: string, template: string) => ({
+          to,
+          channel: "email",
+          template,
+          resource_id,
+          resource_type: "order",
+          trigger_type: "order.placed",
+          content: { subject: "Your order", text: "ok" },
+        })
+        const [first] = await notifications.createNotifications([attempt("order_late_1", "order-confirmation")])
+        await mailTo(to, 1)
+        // The confirmation went out two hours ago, Resend accepted it a few seconds later.
+        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000)
+        const pg = getContainer().resolve(ContainerRegistrationKeys.PG_CONNECTION) as any
+        await pg("notification").where({ id: first.id }).update({ created_at: twoHoursAgo })
+        const sentAt = new Date(twoHoursAgo.getTime() + 5000).toISOString()
+        await notifications.createNotifications([attempt("order_late_2", "order-dispatched")])
+        await mailTo(to, 2)
+
+        const body = event("email.bounced", to, `${bounce}, "created_at": "${sentAt}"`)
+        const res = await post(body, svixHeaders(body))
+        expect(res.status).toBe(200)
+        expect(alerts).toHaveLength(1)
+        expect(alerts[0].tags).toMatchObject({ notification_id: first.id, resource_id: "order_late_1", match: "sent_time" })
+      })
+
+      it("matches the stored attempt when Resend reports the address in another case", async () => {
+        const to = `e2-case-${RUN}@example.com`
+        const [sent] = await (getContainer().resolve(Modules.NOTIFICATION) as any).createNotifications([
+          {
+            to,
+            channel: "email",
+            template: "order-confirmation",
+            resource_id: "order_case_1",
+            resource_type: "order",
+            trigger_type: "order.placed",
+            content: { subject: "Your order", text: "ok" },
+          },
+        ])
+        await mailTo(to, 1)
+        const body = event("email.bounced", to.toUpperCase(), bounce)
+        const res = await post(body, svixHeaders(body))
+        expect(res.status).toBe(200)
+        expect(alerts[0].tags).toMatchObject({ notification_id: sent.id, match: "newest" })
       })
 
       it("reports a complaint even when no stored attempt matches", async () => {

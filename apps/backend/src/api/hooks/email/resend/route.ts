@@ -9,10 +9,18 @@ const REPORTED = new Set(["email.bounced", "email.complained"])
 /** How far back a stored attempt is matched to the event. */
 const MATCH_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
 
+/**
+ * Our attempt row is written before the message reaches Resend; Resend's
+ * `data.created_at` is when it accepted the message. A little slack covers
+ * clock drift between the two.
+ */
+const SENT_TIME_SLACK_MS = 5 * 60 * 1000
+
 type ResendEvent = {
   type?: unknown
   data?: {
     email_id?: unknown
+    created_at?: unknown
     to?: unknown
     bounce?: { type?: unknown; subType?: unknown } | null
   } | null
@@ -26,10 +34,13 @@ const str = (v: unknown) => (typeof v === "string" ? v : undefined)
  * "success" on a stored attempt only means the mail server accepted the
  * message. Resend tells us here when the recipient's server later bounced
  * it or the reader marked it as spam. Each such event becomes a Sentry
- * alert carrying the ids of the stored attempt it matches (by recipient,
- * newest within 30 days): the person on call then knows which order or
- * application's email did not arrive and can reach the customer another
- * way. Addresses and subjects are never logged or tagged.
+ * alert carrying the ids of the stored attempt it matches: same recipient
+ * (any letter case), the newest one written before Resend accepted the
+ * message (`data.created_at`), within 30 days. Without that time it falls
+ * back to the newest attempt to the address and says so in the `match` tag.
+ * The person on call then knows which order or application's email did not
+ * arrive and can reach the customer another way. Addresses and subjects are
+ * never logged or tagged.
  */
 export async function POST(req: MedusaRequest<ResendEvent>, res: MedusaResponse) {
   const logger = req.scope.resolve(ContainerRegistrationKeys.LOGGER)
@@ -40,7 +51,10 @@ export async function POST(req: MedusaRequest<ResendEvent>, res: MedusaResponse)
   }
 
   const data = req.body?.data ?? {}
-  const recipients = (Array.isArray(data?.to) ? data.to : [data?.to]).filter((t): t is string => typeof t === "string" && !!t)
+  const given = (Array.isArray(data?.to) ? data.to : [data?.to]).filter((t): t is string => typeof t === "string" && !!t)
+  // Stored as typed at checkout; Resend may report another case.
+  const recipients = [...new Set(given.flatMap((t) => [t, t.trim().toLowerCase()]))]
+  const sentAt = typeof data?.created_at === "string" ? Date.parse(data.created_at) : NaN
   const tags: Record<string, string | undefined> = {
     source: "webhook:resend",
     event: type,
@@ -58,13 +72,16 @@ export async function POST(req: MedusaRequest<ResendEvent>, res: MedusaResponse)
         to: recipients,
         channel: "email",
         status: "success",
-        created_at: { $gte: new Date(Date.now() - MATCH_WINDOW_MS) },
+        created_at: Number.isFinite(sentAt)
+          ? { $gte: new Date(sentAt - MATCH_WINDOW_MS), $lte: new Date(sentAt + SENT_TIME_SLACK_MS) }
+          : { $gte: new Date(Date.now() - MATCH_WINDOW_MS) },
       }
       const [match] = await notifications.listNotifications(
         filters as Parameters<typeof notifications.listNotifications>[0],
         { select: ["id", "template", "resource_type", "resource_id"], order: { created_at: "DESC" }, take: 1 }
       )
       if (match) {
+        tags.match = Number.isFinite(sentAt) ? "sent_time" : "newest"
         tags.notification_id = match.id
         tags.template = match.template ?? undefined
         tags.resource_type = match.resource_type ?? undefined
