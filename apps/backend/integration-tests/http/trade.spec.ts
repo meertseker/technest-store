@@ -97,12 +97,20 @@ medusaIntegrationTestRunner({
         retail: Number(v.prices.find((p: any) => p.currency_code === "gbp").amount),
       }))
 
-      // The basket test buys up to 60; take stock out of the picture for that variant.
-      await api.post(
-        `/admin/products/${productId}/variants/${variants[0].id}`,
-        { manage_inventory: false },
-        admin
-      )
+      // The basket test buys up to 60: give that variant plenty of stock (the
+      // shop sells tracked stock only, so it can't simply stop tracking).
+      const { data: stock } = await query.graph({
+        entity: "product_variant",
+        fields: ["inventory_items.inventory_item_id"],
+        filters: { id: variants[0].id },
+      })
+      await container.resolve(Modules.INVENTORY).updateInventoryLevels([
+        {
+          inventory_item_id: (stock[0] as any).inventory_items[0].inventory_item_id,
+          location_id: seeded.stockLocation.id,
+          stocked_quantity: 1000,
+        },
+      ])
 
       // Tiers for the first variant: VAT-inclusive major units, like retail prices.
       await api.post(
@@ -322,6 +330,25 @@ medusaIntegrationTestRunner({
         expect(await groupsOf(customers.bob.customerId)).toEqual(["Trade"])
       })
 
+      it("two first approvals at once create one Trade group with both customers in it", async () => {
+        const customerService: ICustomerModuleService = getContainer().resolve(Modules.CUSTOMER)
+        await customerService.deleteCustomerGroups(tradeGroupId)
+        const { data: carolApp } = await api.post(
+          "/store/trade-applications",
+          application({ company_name: "Carol Cases" }),
+          as("carol")
+        )
+        const responses = await Promise.all(
+          [pendingId, carolApp.trade_application.id].map((id) =>
+            fail(api.post(`/admin/trade-applications/${id}/approve`, {}, admin))
+          )
+        )
+        expect(responses.map((r) => r.status)).toEqual([200, 200])
+        expect(await customerService.listCustomerGroups({ name: "Trade" })).toHaveLength(1)
+        expect(await groupsOf(customers.bob.customerId)).toEqual(["Trade"])
+        expect(await groupsOf(customers.carol.customerId)).toEqual(["Trade"])
+      })
+
       it("rolls back membership, the new group and the status when a later step fails", async () => {
         const container = getContainer()
         const customerService: ICustomerModuleService = container.resolve(Modules.CUSTOMER)
@@ -439,6 +466,23 @@ medusaIntegrationTestRunner({
 
         const revoked = await api.get("/admin/trade-applications?status=revoked", admin)
         expect(revoked.data.trade_applications.map((a: any) => a.id)).toEqual([approvedId])
+      })
+
+      it("reprices the customer's open baskets at retail, so a trade-priced basket can't be checked out", async () => {
+        const { data } = await api.post("/store/carts", { region_id: regionId }, as("trader"))
+        const { data: withItem } = await api.post(
+          `/store/carts/${data.cart.id}/line-items`,
+          { variant_id: variants[0].id, quantity: 10 },
+          as("trader")
+        )
+        expect(withItem.cart.items[0].unit_price).toBe(7)
+
+        await api.post(`/admin/trade-applications/${approvedId}/revoke`, {}, admin)
+
+        // Reading the basket does not reprice it: the revoke must have done so.
+        const { data: after } = await api.get(`/store/carts/${data.cart.id}`, as("trader"))
+        expect(after.cart.items[0].unit_price).toBe(variants[0].retail)
+        expect(after.cart.items[0].quantity).toBe(10)
       })
 
       it("accepts no reason, an empty body and a blank reason (stored as null)", async () => {

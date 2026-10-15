@@ -3,6 +3,8 @@ import {
   transform,
   WorkflowResponse,
 } from "@medusajs/framework/workflows-sdk"
+import { acquireLockStep, releaseLockStep } from "@medusajs/medusa/core-flows"
+import { TRADE_LOCK_OPTIONS, TRADE_PRICING_SETUP_LOCK_KEY } from "./steps/trade-locks"
 import {
   ensureTradeCustomerGroupStep,
   ensureTradePriceListStep,
@@ -12,6 +14,7 @@ import {
 export const ensureTradePricingWorkflow = createWorkflow(
   "ensure-trade-pricing",
   function () {
+    acquireLockStep({ key: TRADE_PRICING_SETUP_LOCK_KEY, ...TRADE_LOCK_OPTIONS })
     const groupId = ensureTradeCustomerGroupStep()
     const listInput = transform({ groupId }, ({ groupId }) => ({ customer_group_id: groupId }))
     const priceListId = ensureTradePriceListStep(listInput)
@@ -19,6 +22,7 @@ export const ensureTradePricingWorkflow = createWorkflow(
       customer_group_id: groupId,
       price_list_id: priceListId,
     }))
+    releaseLockStep({ key: TRADE_PRICING_SETUP_LOCK_KEY })
     return new WorkflowResponse(result)
   }
 )

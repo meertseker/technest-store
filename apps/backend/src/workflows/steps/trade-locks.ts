@@ -4,3 +4,10 @@ export const tradeCustomerLockKey = (customerId: string) => `trade_application:c
 
 /** Wait up to 5 s for the lock; it expires after 30 s if a process dies holding it. */
 export const TRADE_LOCK_OPTIONS = { timeout: 5, ttl: 30 }
+
+/**
+ * One lock for creating the Trade customer group and price list: two first
+ * approvals at once would otherwise both find no group, both create one, and
+ * the customer of the first would end up in a group nothing points to.
+ */
+export const TRADE_PRICING_SETUP_LOCK_KEY = "trade_pricing:setup"

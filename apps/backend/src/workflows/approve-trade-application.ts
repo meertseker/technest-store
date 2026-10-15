@@ -13,7 +13,11 @@ import {
   retrievePendingTradeApplicationStep,
   updateTradeApplicationStatusStep,
 } from "./steps/trade-application-steps"
-import { TRADE_LOCK_OPTIONS, tradeApplicationLockKey } from "./steps/trade-locks"
+import {
+  TRADE_LOCK_OPTIONS,
+  TRADE_PRICING_SETUP_LOCK_KEY,
+  tradeApplicationLockKey,
+} from "./steps/trade-locks"
 import {
   addCustomerToGroupStep,
   ensureTradeCustomerGroupStep,
@@ -23,7 +27,8 @@ import {
  * Approves a pending application: puts the customer in the "Trade" group
  * (creating the group if needed) and marks the application approved.
  * A failure in any later step rolls back the group membership and the group.
- * A lock on the application stops two reviewers approving/rejecting it at once.
+ * A lock on the application stops two reviewers approving/rejecting it at once;
+ * a second, shop-wide lock serialises approvals so only one creates the group.
  */
 export const approveTradeApplicationWorkflow = createWorkflow(
   "approve-trade-application",
@@ -34,6 +39,11 @@ export const approveTradeApplicationWorkflow = createWorkflow(
     }))
     acquireLockStep(lock)
     const application = retrievePendingTradeApplicationStep(input)
+    // Held to the end, so a group this run creates (and might roll back) is
+    // never picked up by a concurrent approval.
+    acquireLockStep({ key: TRADE_PRICING_SETUP_LOCK_KEY, ...TRADE_LOCK_OPTIONS }).config({
+      name: "acquire-trade-pricing-setup-lock",
+    })
     const groupId = ensureTradeCustomerGroupStep()
     const membership = transform({ application, groupId }, ({ application, groupId }) => ({
       customer_id: application.customer_id,
@@ -51,7 +61,10 @@ export const approveTradeApplicationWorkflow = createWorkflow(
       data: { id: application.id, customer_id: application.customer_id },
     }))
     emitEventStep(event)
-    releaseLockStep(lock)
+    const locks = transform({ input }, ({ input }) => ({
+      key: [tradeApplicationLockKey(input.id), TRADE_PRICING_SETUP_LOCK_KEY],
+    }))
+    releaseLockStep(locks)
     return new WorkflowResponse(updated)
   }
 )
