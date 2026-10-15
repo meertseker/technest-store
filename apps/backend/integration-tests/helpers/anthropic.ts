@@ -6,13 +6,15 @@ import { AddressInfo, Socket } from "net"
  * exercise the real Anthropic SDK without any network access. Point the SDK
  * at it with ANTHROPIC_BASE_URL.
  */
-export type StubMode = "ok" | "refusal" | "slow" | "garbage" | "error500" | "unauthorized"
+export type StubMode = "ok" | "refusal" | "slow" | "garbage" | "error500" | "unauthorized" | "rate_limited"
 
 export type AnthropicStub = {
   url: string
   mode: StubMode
   /** JSON the model "answers" in ok mode. */
   answer: Record<string, unknown>
+  /** Seconds sent as retry-after in rate_limited mode. */
+  retryAfter: number
   requests: { headers: http.IncomingHttpHeaders; body: any }[]
   close: () => Promise<void>
 }
@@ -35,6 +37,7 @@ export async function startAnthropicStub(port = 0): Promise<AnthropicStub> {
     url: "",
     mode: "ok",
     answer: {},
+    retryAfter: 1,
     requests: [],
     close: async () => {},
   }
@@ -47,8 +50,8 @@ export async function startAnthropicStub(port = 0): Promise<AnthropicStub> {
       return res.end()
     }
     state.requests.push({ headers: req.headers, body: JSON.parse(Buffer.concat(chunks).toString()) })
-    const send = (status: number, body: unknown) => {
-      res.writeHead(status, { "content-type": "application/json", "request-id": "req_stub" })
+    const send = (status: number, body: unknown, headers: Record<string, string> = {}) => {
+      res.writeHead(status, { "content-type": "application/json", "request-id": "req_stub", ...headers })
       res.end(JSON.stringify(body))
     }
     switch (state.mode) {
@@ -65,6 +68,12 @@ export async function startAnthropicStub(port = 0): Promise<AnthropicStub> {
         return send(200, message([{ type: "text", text: "{not json" }], "end_turn"))
       case "error500":
         return send(500, { type: "error", error: { type: "api_error", message: "boom" } })
+      case "rate_limited":
+        return send(
+          429,
+          { type: "error", error: { type: "rate_limit_error", message: "slow down" } },
+          { "retry-after": String(state.retryAfter) }
+        )
       case "unauthorized":
         return send(401, { type: "error", error: { type: "authentication_error", message: "invalid x-api-key" } })
       case "slow":

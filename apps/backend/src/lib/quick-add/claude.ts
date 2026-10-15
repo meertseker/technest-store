@@ -84,6 +84,15 @@ function retryable(e: unknown): boolean {
   return false
 }
 
+/** A rate limit says how long to wait (retry-after, seconds); anything else waits RETRY_PAUSE_MS. */
+function retryPauseMs(e: unknown): number {
+  if (e instanceof Anthropic.APIError && e.status === 429) {
+    const seconds = Number(e.headers?.get?.("retry-after"))
+    if (Number.isFinite(seconds) && seconds > 0) return Math.max(RETRY_PAUSE_MS, seconds * 1000)
+  }
+  return RETRY_PAUSE_MS
+}
+
 const fail = (code: AnalyzeFailureCode, message: string): AnalyzeResult => ({
   ok: false,
   code,
@@ -122,10 +131,11 @@ export async function analyzeProductPhoto(input: AnalyzeInput): Promise<AnalyzeR
     if (attempt === 2 || !retryable(result.error)) {
       return mapError(result.error)
     }
-    if (deadline - Date.now() - RETRY_PAUSE_MS < MIN_ATTEMPT_MS) {
+    const pause = retryPauseMs(result.error)
+    if (deadline - Date.now() - pause < MIN_ATTEMPT_MS) {
       return mapError(result.error)
     }
-    await new Promise((resolve) => setTimeout(resolve, RETRY_PAUSE_MS))
+    await new Promise((resolve) => setTimeout(resolve, pause))
   }
 }
 

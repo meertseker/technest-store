@@ -50,6 +50,7 @@ describe("analyzeProductPhoto deadline", () => {
     stub.mode = "ok"
     stub.answer = ANSWER
     stub.requests.length = 0
+    stub.retryAfter = 1
     process.env.ANTHROPIC_API_KEY = "sk-ant-unit-test"
     process.env.ANTHROPIC_BASE_URL = stub.url
   })
@@ -107,6 +108,36 @@ describe("analyzeProductPhoto deadline", () => {
     const started = Date.now()
     const result = await analyzeProductPhoto({ image, catalogue })
 
+    expect(result).toMatchObject({ ok: false, code: "ai_unavailable" })
+    expect(stub.requests).toHaveLength(1)
+    expect(Date.now() - started).toBeLessThan(2000)
+  })
+
+  it("waits as long as a rate limit asks before the second attempt", async () => {
+    process.env.QUICK_ADD_AI_TIMEOUT_MS = "5000"
+    process.env.QUICK_ADD_AI_DEADLINE_MS = "20000"
+    stub.mode = "rate_limited"
+    stub.retryAfter = 1
+
+    const started = Date.now()
+    const pending = analyzeProductPhoto({ image, catalogue })
+    expect(await until(() => stub.requests.length === 1)).toBe(true)
+    stub.mode = "ok"
+    const result = await pending
+
+    expect(result).toMatchObject({ ok: true })
+    expect(stub.requests).toHaveLength(2)
+    expect(Date.now() - started).toBeGreaterThanOrEqual(950)
+  })
+
+  it("does not retry a rate limit whose wait would not leave time for another attempt", async () => {
+    process.env.QUICK_ADD_AI_TIMEOUT_MS = "5000"
+    process.env.QUICK_ADD_AI_DEADLINE_MS = "20000"
+    stub.mode = "rate_limited"
+    stub.retryAfter = 20
+
+    const started = Date.now()
+    const result = await analyzeProductPhoto({ image, catalogue })
     expect(result).toMatchObject({ ok: false, code: "ai_unavailable" })
     expect(stub.requests).toHaveLength(1)
     expect(Date.now() - started).toBeLessThan(2000)
