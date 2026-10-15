@@ -353,6 +353,63 @@ medusaIntegrationTestRunner({
       expect(moved.product.categories.map((c: any) => c.handle)).toContain("chargers-cables")
     })
 
+    it("won't let a variant edit make a published product oversellable, on any variant route", async () => {
+      const id = productId["20w-usb-c-fast-wall-charger"]
+      const variantsOf = async (pid: string) =>
+        (await api.get(`/admin/products/${pid}?fields=status,title,variants.id,variants.manage_inventory,variants.allow_backorder`, admin))
+          .data.product
+      const before = await variantsOf(id)
+      expect(before.status).toBe("published")
+      const vid = before.variants[0].id
+
+      for (const body of [{ manage_inventory: false }, { allow_backorder: true }]) {
+        const one = await api.post(`/admin/products/${id}/variants/${vid}`, body, admin).catch((e: any) => e.response)
+        expect(one.status).toBe(400)
+        expect(one.data.message).toMatch(/does not track stock|allows backorders/)
+        const batch = await api
+          .post(`/admin/products/${id}/variants/batch`, { update: [{ id: vid, ...body }] }, admin)
+          .catch((e: any) => e.response)
+        expect(batch.status).toBe(400)
+      }
+      const created = await api
+        .post(
+          `/admin/products/${id}/variants`,
+          { title: "Backorder", manage_inventory: true, allow_backorder: true, prices: [] },
+          admin
+        )
+        .catch((e: any) => e.response)
+      expect(created.status).toBe(400)
+      expect(created.data.message).toMatch(/allows backorders/)
+      expect(await variantsOf(id)).toEqual(before)
+
+      // A draft can hold anything; publishing it is what the guard refuses.
+      const draft = await variantsOf(draftChargerId)
+      const ok = await api.post(
+        `/admin/products/${draftChargerId}/variants/${draft.variants[0].id}`,
+        { allow_backorder: true },
+        admin
+      )
+      expect(ok.status).toBe(200)
+      await api.post(`/admin/products/${draftChargerId}/variants/${draft.variants[0].id}`, { allow_backorder: false }, admin)
+    })
+
+    it("a published product that doesn't track stock (data from before the rule) can be fixed, but not edited otherwise", async () => {
+      const id = productId["20w-usb-c-fast-wall-charger"]
+      const { data } = await api.get(`/admin/products/${id}?fields=variants.id`, admin)
+      const vid = data.product.variants[0].id
+      await getContainer().resolve(Modules.PRODUCT).updateProductVariants(vid, { manage_inventory: false })
+
+      // Any other edit of the live product is refused with the reason...
+      const rename = await api.post(`/admin/products/${id}`, { title: "20W USB-C Charger" }, admin).catch((e: any) => e.response)
+      expect(rename.status).toBe(400)
+      expect(rename.data.message).toMatch(/does not track stock/)
+      // ...turning tracking back on is the fix, and then edits work again.
+      const fixed = await api.post(`/admin/products/${id}/variants/${vid}`, { manage_inventory: true }, admin)
+      expect(fixed.status).toBe(200)
+      const renamed = await api.post(`/admin/products/${id}`, { title: "20W USB-C Fast Charger" }, admin)
+      expect(renamed.status).toBe(200)
+    })
+
     it("never publishes a vape through the admin API", async () => {
       const { data } = await api.post(
         "/admin/products",
