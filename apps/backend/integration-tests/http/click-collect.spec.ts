@@ -425,6 +425,57 @@ medusaIntegrationTestRunner({
         const missing = await api.get(`/admin/click-collect/orders`, admin).catch((e: any) => e.response)
         expect(missing.status).toBe(400)
       })
+
+      it("pages through many pickup orders in order, each once, with delivery orders left out", async () => {
+        const pickupIds: string[] = []
+        for (let i = 0; i < 12; i++) {
+          pickupIds.push((await pickupOrder()).order.id)
+          if (i % 4 === 0) {
+            await placeAuthorisedOrder(getContainer(), {
+              regionId,
+              shippingOptionId: options["standard"],
+              shippingAmount: 3.49,
+            })
+          }
+        }
+
+        const seen: string[] = []
+        for (let offset = 0; offset < 15; offset += 5) {
+          const page = (
+            await api.get(`/admin/click-collect/orders?status=to_pick&limit=5&offset=${offset}`, admin)
+          ).data
+          expect(page.count).toBe(12)
+          seen.push(...page.orders.map((o: any) => o.id))
+        }
+        expect(seen).toEqual(pickupIds)
+      })
+
+      it("queries the database with filters that don't grow with the number of orders", async () => {
+        const query = getContainer().resolve(ContainerRegistrationKeys.QUERY)
+        const orders = getContainer().resolve(Modules.ORDER)
+        // Every filter the board sends for one page of a fixed size.
+        const boardFilters = async () => {
+          const graph = jest.spyOn(query, "graph")
+          const list = jest.spyOn(orders, "listAndCountOrders")
+          try {
+            const page = (await api.get(`/admin/click-collect/orders?status=to_pick&limit=1`, admin)).data
+            expect(page.orders).toHaveLength(1)
+            return [
+              ...graph.mock.calls.map(([config]) => JSON.stringify((config as any).filters ?? null)),
+              ...list.mock.calls.map(([filters]) => JSON.stringify(filters ?? null)),
+            ]
+          } finally {
+            graph.mockRestore()
+            list.mockRestore()
+          }
+        }
+
+        await pickupOrder()
+        const few = await boardFilters()
+        for (let i = 0; i < 4; i++) await pickupOrder()
+        const more = await boardFilters()
+        expect(more).toEqual(few)
+      })
     })
 
     describe("click-collect-lifecycle job", () => {
