@@ -114,9 +114,8 @@ medusaIntegrationTestRunner({
         const okEmail = `e2-trade-approved-${uid()}@example.com`
         const ok = await apply((await customer(okEmail)).id)
         await approveTradeApplicationWorkflow(getContainer()).run({ input: { id: ok.id } })
-        const approved = (await tradeMail(okEmail, 2)).filter(
-          (m) => m.Subject === "Your Tech Nest trade account is approved"
-        )
+        // Wait by subject: the welcome email also counts in tradeMail's n, so a count can be reached first.
+        const approved = await mailWithSubject(okEmail, "Your Tech Nest trade account is approved")
         expect(approved).toHaveLength(1)
 
         const noEmail = `e2-trade-rejected-${uid()}@example.com`
@@ -126,7 +125,7 @@ medusaIntegrationTestRunner({
           input: { id: rejectedApp.id, reason: "We couldn't verify the VAT number." },
         })
         const subject = "About your Tech Nest trade account application"
-        const rejected = (await tradeMail(noEmail, 2)).find((m) => m.Subject === subject)!
+        const [rejected] = await mailWithSubject(noEmail, subject)
         expect(rejected).toBeDefined()
         expect(await textOf(rejected.ID)).toContain("Reason: We couldn't verify the VAT number.")
 
