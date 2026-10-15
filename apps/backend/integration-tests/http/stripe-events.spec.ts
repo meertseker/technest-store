@@ -33,11 +33,12 @@ jest.retryTimes(0)
 const URL = "/hooks/payment/stripe_stripe"
 const SHOP = process.env.SHOP_NOTIFY_EMAIL!
 
-const eventJson = (type: string, object: Record<string, unknown>) =>
+const eventJson = (type: string, object: Record<string, unknown>, created = Math.floor(Date.now() / 1000)) =>
   JSON.stringify({
     id: `evt_${Math.random().toString(36).slice(2)}`,
     object: "event",
     type,
+    created,
     livemode: false,
     data: { object },
   })
@@ -139,11 +140,11 @@ medusaIntegrationTestRunner({
 
         // Medusa queues the event with a 5 s delay before the worker side runs.
         let meta: Record<string, any> = {}
-        for (let i = 0; i < 80 && !meta.dispute; i++) {
+        for (let i = 0; i < 80 && !meta.disputes; i++) {
           await settle(250)
           meta = await metadataOf(o.id)
         }
-        expect(meta.dispute).toEqual({
+        expect(meta.disputes.dp_test_1).toEqual({
           id: "dp_test_1",
           status: "needs_response",
           reason: "fraudulent",
@@ -152,6 +153,7 @@ medusaIntegrationTestRunner({
           due_by: "2025-10-24T00:00:00.000Z",
           livemode: false,
           opened_at: expect.any(String),
+          event_at: expect.any(Number),
         })
         expect(alerts).toHaveLength(1)
         expect(alerts[0].message).toContain(o.id)
@@ -167,7 +169,7 @@ medusaIntegrationTestRunner({
         await deliver(body)
         await waitForBackgroundWork(getContainer())
         expect(alerts).toHaveLength(1)
-        expect((await metadataOf(o.id)).dispute).toEqual(meta.dispute)
+        expect((await metadataOf(o.id)).disputes).toEqual(meta.disputes)
         expect(await mailWithSubject(SHOP, subject)).toHaveLength(1)
         expect((await paymentOf(getContainer(), payment_id)).captured_at).toBeTruthy()
       })
@@ -178,7 +180,7 @@ medusaIntegrationTestRunner({
         alerts = []
 
         await deliver(eventJson("charge.dispute.closed", dispute(intent_id, { id: "dp_test_2", status: "won" })))
-        expect((await metadataOf(o.id)).dispute).toMatchObject({
+        expect((await metadataOf(o.id)).disputes.dp_test_2).toMatchObject({
           id: "dp_test_2",
           status: "won",
           closed_at: expect.any(String),
@@ -189,7 +191,7 @@ medusaIntegrationTestRunner({
         await deliver(
           eventJson("charge.dispute.updated", dispute(other.intent_id, { id: "dp_test_3", status: "under_review" }))
         )
-        expect((await metadataOf(other.order.id)).dispute).toMatchObject({ id: "dp_test_3", status: "under_review" })
+        expect((await metadataOf(other.order.id)).disputes.dp_test_3).toMatchObject({ id: "dp_test_3", status: "under_review" })
         expect(alerts).toHaveLength(1)
       })
 
@@ -198,7 +200,34 @@ medusaIntegrationTestRunner({
         await deliver(eventJson("charge.dispute.created", dispute("pi_unknown")))
         await deliver(eventJson("charge.dispute.created", dispute(intent_id)), "t=1,v1=00")
         expect(alerts).toHaveLength(0)
-        expect((await metadataOf(o.id)).dispute).toBeUndefined()
+        expect((await metadataOf(o.id)).disputes).toBeUndefined()
+      })
+
+      it("events arriving out of order never move a dispute's status back, and nothing changes once it is closed", async () => {
+        const { order: o, intent_id } = await order("standard", true)
+        const t = Math.floor(Date.now() / 1000)
+        await deliver(eventJson("charge.dispute.created", dispute(intent_id, { id: "dp_order" }), t))
+        await deliver(eventJson("charge.dispute.updated", dispute(intent_id, { id: "dp_order", status: "under_review" }), t + 200))
+        // An older update delivered late.
+        await deliver(eventJson("charge.dispute.updated", dispute(intent_id, { id: "dp_order", status: "warning_needs_response" }), t + 100))
+        expect((await metadataOf(o.id)).disputes.dp_order.status).toBe("under_review")
+
+        await deliver(eventJson("charge.dispute.closed", dispute(intent_id, { id: "dp_order", status: "lost" }), t + 300))
+        await deliver(eventJson("charge.dispute.updated", dispute(intent_id, { id: "dp_order", status: "under_review" }), t + 400))
+        expect((await metadataOf(o.id)).disputes.dp_order).toMatchObject({ status: "lost", closed_at: expect.any(String) })
+        expect(alerts).toHaveLength(1)
+      })
+
+      it("a second dispute on the same order is kept next to the first, each alerted once", async () => {
+        const { order: o, intent_id } = await order("standard", true)
+        await deliver(eventJson("charge.dispute.created", dispute(intent_id, { id: "dp_first", amount: 500 })))
+        await deliver(eventJson("charge.dispute.created", dispute(intent_id, { id: "dp_second", amount: 847 })))
+
+        const disputes = (await metadataOf(o.id)).disputes
+        expect(Object.keys(disputes).sort()).toEqual(["dp_first", "dp_second"])
+        expect(disputes.dp_first).toMatchObject({ amount_pence: 500, status: "needs_response" })
+        expect(disputes.dp_second).toMatchObject({ amount_pence: 847, status: "needs_response" })
+        expect(alerts).toHaveLength(2)
       })
     })
 

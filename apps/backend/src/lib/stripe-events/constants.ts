@@ -4,8 +4,8 @@
  * Only the backend writes them; a shopper's cart metadata can't carry them.
  */
 export const PaymentNoticeMeta = {
-  /** `{ id, status, reason, amount_pence, currency, due_by, livemode, opened_at, closed_at? }` */
-  DISPUTE: "dispute",
+  /** `{ [dispute id]: { id, status, reason, amount_pence, currency, due_by, livemode, opened_at, event_at, closed_at? } }` */
+  DISPUTES: "disputes",
   /** `[{ id, amount_pence, at, unrecorded? }]`: refunds made in the Stripe dashboard. */
   EXTERNAL_REFUNDS: "external_refunds",
   /** `{ payment_intent, reason, amount_pence, at }`: the authorisation was cancelled at Stripe, not by us. */

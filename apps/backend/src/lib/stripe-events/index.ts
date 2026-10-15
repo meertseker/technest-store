@@ -5,6 +5,7 @@ import { toPence } from "../email/order-email-data"
 import { runEmail } from "../email/run-email"
 import { recordExternalRefundWorkflow } from "../../workflows/record-external-refund"
 import { REFUNDS_CHANGED } from "../../workflows/steps/payment/assert-refunds-unchanged"
+import { recordDisputeWorkflow } from "../../workflows/record-dispute"
 import { recordHoldReleasedWorkflow } from "../../workflows/record-hold-released"
 import { recordPaymentNoticeWorkflow } from "../../workflows/record-payment-notice"
 import { PaymentNoticeMeta } from "./constants"
@@ -22,6 +23,8 @@ export const STRIPE_EVENT_TOLERANCE_SECONDS = 24 * 60 * 60
 export type StripeEvent = {
   id: string
   type: string
+  /** Unix seconds. */
+  created?: number
   livemode?: boolean
   data: { object: Record<string, any> }
 }
@@ -113,10 +116,12 @@ function ignored(container: MedusaContainer, event: StripeEvent, why: string): S
 }
 
 /**
- * charge.dispute.created / updated / closed. A new dispute is written to the
- * order, reported and emailed to the shop; a later status only updates the
- * record. An update or close for a dispute we never saw opened is treated as
- * the opening (the created event was lost).
+ * charge.dispute.created / updated / closed. Each dispute has its own record
+ * on the order (record-dispute, under the order's lock). A new dispute is
+ * reported and emailed to the shop; a later status only updates its record,
+ * and an event older than the last one applied, or anything after the close,
+ * changes nothing. An update or close for a dispute we never saw opened is
+ * treated as the opening (the created event was lost).
  */
 async function disputeEvent(container: MedusaContainer, event: StripeEvent): Promise<StripeEventResult> {
   const dispute = event.data.object
@@ -126,58 +131,38 @@ async function disputeEvent(container: MedusaContainer, event: StripeEvent): Pro
   const order = payment?.payment_collection?.order
   if (!order) return ignored(container, event, "no order for this payment")
 
-  const now = new Date().toISOString()
-  const closed = event.type === "charge.dispute.closed"
-  const current = (order.metadata ?? {})[PaymentNoticeMeta.DISPUTE] as Record<string, unknown> | undefined
-  if (current?.id === disputeId) {
-    if (event.type !== "charge.dispute.created") {
-      await recordPaymentNoticeWorkflow(container).run({
-        input: {
-          order_id: order.id,
-          patch: {
-            [PaymentNoticeMeta.DISPUTE]: {
-              ...current,
-              status: code(dispute.status) ?? current.status,
-              ...(closed ? { closed_at: now } : {}),
-            },
-          },
-        },
-      })
-      return { handled: "dispute_updated" }
-    }
-    // A redelivered opening: the record exists; make sure the email went out.
-    await shopEmail(container, "shop-payment-dispute", event, { id: disputeId, type: "dispute" }, order.id)
-    return { handled: "dispute_known" }
-  }
-
   const dueBy = Number(dispute.evidence_details?.due_by)
   const amountPence = smallestUnit(dispute.amount)
   const reason = code(dispute.reason) ?? "unknown"
-  await recordPaymentNoticeWorkflow(container).run({
+  const created = Number(event.created)
+  const { result } = await recordDisputeWorkflow(container).run({
     input: {
       order_id: order.id,
-      patch: {
-        [PaymentNoticeMeta.DISPUTE]: {
-          id: disputeId,
-          status: code(dispute.status) ?? "unknown",
-          reason,
-          amount_pence: amountPence,
-          currency: code(dispute.currency) ?? payment!.currency_code,
-          due_by: Number.isFinite(dueBy) && dueBy > 0 ? new Date(dueBy * 1000).toISOString() : null,
-          livemode: event.livemode === true,
-          opened_at: now,
-          ...(closed ? { closed_at: now } : {}),
-        },
+      event_type: event.type,
+      event_at: Number.isFinite(created) && created > 0 ? created : Math.floor(Date.now() / 1000),
+      dispute: {
+        id: disputeId,
+        status: code(dispute.status) ?? "unknown",
+        reason,
+        amount_pence: amountPence,
+        currency: code(dispute.currency) ?? payment!.currency_code,
+        due_by: Number.isFinite(dueBy) && dueBy > 0 ? new Date(dueBy * 1000).toISOString() : null,
+        livemode: event.livemode === true,
       },
     },
   })
-  reportAlert(
-    `Stripe dispute ${disputeId} opened on order ${order.id}: ${amountPence}p, reason ${reason}`,
-    { source: "stripe-events", event: event.type, order_id: order.id, dispute_id: disputeId, reason },
-    `stripe-dispute:${disputeId}`
-  )
+  if (result.state === "updated") return { handled: "dispute_updated" }
+  if (result.state === "stale") return { handled: "dispute_stale" }
+  if (result.state === "opened") {
+    reportAlert(
+      `Stripe dispute ${disputeId} opened on order ${order.id}: ${amountPence}p, reason ${reason}`,
+      { source: "stripe-events", event: event.type, order_id: order.id, dispute_id: disputeId, reason },
+      `stripe-dispute:${disputeId}`
+    )
+  }
+  // Send-once: a redelivered opening only makes sure the email went out.
   await shopEmail(container, "shop-payment-dispute", event, { id: disputeId, type: "dispute" }, order.id)
-  return { handled: "dispute_opened" }
+  return { handled: result.state === "opened" ? "dispute_opened" : "dispute_known" }
 }
 
 /**

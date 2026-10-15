@@ -50,7 +50,8 @@ export async function paymentDispute(
 ): Promise<ResolvedEmail | null> {
   if (recipient !== "shop" || !ids[0]) return null
   const order = await loadOrder(container, ids[0])
-  const dispute = order?.metadata?.[PaymentNoticeMeta.DISPUTE] as Row | undefined
+  const disputes = order?.metadata?.[PaymentNoticeMeta.DISPUTES] as Record<string, Row> | undefined
+  const dispute = disputes?.[disputeId]
   if (!order || !dispute || dispute.id !== disputeId) return null
   const data: ShopPaymentDisputeData = {
     display_id: order.display_id ?? order.id,
