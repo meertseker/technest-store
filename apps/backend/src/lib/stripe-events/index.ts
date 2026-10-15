@@ -196,7 +196,17 @@ async function chargeRefundedOnce(container: MedusaContainer, event: StripeEvent
   if (!payment || !order) return ignored(container, event, "no order for this payment")
 
   const stripePence = refundedAfterCapture(charge)
-  const knownPence = sumPence(payment.refunds)
+  const existing =
+    ((order.metadata ?? {})[PaymentNoticeMeta.EXTERNAL_REFUNDS] as
+      | { id?: unknown; amount_pence?: unknown; unrecorded?: unknown }[]
+      | undefined) ?? []
+  // Refunds Medusa holds, plus refunds already noted on the order but not written to Medusa
+  // (those noted and written are among Medusa's refunds already).
+  const medusaPence = sumPence(payment.refunds)
+  const notedPence = existing
+    .filter((r) => r?.unrecorded === true)
+    .reduce((sum, r) => sum + smallestUnit(r.amount_pence), 0)
+  const knownPence = medusaPence + notedPence
   const deltaPence = stripePence - knownPence
   if (deltaPence <= 0) return { handled: "refund_known" }
 
@@ -205,7 +215,6 @@ async function chargeRefundedOnce(container: MedusaContainer, event: StripeEvent
     (r) => smallestUnit(r.amount) === deltaPence && idOf(r.id)
   )
   const refundId = listed.length === 1 ? idOf(listed[0].id)! : `${idOf(charge.id) ?? "charge"}:${stripePence}`
-  const existing = ((order.metadata ?? {})[PaymentNoticeMeta.EXTERNAL_REFUNDS] as { id?: unknown }[] | undefined) ?? []
   const resource = { id: refundId, type: "refund" }
   if (existing.some((r) => r?.id === refundId)) {
     await shopEmail(container, "shop-payment-notice", event, resource, order.id)
@@ -224,7 +233,8 @@ async function chargeRefundedOnce(container: MedusaContainer, event: StripeEvent
         // Medusa amounts are major units.
         amount: Number((deltaPence / 100).toFixed(2)),
         currency_code: payment.currency_code,
-        known_pence: knownPence,
+        // Checked again under the order's lock against Medusa's refunds.
+        known_pence: medusaPence,
         stripe_refund_id: refundId,
         metadata_patch: patch,
       },

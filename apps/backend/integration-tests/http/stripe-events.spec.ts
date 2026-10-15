@@ -358,6 +358,26 @@ medusaIntegrationTestRunner({
         expect(await paymentStatus(o.id)).toBe("refunded")
       })
 
+      it("a refund only noted (not written to Medusa) is not counted again by later refund events", async () => {
+        // Captured at Stripe outside Medusa, then £5.00 refunded in the dashboard: only a note.
+        const { order: o, intent_id, payment_id } = await order("standard", false)
+        await deliver(eventJson("charge.refunded", charge(intent_id, 500)))
+        expect((await metadataOf(o.id)).external_refunds).toEqual([
+          expect.objectContaining({ amount_pence: 500, unrecorded: true }),
+        ])
+
+        // Later the capture reaches Medusa and staff refund £3.00 in the admin: Stripe now reports £8.00 refunded.
+        await capturePaymentWorkflow(getContainer()).run({ input: { payment_id } })
+        expect((await api.post(`/admin/payments/${payment_id}/refund`, { amount: 3 }, admin)).status).toBe(200)
+        await settle()
+        await deliver(eventJson("charge.refunded", charge(intent_id, 800)))
+        await waitForBackgroundWork(getContainer())
+
+        expect((await paymentOf(getContainer(), payment_id)).refunds.map((r: any) => Number(r.amount))).toEqual([3])
+        expect((await metadataOf(o.id)).external_refunds).toHaveLength(1)
+        expect(alerts).toHaveLength(1)
+      })
+
       it("a refund of more than Medusa captured is noted and reported but not written as a refund", async () => {
         // The capture itself happened outside Medusa too (e.g. in the dashboard): nothing to refund against.
         const { order: o, intent_id, payment_id } = await order("standard", false)
