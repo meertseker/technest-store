@@ -118,9 +118,25 @@ async function loadExistingVariants(
       fields: ["product_id", "device_id", "note"],
       filters: { product_id: productIds },
     }),
-    query.graph({ entity: "product", fields: ["id", "variants.id"], filters: { id: productIds } }),
+    query.graph({
+      entity: "product",
+      fields: ["id", "variants.id", "variants.title", "variants.sku", "variants.manage_inventory", "variants.allow_backorder"],
+      filters: { id: productIds },
+    }),
   ])
   const variantCount = new Map(products.map((p) => [p.id, p.variants?.length ?? 1]))
+  const variantsOf = new Map(
+    products.map((p) => [
+      p.id,
+      (p.variants ?? []).map((v: any) => ({
+        id: v.id,
+        title: v.title,
+        sku: v.sku,
+        manage_inventory: v.manage_inventory,
+        allow_backorder: v.allow_backorder,
+      })),
+    ])
+  )
 
   for (const v of variants) {
     if (!v.sku || !v.product) continue
@@ -143,6 +159,7 @@ async function loadExistingVariants(
       safety_marking: (v.product.product_attributes?.safety_marking ?? "none") as SafetyMarking,
       wattage: v.product.product_attributes?.wattage ?? null,
       tags: (v.product.tags ?? []).map((t: any) => t?.value).filter(Boolean),
+      variants: variantsOf.get(v.product.id) ?? [],
       prices: (v.prices ?? [])
         .filter((p: any) => p && !p.price_list_id)
         .map((p: any) => ({

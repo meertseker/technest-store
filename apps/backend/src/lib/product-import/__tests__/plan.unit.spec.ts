@@ -75,6 +75,30 @@ describe("buildImportPlan", () => {
     expect(rows[0].warnings).toEqual([`${DRAFT_SAFETY_WARNING} It was live before and is now hidden.`])
   })
 
+  // The shop sells tracked stock only; the plan applies that rule like the
+  // safety marking, so the row becomes a draft instead of failing the import.
+  it.each([
+    ["does not track stock", { manage_inventory: false }],
+    ["allows backorders", { allow_backorder: true }],
+  ])("holds back a live product whose variant %s as a draft, saying why", (why, flags) => {
+    const cable: ExistingVariant = {
+      ...existingCable,
+      variants: [{ id: "variant_1", title: "Default", sku: "TN-CABLE", manage_inventory: true, allow_backorder: false, ...flags }],
+    }
+    const { rows } = plan(["TN-CABLE,Old cable v2,,,4.49,,,,"], ctx({ variantsBySku: new Map([["TN-CABLE", cable]]) }))
+    expect(rows[0].action).toBe("update")
+    expect(rows[0].status).toBe("draft")
+    expect(rows[0].warnings).toHaveLength(1)
+    expect(rows[0].warnings[0]).toMatch(/^Imported as a draft: /)
+    expect(rows[0].warnings[0]).toContain(why)
+    expect(rows[0].warnings[0]).toMatch(/It was live before and is now hidden\.$/)
+    // Fully tracked: stays live.
+    const tracked = plan(["TN-CABLE,Old cable v2,,,4.49,,,,"], ctx({
+      variantsBySku: new Map([["TN-CABLE", { ...cable, variants: [{ id: "variant_1", manage_inventory: true, allow_backorder: false }] }]]),
+    }))
+    expect(tracked.rows[0].status).toBe("published")
+  })
+
   it("plans a new product with a handle from its title, published by default", () => {
     const { rows, summary } = plan(["TN-NEW,Clear Case,,cases,5.99,,10,iphone-16,"])
     expect(rows[0]).toMatchObject({

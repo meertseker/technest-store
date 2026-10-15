@@ -1,7 +1,11 @@
 import {
   PublishCheckProduct,
+  PublishCheckVariant,
   SafetyMarking,
+  hasSafetyMarking,
+  needsSafetyMarking,
   publishBlocker,
+  untrackedStockMessage,
 } from "../../modules/product-attributes/utils"
 import {
   ImportAttributes,
@@ -55,6 +59,8 @@ export type ExistingVariant = {
   wattage: number | null
   /** Product tag values (the publish guard reads them for vapes). */
   tags: string[]
+  /** Every variant of the product, with its stock flags (the publish guard requires tracked stock). */
+  variants?: PublishCheckVariant[]
   prices: ExistingPrice[]
 }
 
@@ -298,6 +304,7 @@ export function buildImportPlan(read: ReadRowsResult, ctx: PlanContext): ImportP
         status,
         categories: chains,
         tags,
+        variants: existing?.variants ?? [],
         product_attributes: {
           safety_marking: input.attributes.safety_marking ?? existing?.safety_marking ?? "none",
           wattage: input.attributes.wattage ?? existing?.wattage ?? null,
@@ -305,11 +312,14 @@ export function buildImportPlan(read: ReadRowsResult, ctx: PlanContext): ImportP
       }
       if (publishBlocker(check)) {
         status = "draft"
-        warnings.push(
-          existing?.product_status === "published"
-            ? `${DRAFT_SAFETY_WARNING} It was live before and is now hidden.`
-            : DRAFT_SAFETY_WARNING
-        )
+        const hidden = existing?.product_status === "published" ? " It was live before and is now hidden." : ""
+        if (needsSafetyMarking(check) && !hasSafetyMarking(check.product_attributes?.safety_marking)) {
+          warnings.push(`${DRAFT_SAFETY_WARNING}${hidden}`)
+        }
+        const untracked = untrackedStockMessage(check)
+        if (untracked) {
+          warnings.push(`Imported as a draft: ${untracked}${hidden}`)
+        }
       }
     }
 
