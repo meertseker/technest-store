@@ -10,6 +10,7 @@ import { seedTechNest } from "../../src/scripts/seed"
 import { approveTradeApplicationWorkflow } from "../../src/workflows/approve-trade-application"
 import { createRepairBookingWorkflow } from "../../src/workflows/create-repair-booking"
 import { rejectTradeApplicationWorkflow } from "../../src/workflows/reject-trade-application"
+import { revokeTradeApplicationWorkflow } from "../../src/workflows/revoke-trade-application"
 import { submitTradeApplicationWorkflow } from "../../src/workflows/submit-trade-application"
 import { waitForBackgroundWork } from "../helpers/background"
 import { mailTo, mailWithSubject, settle, textOf } from "../utils/mailpit"
@@ -152,18 +153,13 @@ medusaIntegrationTestRunner({
         const subject = "Your Tech Nest trade account has been closed"
         expect((await tradeMail(email, 2)).filter((m) => m.Subject === subject)).toHaveLength(0)
 
-        // The revoke route and its "revoked" status are another branch's (docs/contracts/trade.md). Until that
-        // migration lands the column's check still lists three statuses, so this test widens it in its own
-        // (per-test) database copy to put an application into the state that route will produce.
-        const db = getContainer().resolve(ContainerRegistrationKeys.PG_CONNECTION)
-        await db.raw(`alter table trade_application drop constraint if exists trade_application_status_check`)
-        await db.raw(`update trade_application set status = 'revoked', reason = ? where id = ?`, [
-          "The business has stopped trading.",
-          app.id,
-        ])
+        // The real revoke workflow: status "revoked" with the reason, then its event reaches the subscriber.
+        await revokeTradeApplicationWorkflow(getContainer()).run({
+          input: { id: app.id, reason: "The business has stopped trading." },
+        })
 
-        await emit(tradeApplicationEmails, "technest.trade_application.revoked", { id: app.id, customer_id: c.id })
-        const [closed] = (await tradeMail(email, 3)).filter((m) => m.Subject === subject)
+        // Sent from the workflow's event, so wait for it by subject (the welcome email also counts in tradeMail's n).
+        const [closed] = await mailWithSubject(email, subject)
         expect(closed).toBeDefined()
         const text = await textOf(closed.ID)
         expect(text).toContain("Reason: The business has stopped trading.")
