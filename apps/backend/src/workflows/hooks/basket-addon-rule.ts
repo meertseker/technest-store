@@ -1,4 +1,5 @@
-import { MedusaError } from "@medusajs/framework/utils"
+import type { MedusaContainer } from "@medusajs/framework/types"
+import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
 import { StepResponse } from "@medusajs/framework/workflows-sdk"
 import {
   addShippingMethodToCartWorkflow,
@@ -23,6 +24,11 @@ addShippingMethodToCartWorkflow.hooks.validate(async ({ input, cart }, { contain
 })
 
 completeCartWorkflow.hooks.validate(async ({ cart }, { container }) => {
+  // Core runs this hook again when a cart that already became an order is
+  // completed a second time (a retried or late call from the browser) and then
+  // returns the existing order. Nothing here may refuse that: the cart's own
+  // reservations would now count against it.
+  if (await cartHasOrder(container, cart)) return new StepResponse(undefined)
   // Cart metadata becomes order metadata, where Click & Collect state lives.
   // The Store API drops the state keys (api/store/carts/middlewares.ts); a cart
   // that carries one anyway must not become an order that looks collected.
@@ -44,3 +50,16 @@ completeCartWorkflow.hooks.validate(async ({ cart }, { container }) => {
   }
   return new StepResponse(undefined)
 })
+
+async function cartHasOrder(
+  container: MedusaContainer,
+  cart: { id: string; completed_at?: unknown }
+): Promise<boolean> {
+  if (cart.completed_at) return true
+  const { data } = await container.resolve(ContainerRegistrationKeys.QUERY).graph({
+    entity: "order_cart",
+    fields: ["order_id"],
+    filters: { cart_id: cart.id },
+  })
+  return data.length > 0
+}

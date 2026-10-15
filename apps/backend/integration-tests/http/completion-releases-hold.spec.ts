@@ -170,6 +170,34 @@ medusaIntegrationTestRunner({
       expect(await reserved(handle)).toBe(reservedBefore + 6)
     })
 
+    it("a second completion of a cart that already became an order returns that order, even when its lines used the last stock", async () => {
+      const handle = "clear-shockproof-case"
+      const { data: created } = await api.post("/store/carts", { region_id: regionId, email: "shopper@example.com" }, store)
+      const cartId = created.cart.id as string
+      await api.post(`/store/carts/${cartId}/line-items`, { variant_id: variants[handle].id, quantity: 3, metadata: { note: "a" } }, store)
+      await api.post(`/store/carts/${cartId}/line-items`, { variant_id: variants[handle].id, quantity: 3, metadata: { note: "b" } }, store)
+      await api.post(`/store/carts/${cartId}`, { shipping_address: ADDRESS, billing_address: ADDRESS }, store)
+      await api.post(`/store/carts/${cartId}/shipping-methods`, { option_id: options["standard"] }, store)
+      const reservedBefore = await reserved(handle)
+      // Exactly enough for both lines: once they are reserved, nothing is left.
+      await setStock(handle, reservedBefore + 6)
+      const { data: pc } = await api.post("/store/payment-collections", { cart_id: cartId }, store)
+      await api.post(`/store/payment-collections/${pc.payment_collection.id}/payment-sessions`, { provider_id: TEST_PROVIDER_ID }, store)
+
+      const first = await api.post(`/store/carts/${cartId}/complete`, {}, store)
+      expect(first.data.type).toBe("order")
+      await waitForBackgroundWork(getContainer())
+      resetPaymentRecorder()
+
+      // A retried or late call from the browser.
+      const again = await api.post(`/store/carts/${cartId}/complete`, {}, store).catch((e: any) => e.response)
+      expect(again.status).toBe(200)
+      expect(again.data).toMatchObject({ type: "order", order: { id: first.data.order.id } })
+      expect(released()).toBe(0)
+      expect(await ordersOf(cartId)).toBe(1)
+      expect(await reserved(handle)).toBe(reservedBefore + 6)
+    })
+
     it("refuses a payment session for a basket that breaks the add-on rule, before any hold is placed", async () => {
       const { data: created } = await api.post(
         "/store/carts",

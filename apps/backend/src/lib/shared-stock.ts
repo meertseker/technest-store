@@ -97,7 +97,15 @@ export async function cartShortSharedInventory(container: MedusaContainer, cartI
         .map((ii) => ({ inventory_item_id: ii.inventory_item_id, required_quantity: Number(ii.required_quantity) || 1 })),
     }
   })
-  const itemIds = [...new Set(lines.flatMap((l) => l.inventory_items.map((ii) => ii.inventory_item_id)))]
+  // Only inventory items that two or more checked lines need can be short here.
+  const linesPerItem = new Map<string, number>()
+  for (const line of lines) {
+    if (!line.manage_inventory || line.allow_backorder) continue
+    for (const ii of line.inventory_items) {
+      linesPerItem.set(ii.inventory_item_id, (linesPerItem.get(ii.inventory_item_id) ?? 0) + 1)
+    }
+  }
+  const itemIds = [...linesPerItem].filter(([, count]) => count > 1).map(([id]) => id)
   if (!itemIds.length) return []
 
   // Medusa reserves only at the locations of the cart's sales channel.
