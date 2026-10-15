@@ -15,7 +15,15 @@ jest.mock("../../lib/payment-reconcile", () => ({
   reconcilePayments: (...a: unknown[]) => reconcile(...a),
 }))
 const purge = jest.fn()
-jest.mock("../../lib/data-retention", () => ({ purgeExpiredRecords: (...a: unknown[]) => purge(...a) }))
+// The job removes data through a workflow (every mutation goes through one).
+jest.mock("../../workflows/purge-expired-records", () => ({
+  purgeExpiredRecordsWorkflow: () => ({ run: (...a: unknown[]) => purge(...a) }),
+}))
+jest.mock("../../lib/data-retention", () => ({
+  purgeExpiredRecords: () => {
+    throw new Error("the job must not delete outside the workflow")
+  },
+}))
 const lowStockRun = jest.fn()
 jest.mock("../../workflows/emit-low-stock-digest", () => ({ emitLowStockDigestWorkflow: () => ({ run: lowStockRun }) }))
 jest.mock("../../lib/low-stock", () => ({
@@ -81,6 +89,16 @@ describe("a scheduled job that fails is reported, not only logged", () => {
     work.mockRejectedValue(new Error("Timed-out acquiring lock"))
     await job(container)
     expect(alerts).toEqual([])
+  })
+
+  it("data-retention: removes the data through the workflow and logs the counts", async () => {
+    purge.mockResolvedValue({ result: { repair_bookings: 2, trade_applications: 1 } })
+    await dataRetentionJob(container)
+    expect(purge).toHaveBeenCalledTimes(1)
+    expect(alerts).toEqual([])
+    expect(logger.info).toHaveBeenCalledWith(
+      "data-retention: removed 2 repair bookings and 1 trade applications"
+    )
   })
 
   it("low-stock digest: the check fails", async () => {
