@@ -8,7 +8,7 @@ import { REFUNDS_CHANGED } from "../../workflows/steps/payment/assert-refunds-un
 import { recordDisputeWorkflow } from "../../workflows/record-dispute"
 import { recordHoldReleasedWorkflow } from "../../workflows/record-hold-released"
 import { recordPaymentNoticeWorkflow } from "../../workflows/record-payment-notice"
-import { PaymentNoticeMeta } from "./constants"
+import { PaymentNoticeMeta, stripeCode } from "./constants"
 
 export * from "./constants"
 
@@ -68,10 +68,6 @@ const idOf = (value: unknown): string | null =>
     : value && typeof value === "object" && typeof (value as { id?: unknown }).id === "string"
       ? ((value as { id: string }).id)
       : null
-
-/** Stripe codes are snake_case; anything else is not shown to people. */
-const code = (value: unknown): string | null =>
-  typeof value === "string" && /^[a-z0-9_]{1,40}$/.test(value) ? value : null
 
 const sumPence = (rows?: ({ amount: unknown } | null)[] | null) =>
   (rows ?? []).reduce((sum, row) => sum + toPence(row?.amount), 0)
@@ -133,7 +129,7 @@ async function disputeEvent(container: MedusaContainer, event: StripeEvent): Pro
 
   const dueBy = Number(dispute.evidence_details?.due_by)
   const amountPence = smallestUnit(dispute.amount)
-  const reason = code(dispute.reason) ?? "unknown"
+  const reason = stripeCode(dispute.reason) ?? "unknown"
   const created = Number(event.created)
   const { result } = await recordDisputeWorkflow(container).run({
     input: {
@@ -142,10 +138,10 @@ async function disputeEvent(container: MedusaContainer, event: StripeEvent): Pro
       event_at: Number.isFinite(created) && created > 0 ? created : Math.floor(Date.now() / 1000),
       dispute: {
         id: disputeId,
-        status: code(dispute.status) ?? "unknown",
+        status: stripeCode(dispute.status) ?? "unknown",
         reason,
         amount_pence: amountPence,
-        currency: code(dispute.currency) ?? payment!.currency_code,
+        currency: stripeCode(dispute.currency) ?? payment!.currency_code,
         due_by: Number.isFinite(dueBy) && dueBy > 0 ? new Date(dueBy * 1000).toISOString() : null,
         livemode: event.livemode === true,
       },
@@ -287,7 +283,7 @@ async function intentCanceled(container: MedusaContainer, event: StripeEvent): P
   const order = payment.payment_collection?.order
   if (!order || order.status === "canceled") return { handled: "order_cancelled" }
 
-  const reason = code(intent.cancellation_reason)
+  const reason = stripeCode(intent.cancellation_reason)
   const { result } = await recordHoldReleasedWorkflow(container).run({
     input: {
       order_id: order.id,

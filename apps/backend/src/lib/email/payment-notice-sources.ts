@@ -1,7 +1,7 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import type { ShopPaymentDisputeData, ShopPaymentNoticeData } from "@technest/emails"
-import { PaymentNoticeMeta } from "../stripe-events/constants"
+import { PaymentNoticeMeta, stripeCode } from "../stripe-events/constants"
 import { shopNotifyEmail, toPence } from "./order-email-data"
 import type { EmailRecipient, ResolvedEmail } from "./sources"
 import { adminBase } from "./trade-sources"
@@ -16,10 +16,6 @@ async function loadOrder(container: MedusaContainer, orderId: string): Promise<R
   })
   return data[0] as Row | undefined
 }
-
-/** Stripe codes are snake_case; anything else is not shown to staff. */
-const code = (value: unknown): string | null =>
-  typeof value === "string" && /^[a-z0-9_]{1,40}$/.test(value) ? value : null
 
 /** "Friday 24 October" in shop time, or null when the value isn't a date. */
 export function shopDay(iso: unknown): string | null {
@@ -56,8 +52,8 @@ export async function paymentDispute(
   const data: ShopPaymentDisputeData = {
     display_id: order.display_id ?? order.id,
     amount_pence: Math.round(Number(dispute.amount_pence) || 0),
-    reason: code(dispute.reason) ?? "unknown",
-    status: code(dispute.status) ?? "unknown",
+    reason: stripeCode(dispute.reason) ?? "unknown",
+    status: stripeCode(dispute.status) ?? "unknown",
     due_by: shopDay(dispute.due_by),
     dispute_url: `${stripeDashboard(dispute.livemode)}/disputes/${encodeURIComponent(disputeId)}`,
     admin_order_url: `${adminBase()}/orders/${order.id}`,
@@ -103,7 +99,7 @@ export async function paymentNotice(
       ...base,
       kind: "hold_released",
       amount_pence: Math.round(Number(hold.amount_pence) || 0),
-      reason: code(hold.reason),
+      reason: stripeCode(hold.reason),
     }
     return done(data)
   }

@@ -13,3 +13,7 @@ export const PaymentNoticeMeta = {
   /** `{ fulfillment_id, at }`: a pickup order delivered from Medusa's order page, captured by the sweep. */
   COLLECTED_OUTSIDE_BOARD: "collected_outside_board",
 } as const
+
+/** A Stripe code (reason, status, currency) if it is plain snake_case; anything else is never shown to people. */
+export const stripeCode = (value: unknown): string | null =>
+  typeof value === "string" && /^[a-z0-9_]{1,40}$/.test(value) ? value : null
