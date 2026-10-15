@@ -18,6 +18,7 @@ import {
   tradeApplicationLockKey,
   tradeCustomerLockKey,
 } from "./steps/trade-locks"
+import { repriceCustomerCartsStep } from "./steps/reprice-customer-carts"
 import { removeCustomerFromTradeGroupStep } from "./steps/trade-pricing-steps"
 
 export type RevokeTradeApplicationInput = {
@@ -28,7 +29,8 @@ export type RevokeTradeApplicationInput = {
 
 /**
  * Closes an approved trade account: the customer leaves the Trade group (so
- * trade tiers answer 403 and carts price at retail) and the application is
+ * trade tiers answer 403, new carts price at retail and the customer's open
+ * carts are re-priced at retail) and the application is
  * marked revoked with the optional reason. The customer may apply again.
  * Locks the application and the customer so a concurrent review or re-apply
  * waits; a failure after the removal puts the customer back in the group.
@@ -52,6 +54,8 @@ export const revokeTradeApplicationWorkflow = createWorkflow(
       customer_id: application.customer_id,
     }))
     removeCustomerFromTradeGroupStep(membership)
+    // Open baskets still hold trade prices; checkout would charge them.
+    repriceCustomerCartsStep(membership)
 
     const update = transform({ input }, ({ input }) => ({
       id: input.id,
