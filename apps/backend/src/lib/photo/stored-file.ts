@@ -19,15 +19,19 @@ export type StoredFileReader = {
  */
 export async function retrieveStoredFile(
   files: StoredFileReader,
-  id: string
+  id: string,
+  { timeoutMs = PROBE_TIMEOUT_MS }: { timeoutMs?: number } = {}
 ): Promise<{ id: string; url: string }> {
   const file = await files.retrieveFile(id)
   const stream = await files.getDownloadStream(id)
-  await probeAndClose(stream)
+  await probeAndClose(stream, timeoutMs)
   return file
 }
 
-async function probeAndClose(stream: unknown): Promise<void> {
+/** A storage that accepted the request but sends nothing for this long counts as failed. */
+export const PROBE_TIMEOUT_MS = 15_000
+
+async function probeAndClose(stream: unknown, timeoutMs: number): Promise<void> {
   const node = stream as Readable | null
   if (!node || typeof node.once !== "function") {
     // A web stream (other runtimes): opening it already got an answer.
@@ -37,7 +41,12 @@ async function probeAndClose(stream: unknown): Promise<void> {
   }
   try {
     await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(
+        () => done(new Error(`The file storage did not answer within ${Math.round(timeoutMs / 1000)} s`)),
+        timeoutMs
+      )
       const done = (err?: Error) => {
+        clearTimeout(timer)
         node.off("readable", ok)
         node.off("end", ok)
         node.off("error", fail)

@@ -79,4 +79,18 @@ describe("retrieveStoredFile", () => {
     const empty = fileModule({ getDownloadStream: jest.fn(async () => Readable.from([])) })
     await expect(retrieveStoredFile(empty, "empty.jpg")).resolves.toMatchObject({ id: "empty.jpg" })
   })
+
+  it("gives up on a storage stream that never answers, and closes it", async () => {
+    let destroyed = false
+    const silent = new Readable({
+      read() {},
+      destroy(err, cb) {
+        destroyed = true
+        cb(err)
+      },
+    })
+    const files = fileModule({ getDownloadStream: jest.fn(async () => silent) })
+    await expect(retrieveStoredFile(files, "stalled.jpg", { timeoutMs: 50 })).rejects.toThrow(/did not answer/i)
+    expect(destroyed).toBe(true)
+  })
 })
