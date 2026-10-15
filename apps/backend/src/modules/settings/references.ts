@@ -1,4 +1,3 @@
-import { MedusaError } from "@medusajs/framework/utils"
 import { SETTINGS_MODULE } from "."
 import type SettingsModuleService from "./service"
 
@@ -50,8 +49,12 @@ export async function setReference(
   try {
     await settings.createTechnestReferences({ key, value })
   } catch (e) {
-    // Two callers stored the key at once: the unique index kept one row, keep that one.
-    if (!(e instanceof MedusaError && e.type === MedusaError.Types.DUPLICATE_ERROR)) {
+    // Two callers stored the key at once: the unique index kept one row, keep
+    // that one. Medusa reports the unique violation as INVALID_DATA ("...
+    // already exists"), so check by reading the key again rather than by the
+    // error type: if a row is there now, the other caller won.
+    const [stored] = await settings.listTechnestReferences({ key }, { select: ["id", "value"], take: 1 })
+    if (!stored) {
       throw e
     }
   }
