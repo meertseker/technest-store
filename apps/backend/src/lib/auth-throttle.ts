@@ -63,6 +63,12 @@ function isInternal(address: string): boolean {
   return lower === "::1" || /^f[cd]/.test(lower) || /^fe[89ab]/.test(lower)
 }
 
+/** "::ffff:203.0.113.9" (an IPv4 client on a dual-stack socket) -> "203.0.113.9"; anything else unchanged. */
+export function unmapIPv4(address: string): string {
+  const plain = address.replace(/^::ffff:/i, "")
+  return plain !== address && isIP(plain) === 4 ? plain : address
+}
+
 /** IPv4 as is; IPv6 by its /64 (one subscriber owns the whole /64). */
 export function ipKey(address: string): string {
   if (isIP(address) !== 6) {
@@ -85,11 +91,12 @@ export function ipKey(address: string): string {
  * (see the note at the top of this file).
  */
 export function visitorIp(req: MedusaRequest): string | null {
-  const forwarded = header(req, "cf-connecting-ip")
+  const raw = header(req, "cf-connecting-ip")
+  const forwarded = raw ? unmapIPv4(raw) : raw
   if (forwarded && isIP(forwarded)) {
     return ipKey(forwarded)
   }
-  const peer = (req.socket?.remoteAddress ?? "").replace(/^::ffff:/i, "")
+  const peer = unmapIPv4(req.socket?.remoteAddress ?? "")
   if (isIP(peer) && !isInternal(peer)) {
     return ipKey(peer)
   }

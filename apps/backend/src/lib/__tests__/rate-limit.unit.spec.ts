@@ -48,6 +48,31 @@ describe("rateLimit middleware keys", () => {
     ])
     expect(hits(["203.0.113.9", "203.0.113.9", "203.0.113.9"])).toEqual(["allowed", "allowed", 429])
   })
+
+  it("counts an IPv4 client seen as an IPv4-mapped IPv6 address by its IPv4 address", () => {
+    // Different clients must not share one bucket...
+    expect(hits(["::ffff:203.0.113.9", "::ffff:203.0.113.10", "::FFFF:198.51.100.7"])).toEqual([
+      "allowed",
+      "allowed",
+      "allowed",
+    ])
+    // ...and the mapped and plain forms of one client are the same client.
+    expect(hits(["::ffff:203.0.113.9", "203.0.113.9", "::ffff:203.0.113.9"])).toEqual(["allowed", "allowed", 429])
+    // Without a forwarded header the socket address is used, mapped or not.
+    const limiter = new SlidingWindowRateLimiter({ limit: 1, windowMs: 60_000 })
+    const middleware = rateLimit(limiter, "test", "slow down")
+    const viaSocket = (address: string) => {
+      const res = new FakeRes()
+      const next = jest.fn()
+      middleware({ headers: {}, socket: { remoteAddress: address } } as any, res as any, next)
+      return next.mock.calls.length ? "allowed" : res.statusCode
+    }
+    expect([viaSocket("::ffff:192.0.2.1"), viaSocket("::ffff:192.0.2.2"), viaSocket("192.0.2.1")]).toEqual([
+      "allowed",
+      "allowed",
+      429,
+    ])
+  })
 })
 
 describe("SlidingWindowRateLimiter", () => {

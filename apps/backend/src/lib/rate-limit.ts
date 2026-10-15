@@ -3,7 +3,7 @@ import type {
   MedusaRequest,
   MedusaResponse,
 } from "@medusajs/framework/http"
-import { ipKey } from "./auth-throttle"
+import { ipKey, unmapIPv4 } from "./auth-throttle"
 
 type Options = {
   limit: number
@@ -68,11 +68,13 @@ export class SlidingWindowRateLimiter {
 /**
  * The client IP. Behind Cloudflare the real address is in CF-Connecting-IP
  * (Caddy overwrites it with its trusted {client_ip} on the api. site, so it cannot be spoofed).
+ * An IPv4 client seen as "::ffff:a.b.c.d" is returned as plain IPv4, so it is
+ * not counted inside the shared ::ffff:0:0/96 block.
  */
 export function clientIp(req: MedusaRequest): string {
   const cf = req.headers["cf-connecting-ip"]
   const value = Array.isArray(cf) ? cf[0] : cf
-  return value?.trim() || req.ip || req.socket?.remoteAddress || "unknown"
+  return unmapIPv4(value?.trim() || req.ip || req.socket?.remoteAddress || "unknown")
 }
 
 /**
