@@ -621,12 +621,14 @@ medusaIntegrationTestRunner({
 
       it("approve, reject, revoke and delete while the application is locked", async () => {
         await holding(tradeApplicationLockKey(pendingId), async () => {
+          // One at a time: a request started early could be refused before it is awaited,
+          // and jest counts that unhandled rejection as a failure.
           for (const request of [
-            api.post(`/admin/trade-applications/${pendingId}/approve`, {}, admin),
-            api.post(`/admin/trade-applications/${pendingId}/reject`, { reason: "x" }, admin),
-            api.delete(`/admin/trade-applications/${pendingId}`, admin),
+            () => api.post(`/admin/trade-applications/${pendingId}/approve`, {}, admin),
+            () => api.post(`/admin/trade-applications/${pendingId}/reject`, { reason: "x" }, admin),
+            () => api.delete(`/admin/trade-applications/${pendingId}`, admin),
           ]) {
-            const err = await fail(request)
+            const err = await fail(request())
             expect(err.status).toBe(409)
             expect(err.data).toEqual({ type: "conflict", message: expect.stringMatching(/another request/i) })
           }
