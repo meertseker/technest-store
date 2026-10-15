@@ -175,6 +175,11 @@ medusaIntegrationTestRunner({
       expect(admin_view.product_attributes).toHaveProperty("reorder_level")
     })
 
+    it("has no starter leftover routes", async () => {
+      expect((await api.get("/store/custom", store).catch((e: any) => e.response)).status).toBe(404)
+      expect((await api.get("/admin/custom", admin).catch((e: any) => e.response)).status).toBe(404)
+    })
+
     it("rejects bad input and unknown products", async () => {
       const bad = await api
         .post(`/admin/products/${draftChargerId}/attributes`, { colour: "red" }, admin)
