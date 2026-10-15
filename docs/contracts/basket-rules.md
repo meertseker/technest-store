@@ -94,8 +94,9 @@ index definition hash, so Medusa reindexes on the next boot.
 
 ## 4. Low-stock digest (for E2)
 
-Scheduled job `technest-low-stock-digest` (`src/jobs/low-stock-digest.ts`): runs hourly and acts only in the
-**08:00 Europe/London** hour (BST/GMT safe; Medusa's cron has no time zone). It emits **one**
+Scheduled job `technest-low-stock-digest` (`src/jobs/low-stock-digest.ts`): runs hourly and acts on the first
+run from **08:00 Europe/London** that day, until noon (BST/GMT safe; Medusa's cron has no time zone; a worker
+that was down at 08:00 catches up in the morning, one that starts after noon waits for the next day). It emits **one**
 `technest.inventory.low_stock` event per run, and **only when at least one variant is low**. Payload exactly as
 docs/contracts/emails.md:
 

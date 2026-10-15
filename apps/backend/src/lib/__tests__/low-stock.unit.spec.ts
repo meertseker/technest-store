@@ -1,6 +1,5 @@
 import {
   defaultLowStockThreshold,
-  isLowStockHour,
   LowStockVariantRow,
   selectLowStock,
 } from "../low-stock"
@@ -97,14 +96,5 @@ describe("defaultLowStockThreshold", () => {
     expect(defaultLowStockThreshold({ LOW_STOCK_THRESHOLD: "0" })).toBe(0)
     expect(defaultLowStockThreshold({ LOW_STOCK_THRESHOLD: "-1" })).toBe(3)
     expect(defaultLowStockThreshold({ LOW_STOCK_THRESHOLD: "abc" })).toBe(3)
-  })
-})
-
-describe("isLowStockHour", () => {
-  it("is 08:00 London time in winter (GMT) and summer (BST)", () => {
-    expect(isLowStockHour(new Date("2026-01-15T08:00:00Z"))).toBe(true)
-    expect(isLowStockHour(new Date("2026-01-15T07:00:00Z"))).toBe(false)
-    expect(isLowStockHour(new Date("2026-07-15T07:00:00Z"))).toBe(true)
-    expect(isLowStockHour(new Date("2026-07-15T08:00:00Z"))).toBe(false)
   })
 })

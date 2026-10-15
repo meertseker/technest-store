@@ -23,13 +23,14 @@ const state: LowStockRunState = {}
 
 export function resetLowStockDigestStateForTests() {
   delete state.lastRunDay
+  delete state.lastFailureReportDay
 }
 
 /**
  * Daily from 08:00 Europe/London (the email contract's time). Medusa's cron
  * runs in the server's time zone (UTC in our containers), so the job runs
- * hourly and acts on the first run at or after 08:00 London that day, which
- * stays right across BST/GMT and survives a worker that was down at 08:00.
+ * hourly and acts on the first run between 08:00 and noon London that day,
+ * which stays right across BST/GMT and survives a worker that was down at 08:00.
  * E2's email sends at most one digest per London day, so a re-run is harmless.
  */
 export default async function lowStockDigestJob(container: MedusaContainer) {
@@ -43,7 +44,12 @@ export default async function lowStockDigestJob(container: MedusaContainer) {
     logger.info(`Low-stock check: ${items.length} variant(s) at or below reorder level.`)
   } catch (error) {
     logger.error(`Low-stock check failed: ${(error as Error).message}`)
-    reportError(error, { source: "job:technest-low-stock-digest" })
+    // Retried every hour until noon; one alert a day is enough for the person on call.
+    const day = londonDay(now)
+    if (state.lastFailureReportDay !== day) {
+      state.lastFailureReportDay = day
+      reportError(error, { source: "job:technest-low-stock-digest" })
+    }
   }
 }
 

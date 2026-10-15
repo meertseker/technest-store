@@ -42,23 +42,28 @@ const londonHour = (now: Date) =>
     }).format(now)
   )
 
-/** True in the 08:00-08:59 hour, London time (BST and GMT alike). */
-export function isLowStockHour(now: Date = new Date()): boolean {
-  return londonHour(now) === LOW_STOCK_HOUR_LONDON
-}
+/** Last London hour (exclusive) a missed 08:00 digest is still sent: it is a morning email. */
+export const LOW_STOCK_CATCH_UP_UNTIL_HOUR_LONDON = 12
 
 /** What the job remembers between hourly runs (in memory: a restart simply checks again). */
-export type LowStockRunState = { lastRunDay?: string }
+export type LowStockRunState = { lastRunDay?: string; lastFailureReportDay?: string }
 
 /**
- * The digest is due on the first run at or after 08:00 London on a day this
- * process has not yet run it. Acting only inside the 08:00 hour meant a
- * worker that was down then (a deploy, a restart) sent no digest that day.
- * E2's email sends at most one digest per London day whatever the hour, so
- * a second run after a restart is harmless.
+ * The digest is due on the first run between 08:00 and noon London on a day
+ * this process has not yet run it. Acting only inside the 08:00 hour meant a
+ * worker that was down then (a deploy, a restart) sent no digest that day; a
+ * worker that starts after noon waits for the next morning, so the shop never
+ * gets a "daily" digest late in the evening. E2's email sends at most one
+ * digest per London day whatever the hour, so a second run after a restart
+ * is harmless.
  */
 export function isLowStockDue(now: Date, state: LowStockRunState): boolean {
-  return londonHour(now) >= LOW_STOCK_HOUR_LONDON && state.lastRunDay !== londonDay(now)
+  const hour = londonHour(now)
+  return (
+    hour >= LOW_STOCK_HOUR_LONDON &&
+    hour < LOW_STOCK_CATCH_UP_UNTIL_HOUR_LONDON &&
+    state.lastRunDay !== londonDay(now)
+  )
 }
 
 export type LowStockVariantRow = {

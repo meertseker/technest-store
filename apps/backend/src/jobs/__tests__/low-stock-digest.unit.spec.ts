@@ -1,5 +1,7 @@
 const run = jest.fn()
 jest.mock("../../workflows/emit-low-stock-digest", () => ({ emitLowStockDigestWorkflow: () => ({ run }) }))
+const reportError = jest.fn()
+jest.mock("../../lib/alerting", () => ({ reportError: (...a: unknown[]) => reportError(...a) }))
 
 import { isLowStockDue } from "../../lib/low-stock"
 import lowStockDigestJob, { resetLowStockDigestStateForTests } from "../low-stock-digest"
@@ -16,10 +18,18 @@ describe("isLowStockDue (pure)", () => {
   it("is due from 08:00 London on a day with no run yet, and not before", () => {
     expect(isLowStockDue(new Date("2026-01-15T07:59:00Z"), {})).toBe(false)
     expect(isLowStockDue(new Date("2026-01-15T08:00:00Z"), {})).toBe(true)
-    expect(isLowStockDue(new Date("2026-01-15T15:00:00Z"), {})).toBe(true)
+    expect(isLowStockDue(new Date("2026-01-15T11:59:00Z"), {})).toBe(true)
     // BST: 07:00Z is 08:00 London.
     expect(isLowStockDue(new Date("2026-07-15T06:59:00Z"), {})).toBe(false)
     expect(isLowStockDue(new Date("2026-07-15T07:00:00Z"), {})).toBe(true)
+  })
+
+  it("is a morning digest: a worker that starts after noon London waits for the next day", () => {
+    expect(isLowStockDue(new Date("2026-01-15T12:00:00Z"), {})).toBe(false)
+    expect(isLowStockDue(new Date("2026-01-15T22:30:00Z"), {})).toBe(false)
+    // BST: 11:00Z is 12:00 London.
+    expect(isLowStockDue(new Date("2026-07-15T10:59:00Z"), {})).toBe(true)
+    expect(isLowStockDue(new Date("2026-07-15T11:00:00Z"), {})).toBe(false)
   })
 
   it("is not due again on a day that already ran, and is due again the next day", () => {
@@ -33,6 +43,7 @@ describe("the hourly job", () => {
     jest.useFakeTimers()
     run.mockReset().mockResolvedValue({ result: { items: [] } })
     logger.error.mockReset()
+    reportError.mockReset()
     resetLowStockDigestStateForTests()
   })
   afterEach(() => jest.useRealTimers())
@@ -65,5 +76,15 @@ describe("the hourly job", () => {
     expect(run).toHaveBeenCalledTimes(2)
     await at("2026-01-15T10:00:10Z")
     expect(run).toHaveBeenCalledTimes(2)
+  })
+
+  it("reports a check that keeps failing once a day, not on every hourly retry", async () => {
+    run.mockRejectedValue(new Error("db down"))
+    for (const h of ["08", "09", "10", "11"]) await at(`2026-01-15T${h}:00:10Z`)
+    expect(run).toHaveBeenCalledTimes(4)
+    expect(logger.error).toHaveBeenCalledTimes(4)
+    expect(reportError).toHaveBeenCalledTimes(1)
+    await at("2026-01-16T08:00:10Z")
+    expect(reportError).toHaveBeenCalledTimes(2)
   })
 })
