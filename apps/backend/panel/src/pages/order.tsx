@@ -27,6 +27,7 @@ const ORDER_FIELDS = [
   "status",
   "created_at",
   "email",
+  "customer_id",
   "total",
   "original_total",
   "item_total",
@@ -58,6 +59,7 @@ type Order = PanelOrder & {
   display_id: number
   created_at: string
   email: string | null
+  customer_id?: string | null
   total: number | string
   /** Before refunds; `total` drops as money is refunded. */
   original_total?: number | string | null
@@ -95,6 +97,22 @@ const PAYMENT_LABELS: Record<string, { label: string; color: "green" | "orange" 
 export function PaymentBadge({ status }: { status: string | null | undefined }) {
   const s = PAYMENT_LABELS[status ?? ""] ?? { label: status ?? "Unknown", color: "grey" as const }
   return <Badge color={s.color}>{s.label}</Badge>
+}
+
+const FULFILMENT_LABELS: Record<string, { label: string; color: "green" | "orange" | "grey" | "blue" }> = {
+  not_fulfilled: { label: "To do", color: "orange" },
+  partially_fulfilled: { label: "Partly packed", color: "orange" },
+  fulfilled: { label: "Packed", color: "blue" },
+  partially_shipped: { label: "Partly sent", color: "blue" },
+  shipped: { label: "Sent", color: "green" },
+  partially_delivered: { label: "Partly handed over", color: "blue" },
+  delivered: { label: "Done", color: "green" },
+  canceled: { label: "Cancelled", color: "grey" },
+}
+
+export function FulfilmentBadge({ status }: { status: string | null | undefined }) {
+  const s = FULFILMENT_LABELS[status ?? ""]
+  return s ? <Badge color={s.color}>{s.label}</Badge> : null
 }
 
 const fullName = (a?: Address | null) => [a?.first_name, a?.last_name].filter(Boolean).join(" ")
@@ -154,7 +172,7 @@ export function OrderPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Link to="/shop-orders" className="txt-large text-ui-fg-interactive inline-flex min-h-11 items-center gap-1 self-start">
+      <Link to="/shop-orders?tab=all" className="txt-large text-ui-fg-interactive inline-flex min-h-11 items-center gap-1 self-start">
         <ArrowLeft /> Orders
       </Link>
 
@@ -208,7 +226,15 @@ export function OrderPage() {
         <Heading level="h2" className="px-4 py-3 md:px-6">
           Customer
         </Heading>
-        <DetailRow label="Name">{name || "Not given"}</DetailRow>
+        <DetailRow label="Name">
+          {order.customer_id ? (
+            <Link to={`/customers/${order.customer_id}`} className="txt-large text-ui-fg-interactive underline-offset-2 hover:underline">
+              {name || "See customer"}
+            </Link>
+          ) : (
+            name || "Not given"
+          )}
+        </DetailRow>
         <DetailRow label="Email">
           {order.email ? (
             <a href={`mailto:${order.email}`} className="txt-large text-ui-fg-interactive break-all underline">
@@ -241,12 +267,6 @@ export function OrderPage() {
         )}
       </Container>
 
-      <a
-        href={`/app/orders/${order.id}`}
-        className="txt-medium text-ui-fg-subtle inline-flex min-h-11 items-center self-start underline-offset-2 hover:underline"
-      >
-        Open in the full admin (returns, exchanges, notes)
-      </a>
     </div>
   )
 }

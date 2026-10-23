@@ -1,4 +1,4 @@
-import { ArrowRightOnRectangle, CogSixTooth, ShoppingBag, Sun, Tag } from "@medusajs/icons"
+import { ArrowRightOnRectangle, ChartBar, CogSixTooth, ShoppingBag, Sun, Tag, Users } from "@medusajs/icons"
 import { clx } from "@medusajs/ui"
 import type { ComponentType, ReactNode } from "react"
 import { Link, NavLink, useLocation } from "react-router-dom"
@@ -16,15 +16,19 @@ type NavItem = {
   also: string[]
 }
 
+/** At most five along the bottom of a phone; Settings sits in the top bar there. */
 export const NAV: NavItem[] = [
   { to: "/today", label: "Today", Icon: Sun, also: [] },
-  { to: "/shop-orders", label: "Orders", Icon: ShoppingBag, also: ["/orders", "/repair-bookings", "/trade-applications", "/customers"] },
-  { to: "/shop-products", label: "Products", Icon: Tag, also: ["/products"] },
-  { to: "/shop-settings", label: "Settings", Icon: CogSixTooth, also: [] },
+  { to: "/shop-orders", label: "Orders", Icon: ShoppingBag, also: ["/orders", "/repair-bookings", "/trade-applications"] },
+  { to: "/shop-products", label: "Products", Icon: Tag, also: ["/products", "/inventory"] },
+  { to: "/customers", label: "Customers", Icon: Users, also: [] },
+  { to: "/sales", label: "Sales", Icon: ChartBar, also: [] },
 ]
 
+export const SETTINGS: NavItem = { to: "/shop-settings", label: "Settings", Icon: CogSixTooth, also: [] }
+
 export function activeNav(pathname: string): string | null {
-  const hit = NAV.find((n) => [n.to, ...n.also].some((p) => pathname === p || pathname.startsWith(`${p}/`)))
+  const hit = [...NAV, SETTINGS].find((n) => [n.to, ...n.also].some((p) => pathname === p || pathname.startsWith(`${p}/`)))
   return hit?.to ?? null
 }
 
@@ -33,9 +37,10 @@ const FOCUS = "outline-none focus-visible:ring-2 focus-visible:ring-[#d6001c] fo
 function NavLinks({ variant }: { variant: "side" | "bottom" }) {
   const { pathname } = useLocation()
   const active = activeNav(pathname)
+  const items = variant === "side" ? [...NAV, SETTINGS] : NAV
   return (
-    <ul className={variant === "bottom" ? "grid grid-cols-4 gap-1" : "flex flex-col gap-1"}>
-      {NAV.map(({ to, label, Icon }) => {
+    <ul className={variant === "bottom" ? "grid grid-cols-5 gap-1" : "flex flex-col gap-1"}>
+      {items.map(({ to, label, Icon }) => {
         const on = active === to
         return (
           <li key={to}>
@@ -54,7 +59,7 @@ function NavLinks({ variant }: { variant: "side" | "bottom" }) {
               )}
             >
               <Icon className="size-5 shrink-0" />
-              <span className={variant === "bottom" ? "leading-tight" : undefined}>{label}</span>
+              <span className={variant === "bottom" ? "max-w-full truncate leading-tight" : undefined}>{label}</span>
             </NavLink>
           </li>
         )
@@ -79,6 +84,7 @@ function Brand({ size }: { size: "lg" | "sm" }) {
 
 export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   const signOut = useSignOut()
+  const { pathname } = useLocation()
   return (
     <div className="min-h-dvh">
       <a
@@ -114,15 +120,28 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
       </aside>
 
       {/* Phone: slim translucent top bar. */}
-      <header className="sticky top-0 z-20 flex items-center justify-between gap-3 bg-[#f5f5f7]/70 px-4 py-2 backdrop-blur-2xl backdrop-saturate-150 md:hidden">
+      <header className="sticky top-0 z-20 flex items-center justify-between gap-2 bg-[#f5f5f7]/70 px-4 py-2 backdrop-blur-2xl backdrop-saturate-150 md:hidden">
         <Brand size="sm" />
+        <span className="flex-1" />
+        <Link
+          to={SETTINGS.to}
+          aria-label="Settings"
+          aria-current={activeNav(pathname) === SETTINGS.to ? "page" : undefined}
+          className={clx(
+            "glass flex size-11 items-center justify-center rounded-full",
+            activeNav(pathname) === SETTINGS.to ? "text-[#b00017]" : "text-ui-fg-base",
+            FOCUS
+          )}
+        >
+          <CogSixTooth />
+        </Link>
         <button
           type="button"
           onClick={signOut}
           className={clx("glass flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-ui-fg-base", FOCUS)}
         >
           <ArrowRightOnRectangle className="size-4" />
-          Sign out
+          <span className="sr-only sm:not-sr-only">Sign out</span>
         </button>
       </header>
 

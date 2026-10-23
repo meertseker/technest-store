@@ -25,20 +25,20 @@ const ACTORS: Record<string, { idKey: string; audience: "customer" | "staff" }> 
 const RETRY_DELAYS_MS = [2_000, 10_000]
 
 /**
- * The admin dashboard's base URL (ADMIN_URL, e.g. https://admin.technestlondon.co.uk/app),
- * else the backend's /app. Production must configure one: the link carries a
+ * The shop panel's base URL (ADMIN_URL, e.g. https://admin.technestlondon.co.uk/panel),
+ * else the backend's /panel (it has the reset page). Production must configure one: the link carries a
  * live token, so never guess a host there.
  */
 export function adminUrl(env: NodeJS.ProcessEnv = process.env): string {
   if (env.ADMIN_URL) return env.ADMIN_URL.replace(/\/$/, "")
-  if (env.MEDUSA_BACKEND_URL) return `${env.MEDUSA_BACKEND_URL.replace(/\/$/, "")}/app`
+  if (env.MEDUSA_BACKEND_URL) return `${env.MEDUSA_BACKEND_URL.replace(/\/$/, "")}/panel`
   if (env.NODE_ENV === "production") {
     throw new MedusaError(
       MedusaError.Types.INVALID_DATA,
       "ADMIN_URL (or MEDUSA_BACKEND_URL) must be set for staff password resets"
     )
   }
-  return "http://localhost:9000/app"
+  return "http://localhost:9000/panel"
 }
 
 /**

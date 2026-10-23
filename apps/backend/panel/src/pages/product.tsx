@@ -1,5 +1,5 @@
 import { ArrowLeft } from "@medusajs/icons"
-import { Alert, Button, Container, Heading, Text, toast } from "@medusajs/ui"
+import { Alert, Button, Container, Heading, Input, Label, Text, Textarea, toast } from "@medusajs/ui"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
@@ -10,9 +10,8 @@ import { errorMessage } from "../../../src/admin/lib/format"
 import { PRICE_STOCK_FIELDS, type ProductForRows, variantRows } from "../../../src/admin/lib/price-stock"
 import { StatusBadge } from "./all-products"
 
-// One product: its photo, whether it is on sale, and price and stock per
-// option (the same card as Products > Price & stock). Descriptions, extra
-// photos and categories are edited in the full admin.
+// One product: its photo, whether it is on sale, price and stock per option
+// (the same card as Products > Price & stock), and its name and description.
 
 type Product = ProductForRows & { description?: string | null; subtitle?: string | null; handle?: string | null }
 
@@ -119,12 +118,7 @@ export function ProductPage() {
         </ul>
       </section>
 
-      <a
-        href={`/app/products/${product.id}`}
-        className="txt-medium text-ui-fg-subtle inline-flex min-h-11 items-center self-start underline-offset-2 hover:underline"
-      >
-        Open in the full admin (description, photos, categories)
-      </a>
+      <EditText key={`${product.title}|${product.description ?? ""}`} id={product.id} title={product.title} description={product.description ?? ""} />
 
       <ConfirmDialog
         open={confirm}
@@ -142,5 +136,79 @@ export function ProductPage() {
         onCancel={() => setConfirm(false)}
       />
     </div>
+  )
+}
+
+const TITLE_MAX = 200
+const DESCRIPTION_MAX = 5000
+
+/** Name and description, as customers see them on the shop. */
+function EditText({ id, title: savedTitle, description: savedDescription }: { id: string; title: string; description: string }) {
+  const queryClient = useQueryClient()
+  const [title, setTitle] = useState(savedTitle)
+  const [description, setDescription] = useState(savedDescription)
+  const [error, setError] = useState<string | null>(null)
+  const changed = title.trim() !== savedTitle || description.trim() !== savedDescription.trim()
+  const titleError = !title.trim() ? "The name can't be empty." : title.length > TITLE_MAX ? `At most ${TITLE_MAX} characters.` : null
+
+  const save = useMutation({
+    mutationFn: () =>
+      sdk.client.fetch(`/admin/products/${id}`, {
+        method: "POST",
+        body: { title: title.trim(), description: description.trim() || null },
+      }),
+    onMutate: () => setError(null),
+    onSuccess: () => {
+      toast.success("Saved. The shop shows the new text within a few minutes.")
+      queryClient.invalidateQueries({ queryKey: PRICE_STOCK_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: ["panel", "products"] })
+    },
+    onError: (e) => setError(errorMessage(e)),
+  })
+
+  return (
+    <Container className="flex flex-col gap-4 px-4 py-4 md:px-6">
+      <Heading level="h2">Name and description</Heading>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="product-title" size="base" weight="plus">
+          Name
+        </Label>
+        <Input
+          id="product-title"
+          size="base"
+          className={TAP}
+          value={title}
+          maxLength={TITLE_MAX}
+          aria-invalid={!!titleError}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        {titleError && (
+          <Text size="base" className="text-ui-fg-error">
+            {titleError}
+          </Text>
+        )}
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="product-description" size="base" weight="plus">
+          Description
+        </Label>
+        <Textarea
+          id="product-description"
+          rows={6}
+          className="txt-large"
+          value={description}
+          maxLength={DESCRIPTION_MAX}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </div>
+      {error && (
+        <Alert variant="error" role="alert">
+          {error}
+        </Alert>
+      )}
+      <Button size="large" className={`${TAP} self-start`} disabled={!changed || !!titleError} isLoading={save.isPending} onClick={() => save.mutate()}>
+        Save
+      </Button>
+    </Container>
   )
 }

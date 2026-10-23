@@ -118,7 +118,7 @@ medusaIntegrationTestRunner({
 
         const [mail] = await mailTo(email, 1)
         expect(mail.Subject).toBe("Reset your Tech Nest admin password")
-        expect(await textOf(mail.ID)).toContain("https://admin.technestlondon.co.uk/app/reset-password?token=t.staff")
+        expect(await textOf(mail.ID)).toContain("https://admin.technestlondon.co.uk/panel/reset-password?token=t.staff")
       })
     })
   },

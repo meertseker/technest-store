@@ -22,8 +22,8 @@ export const DEFAULT_REORDER_LEVEL = 3
 export const adminBase = () =>
   (
     process.env.ADMIN_URL ||
-    (process.env.MEDUSA_BACKEND_URL ? `${process.env.MEDUSA_BACKEND_URL.replace(/\/$/, "")}/app` : "") ||
-    "https://admin.technestlondon.co.uk/app"
+    (process.env.MEDUSA_BACKEND_URL ? `${process.env.MEDUSA_BACKEND_URL.replace(/\/$/, "")}/panel` : "") ||
+    "https://admin.technestlondon.co.uk/panel"
   ).replace(/\/$/, "")
 
 const query = (container: MedusaContainer) => container.resolve(ContainerRegistrationKeys.QUERY)

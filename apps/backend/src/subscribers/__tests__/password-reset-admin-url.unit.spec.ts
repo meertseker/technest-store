@@ -7,8 +7,8 @@ describe("adminUrl (staff password reset link)", () => {
     )
   })
 
-  it("falls back to the backend's /app", () => {
-    expect(adminUrl({ MEDUSA_BACKEND_URL: "https://api.technestlondon.co.uk" } as any)).toBe("https://api.technestlondon.co.uk/app")
+  it("falls back to the backend's shop panel", () => {
+    expect(adminUrl({ MEDUSA_BACKEND_URL: "https://api.technestlondon.co.uk" } as any)).toBe("https://api.technestlondon.co.uk/panel")
   })
 
   it("refuses to guess a host in production", () => {

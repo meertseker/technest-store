@@ -1,11 +1,12 @@
 import { Button, Container, Heading, Input, Label, Text } from "@medusajs/ui"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { type FormEvent, type ReactNode, useState } from "react"
+import { Link } from "react-router-dom"
 import { TAP } from "../../src/admin/components/shop-ui"
 import { sdk } from "../../src/admin/lib/client"
 
-// Signing in: the same accounts and session cookie as Medusa's dashboard
-// (/app). A password is reset there too: the reset email links to /app.
+// Signing in: the same accounts and session cookie as Medusa's dashboard.
+// A forgotten password is reset in the panel (pages/reset-password.tsx).
 
 export const ME_KEY = ["panel", "me"] as const
 
@@ -115,12 +116,12 @@ function SignIn() {
             Sign in
           </Button>
         </form>
-        <a
-          href="/app/reset-password"
+        <Link
+          to="/reset-password"
           className="txt-large text-ui-fg-interactive inline-flex min-h-11 items-center underline-offset-2 hover:underline"
         >
           Forgot your password?
-        </a>
+        </Link>
       </Container>
     </main>
   )

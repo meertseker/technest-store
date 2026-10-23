@@ -33,7 +33,8 @@ x-backend-env: &backend-env
   AUTH_CORS: https://${SHOP_DOMAIN:-technestlondon.co.uk},https://admin.${SHOP_DOMAIN:-technestlondon.co.uk}
   MEDUSA_BACKEND_URL: https://api.${SHOP_DOMAIN:-technestlondon.co.uk}
   # Staff links in emails (password reset, new trade application, repair, stock) point here directly.
-  ADMIN_URL: https://admin.${SHOP_DOMAIN:-technestlondon.co.uk}/app
+  # Staff links in emails (orders, trade, repairs, stock, password reset) open the shop panel.
+  ADMIN_URL: https://admin.${SHOP_DOMAIN:-technestlondon.co.uk}/panel
   S3_FILE_URL: ${S3_FILE_URL:?}
   S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?}
   S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?}
@@ -52,6 +53,9 @@ x-backend-env: &backend-env
   QUICK_ADD_AI_DEADLINE_MS: ${QUICK_ADD_AI_DEADLINE_MS:-90000}
   # Repair booking form (E1): Cloudflare Turnstile secret. Empty = every booking is refused in production.
   TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
+  # Sales page visitors (read-only Cloudflare Analytics token); empty = sales only.
+  CLOUDFLARE_ANALYTICS_TOKEN: ${CLOUDFLARE_ANALYTICS_TOKEN:-}
+  CLOUDFLARE_ZONE_ID: ${CLOUDFLARE_ZONE_ID:-}
   SENTRY_DSN: ${SENTRY_DSN_BACKEND:-}
   # Dead-man's switch for the worker (docs/ops/uptime-and-sentry.md). Empty = no heartbeat.
   WORKER_HEARTBEAT_URL: ${WORKER_HEARTBEAT_URL:-}

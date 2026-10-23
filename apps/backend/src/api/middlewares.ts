@@ -1,6 +1,7 @@
 import { configureStoreSearch, defineMiddlewares } from '@medusajs/framework/http'
 import { adminClickCollectMiddlewares } from './admin/click-collect/middlewares'
 import { adminDeliveryOrdersMiddlewares } from './admin/delivery-orders/middlewares'
+import { adminShopDashboardMiddlewares } from './admin/shop-dashboard/middlewares'
 import { adminDeviceMiddlewares } from './admin/devices/middlewares'
 import { adminProductAttributesMiddlewares } from './admin/products/[id]/attributes/middlewares'
 import { adminVariantPriceStockMiddlewares } from './admin/products/[id]/variants/middlewares'
@@ -82,6 +83,7 @@ export default defineMiddlewares({
     ...adminProductImportMiddlewares,
     ...adminClickCollectMiddlewares,
     ...adminDeliveryOrdersMiddlewares,
+    ...adminShopDashboardMiddlewares,
     ...adminTechnestSettingsMiddlewares,
     ...adminQuickAddMiddlewares,
   ],
