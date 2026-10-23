@@ -26,12 +26,6 @@ const WHAT_WE_DO = [
     cta: "Shop accessories",
   },
   {
-    title: "The £1 range",
-    text: "Everyday essentials for £1 each. Add them to any order, or pick them up in the shop.",
-    href: "/c/1-deals",
-    cta: "See the range",
-  },
-  {
     title: "Trade and wholesale",
     text: "Buying for a business? Approved trade accounts see prices without VAT and discounts for larger quantities.",
     href: "/trade",

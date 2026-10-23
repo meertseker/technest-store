@@ -6,17 +6,9 @@ import { getCollectionByHandle } from "@lib/data/collections"
 import { getCurrentDevice, listDevices } from "@lib/data/devices"
 import { listProducts } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
-import {
-  ONE_POUND_CATEGORY,
-  parseDealsTab,
-  pickCategoryTiles,
-  pickNewIn,
-  pickOnePound,
-  pickUnderFive,
-} from "@/lib/home/select"
+import { pickCategoryTiles, pickNewIn } from "@/lib/home/select"
 import { categoryPath } from "@/lib/catalogue/categories"
 import CategoryTiles from "@modules/home/components/category-tiles"
-import Deals from "@modules/home/components/deals"
 import GoogleReviews from "@modules/home/components/google-reviews"
 import Hero from "@modules/home/components/hero"
 import ProductSection from "@modules/home/components/product-section"
@@ -29,7 +21,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 }
 
-/** Admin-curated best sellers; until it exists the section shows "New in" instead */
+/** Admin-curated best sellers, shown below the categories when the collection has products */
 const BEST_SELLERS_COLLECTION = "best-sellers"
 
 const PRODUCT_FIELDS =
@@ -56,9 +48,8 @@ async function loadCatalogue(regionId: string) {
   return { products, categories, bestSellers }
 }
 
-export default async function Home(props: { searchParams?: SP }) {
-  const sp = (await props.searchParams) ?? {}
-  const tab = parseDealsTab(sp.deals)
+// The £1 range is gone (the shop stopped selling £1 items, 2026-10-24), and with it the deals section.
+export default async function Home(_props: { searchParams?: SP }) {
   const [region, tree, current] = await Promise.all([
     orNull(getRegion(STORE_COUNTRY)),
     listDevices(),
@@ -82,6 +73,17 @@ export default async function Home(props: { searchParams?: SP }) {
         categories={categories ?? []}
         hrefFor={(c) => categoryPath(categories ?? [], c)}
       />
+      {/* New in comes straight after the hero (lead's request, 2026-10-24): fresh stock first. */}
+      {products ? (
+        <ProductSection
+          id="new-in-heading"
+          title="New in"
+          lede="The latest additions to the shelves."
+          seeAllHref="/search"
+          seeAllLabel="See all products"
+          products={pickNewIn(all)}
+        />
+      ) : null}
       <TrustRow />
 
       {products ? (
@@ -89,12 +91,6 @@ export default async function Home(props: { searchParams?: SP }) {
           <CategoryTiles
             categories={tiles}
             hrefFor={(c) => categoryPath(categories ?? [], c)}
-          />
-          <Deals
-            tab={tab}
-            onePound={pickOnePound(all)}
-            underFive={pickUnderFive(all)}
-            onePoundHref={`/c/${ONE_POUND_CATEGORY}`}
           />
           {curated.length ? (
             <ProductSection
@@ -105,16 +101,7 @@ export default async function Home(props: { searchParams?: SP }) {
               seeAllLabel="See all best sellers"
               products={curated.slice(0, 4)}
             />
-          ) : (
-            <ProductSection
-              id="new-in-heading"
-              title="New in"
-              lede="The latest additions to the shelves."
-              seeAllHref="/search"
-              seeAllLabel="See all products"
-              products={pickNewIn(all)}
-            />
-          )}
+          ) : null}
         </>
       ) : (
         <p className="content-container section text-center text-muted-foreground">

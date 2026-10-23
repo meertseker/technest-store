@@ -32,10 +32,6 @@ const FACTS = [
     title: "When you pay",
     text: "At checkout the amount is only reserved on your card. We take the payment when you collect.",
   },
-  {
-    title: "£1 items",
-    text: "£1 add-on items can't be delivered on their own, but you can always collect them from the shop.",
-  },
 ]
 
 export default function ClickAndCollectPage() {

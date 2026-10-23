@@ -55,10 +55,9 @@ describe("home page", { timeout: 30_000 }, () => {
     expect(count(html, "<h1")).toBe(1)
     const order = [
       "Accessories that fit your phone",
+      "New in",
       "Why shop with us",
       "Shop by category",
-      "£1 deals and under £5",
-      "New in",
       "Screen broken? Most repairs are done the same day.",
       "on Google from ",
       "Visit the shop",
@@ -86,15 +85,12 @@ describe("home page", { timeout: 30_000 }, () => {
     expect(html).not.toContain('href="/c/1-deals"><div')
   })
 
-  it("deals tabs: £1 by default, Under £5 from ?deals=under-5, prices not divided", async () => {
-    const one = await render()
-    expect(one).toContain('aria-current="page" class')
-    expect(one).toContain("Product cloth")
-    expect(one).toContain("£1 add-on")
-    const under = await render({ deals: "under-5" })
-    expect(under).toContain("Product lens")
-    expect(under).toContain("£3.99")
-    expect(under).not.toContain("Product cloth")
+  // The "£1 Deals" category itself is switched off in the admin, so menus drop it there.
+  it("has no £1 range: no deals section, and New in leaves £1 add-ons out", async () => {
+    const html = await render({ deals: "one-pound" })
+    expect(html).not.toContain("£1 deals")
+    expect(html).not.toContain("Product cloth")
+    expect(html).toContain("Product lens")
   })
 
   it("shows curated best sellers when the collection exists", async () => {
@@ -103,6 +99,7 @@ describe("home page", { timeout: 30_000 }, () => {
     state.bestSellers = null
     expect(html).toContain("Best sellers")
     expect(html).toContain("Product charger")
-    expect(html).not.toContain(">New in<")
+    // New in sits under the hero whether or not the shop picked best sellers.
+    expect(html).toContain(">New in<")
   })
 })
