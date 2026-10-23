@@ -1,12 +1,12 @@
-import { CogSixTooth, ShoppingBag, Sun, Tag } from "@medusajs/icons"
-import { Button, clx, Text } from "@medusajs/ui"
+import { ArrowRightOnRectangle, CogSixTooth, ShoppingBag, Sun, Tag } from "@medusajs/icons"
+import { clx } from "@medusajs/ui"
 import type { ComponentType, ReactNode } from "react"
 import { Link, NavLink, useLocation } from "react-router-dom"
-import { TAP } from "../../src/admin/components/shop-ui"
 import { type Me, useSignOut } from "./auth"
 
-// The panel's frame: the shop's four pages and nothing else. A bar along the
-// bottom on a phone (thumb reach), along the top from `md`.
+// The panel's frame, in the Seker panel's layout: navigation is a glass layer
+// floating over the content. From `md` a rounded sidebar on the left; on a
+// phone a rounded bar along the bottom (thumb reach) and a slim top bar.
 
 type NavItem = {
   to: string
@@ -28,28 +28,33 @@ export function activeNav(pathname: string): string | null {
   return hit?.to ?? null
 }
 
-function NavLinks({ variant }: { variant: "top" | "bottom" }) {
+const FOCUS = "outline-none focus-visible:ring-2 focus-visible:ring-[#d6001c] focus-visible:ring-offset-2"
+
+function NavLinks({ variant }: { variant: "side" | "bottom" }) {
   const { pathname } = useLocation()
   const active = activeNav(pathname)
   return (
-    <ul className={clx("flex", variant === "bottom" ? "w-full justify-around" : "gap-1")}>
+    <ul className={variant === "bottom" ? "grid grid-cols-4 gap-1" : "flex flex-col gap-1"}>
       {NAV.map(({ to, label, Icon }) => {
         const on = active === to
         return (
-          <li key={to} className={variant === "bottom" ? "flex-1" : undefined}>
+          <li key={to}>
             <NavLink
               to={to}
               aria-current={on ? "page" : undefined}
               className={clx(
-                "focus-visible:shadow-borders-interactive-with-focus flex items-center rounded-lg outline-none transition-colors",
+                "press flex items-center",
+                FOCUS,
                 variant === "bottom"
-                  ? "min-h-14 flex-col justify-center gap-0.5 px-1 text-xs font-medium"
-                  : "txt-large-plus min-h-11 gap-2 px-3",
-                on ? "text-ui-fg-base bg-ui-bg-base-pressed" : "text-ui-fg-subtle hover:bg-ui-bg-base-hover"
+                  ? "min-h-12 flex-col justify-center gap-0.5 rounded-[1.25rem] px-1 py-1.5 text-[0.6875rem] font-semibold tracking-[0.01em]"
+                  : "min-h-11 gap-3 rounded-xl px-3 py-2 text-[0.9375rem] font-medium",
+                on
+                  ? "bg-white/85 font-semibold text-[#b00017] shadow-[0_1px_2px_rgb(0_0_0/0.04),0_2px_8px_rgb(0_0_0/0.04)]"
+                  : "text-ui-fg-subtle hover:text-ui-fg-base hover:bg-black/[0.04]"
               )}
             >
-              <Icon className={on ? "text-ui-fg-interactive" : undefined} />
-              <span>{label}</span>
+              <Icon className="size-5 shrink-0" />
+              <span className={variant === "bottom" ? "leading-tight" : undefined}>{label}</span>
             </NavLink>
           </li>
         )
@@ -58,46 +63,79 @@ function NavLinks({ variant }: { variant: "top" | "bottom" }) {
   )
 }
 
+function Brand({ size }: { size: "lg" | "sm" }) {
+  return (
+    <Link to="/today" className={clx("press flex items-center gap-2.5 rounded-xl px-2 py-1", FOCUS)}>
+      <img src="/panel/favicon.svg" alt="" className={size === "lg" ? "size-9" : "size-8"} />
+      <span className="flex flex-col leading-tight">
+        <span className={clx("font-semibold tracking-[-0.02em] text-ui-fg-base", size === "lg" ? "text-lg" : "text-base")}>
+          Tech Nest
+        </span>
+        <span className="text-xs font-medium text-ui-fg-subtle">Shop panel</span>
+      </span>
+    </Link>
+  )
+}
+
 export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   const signOut = useSignOut()
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="min-h-dvh">
       <a
         href="#main"
-        className="bg-ui-bg-base sr-only z-50 rounded-md p-3 focus:not-sr-only focus:fixed focus:left-2 focus:top-2"
+        className="sr-only z-[80] rounded-xl bg-white px-4 py-3 font-semibold shadow-lg focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
       >
         Skip to the page
       </a>
-      <header className="bg-ui-bg-base border-ui-border-base sticky top-0 z-30 border-b">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2">
-          <Link to="/today" className="flex min-h-11 items-center gap-2 outline-none">
-            <img src="/panel/favicon.svg" alt="" className="size-8" />
-            <span className="flex flex-col leading-tight">
-              <span className="txt-large-plus">Tech Nest</span>
-              <span className="txt-small text-ui-fg-subtle">Shop panel</span>
-            </span>
-          </Link>
-          <nav aria-label="Pages" className="hidden md:block">
-            <NavLinks variant="top" />
-          </nav>
-          <div className="flex items-center gap-2">
-            <Text size="small" className="text-ui-fg-subtle hidden max-w-48 truncate sm:block" title={me.email}>
-              {me.email}
-            </Text>
-            <Button variant="secondary" className={TAP} onClick={signOut}>
-              Sign out
-            </Button>
-          </div>
+
+      {/* Computer: floating glass sidebar. */}
+      <aside className="glass fixed bottom-3 left-3 top-3 z-30 hidden w-[15.25rem] flex-col overflow-y-auto overscroll-contain rounded-[1.75rem] px-3 py-4 md:flex">
+        <Brand size="lg" />
+        <nav aria-label="Pages" className="mt-6 flex-1">
+          <NavLinks variant="side" />
+        </nav>
+        <div className="border-t border-black/[0.06] pt-3">
+          <p className="truncate px-3 text-sm font-semibold text-ui-fg-base" title={me.email}>
+            {me.first_name || me.email}
+          </p>
+          {me.first_name && <p className="truncate px-3 text-xs text-ui-fg-subtle">{me.email}</p>}
+          <button
+            type="button"
+            onClick={signOut}
+            className={clx(
+              "mt-2 flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-ui-fg-subtle hover:bg-black/[0.04] hover:text-ui-fg-base",
+              FOCUS
+            )}
+          >
+            <ArrowRightOnRectangle className="size-5 shrink-0" />
+            Sign out
+          </button>
         </div>
+      </aside>
+
+      {/* Phone: slim translucent top bar. */}
+      <header className="sticky top-0 z-20 flex items-center justify-between gap-3 bg-[#f5f5f7]/70 px-4 py-2 backdrop-blur-2xl backdrop-saturate-150 md:hidden">
+        <Brand size="sm" />
+        <button
+          type="button"
+          onClick={signOut}
+          className={clx("glass flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-ui-fg-base", FOCUS)}
+        >
+          <ArrowRightOnRectangle className="size-4" />
+          Sign out
+        </button>
       </header>
 
-      <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-3 pb-28 pt-4 md:px-4 md:pb-10">
-        {children}
-      </main>
+      <div className="md:pl-64">
+        <main id="main" tabIndex={-1} className="mx-auto w-full max-w-5xl px-4 pb-28 pt-4 outline-none sm:px-6 md:pb-10 md:pt-6 lg:px-8">
+          {children}
+        </main>
+      </div>
 
+      {/* Phone: floating glass bar along the bottom. */}
       <nav
         aria-label="Pages"
-        className="bg-ui-bg-base border-ui-border-base fixed inset-x-0 bottom-0 z-30 border-t px-2 pb-[env(safe-area-inset-bottom)] pt-1 md:hidden"
+        className="glass fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-30 rounded-[1.75rem] p-1.5 md:hidden"
       >
         <NavLinks variant="bottom" />
       </nav>

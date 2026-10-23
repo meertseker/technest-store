@@ -2,9 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Tech Nest shop panel, in the Seker panel's design language: an Apple-style
+ * light grey ground with soft ambient light, content on solid white cards,
+ * navigation on a floating glass layer, the shop's red (#D6001C) for the main
+ * action and the current page. Medusa's tokens are mapped here so the reused
+ * admin screens follow along.
+ */
+:root {
+  --bg-subtle: #f5f5f7;
+  --bg-base: #ffffff;
+  --bg-component: #ffffff;
+  --bg-component-hover: #fafafa;
+  --fg-base: #1d1d1f;
+  --fg-subtle: #4b4b52;
+  --fg-muted: #6e6e73;
+  /* Links: a darker red so body-size text keeps 4.5:1 on white. */
+  --fg-interactive: #b00017;
+  --fg-interactive-hover: #8a0012;
+  --border-base: #e3e3e8;
+  --border-interactive: #d6001c;
+  --button-inverted: #d6001c;
+  --button-inverted-hover: #b00017;
+  --button-inverted-pressed: #8a0012;
+  --buttons-inverted: 0 4px 14px rgb(214 0 28 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.25);
+  --buttons-inverted-focus: 0 0 0 2px #ffffff, 0 0 0 4px rgb(214 0 28 / 0.6);
+  --borders-interactive-with-focus: 0 0 0 1px #d6001c, 0 0 0 4px rgb(214 0 28 / 0.25);
+  --borders-interactive-with-active: 0 0 0 1px #d6001c, 0 0 0 4px rgb(214 0 28 / 0.2);
+  --borders-focus: 0 0 0 2px #ffffff, 0 0 0 4px rgb(214 0 28 / 0.6);
+  --buttons-neutral-focus: 0 0 0 1px #e3e3e8, 0 0 0 2px #ffffff, 0 0 0 4px rgb(214 0 28 / 0.6);
+  --elevation-card-rest: 0 0 0 1px #e3e3e8, 0 1px 2px rgb(0 0 0 / 0.04), 0 2px 8px rgb(0 0 0 / 0.04);
+  --elevation-card-hover: 0 0 0 1px #d9d9df, 0 4px 12px rgb(0 0 0 / 0.06), 0 16px 40px rgb(0 0 0 / 0.08);
+  --elevation-flyout: 0 4px 12px rgb(0 0 0 / 0.06), 0 16px 40px rgb(0 0 0 / 0.1);
+  --elevation-modal: 0 8px 24px rgb(0 0 0 / 0.08), 0 32px 64px rgb(0 0 0 / 0.14);
+}
+
+/* 17 px base: easy to read on a phone at the counter, larger tap areas (everything scales with rem). */
 html {
+  font-size: 106.25%;
   -webkit-text-size-adjust: 100%;
 }
+
 body {
   min-height: 100dvh;
+  background:
+    radial-gradient(60rem 40rem at 0% 0%, rgb(214 0 28 / 0.09), transparent 60%),
+    radial-gradient(50rem 40rem at 100% 0%, rgb(56 189 248 / 0.12), transparent 60%),
+    radial-gradient(60rem 50rem at 50% 100%, rgb(16 185 129 / 0.08), transparent 60%),
+    #f5f5f7;
+  background-attachment: fixed;
+  font-optical-sizing: auto;
+}
+
+/* Size-specific tracking: tight on big titles, neutral in body text. */
+.h1-core {
+  font-size: 1.75rem;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+}
+.h2-core {
+  font-size: 1.25rem;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* Glass: a translucent layer that floats over the content (navigation only). */
+.glass {
+  background-color: rgb(255 255 255 / 0.55);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgb(255 255 255 / 0.6);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.8),
+    inset 0 -1px 0 rgb(0 0 0 / 0.03),
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 8px 32px rgb(0 0 0 / 0.08);
+}
+
+/* Feedback starts on press, not on release. */
+button:not(:disabled),
+[role="button"],
+a.press {
+  -webkit-tap-highlight-color: transparent;
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+button:not(:disabled):active,
+[role="button"]:active,
+a.press:active {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  button:not(:disabled):active,
+  [role="button"]:active,
+  a.press:active {
+    transform: none !important;
+  }
+}
+
+/* Less transparency or more contrast asked for: the glass turns solid. */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .glass {
+    background-color: #ffffff;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-color: #8e8e93;
+  }
+  body {
+    background: #f5f5f7;
+  }
 }

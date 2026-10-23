@@ -70,6 +70,7 @@ function SignIn() {
     <main className="flex min-h-dvh items-center justify-center p-4">
       <Container className="flex w-full max-w-sm flex-col gap-5 px-6 py-6">
         <div className="flex flex-col gap-1">
+          <img src="/panel/favicon.svg" alt="" className="mb-3 size-12" />
           <Heading level="h1">Tech Nest shop panel</Heading>
           <Text size="large" className="text-ui-fg-subtle">
             Sign in to see today's orders and run the shop.
@@ -110,7 +111,7 @@ function SignIn() {
               {error}
             </Text>
           )}
-          <Button type="submit" size="large" className={TAP} isLoading={busy} disabled={!email || !password}>
+          <Button type="submit" size="large" className={`${TAP} w-full`} isLoading={busy} disabled={!email || !password}>
             Sign in
           </Button>
         </form>
