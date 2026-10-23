@@ -63,7 +63,7 @@ www.{$SHOP_DOMAIN} {
 api.{$SHOP_DOMAIN} {
 	import common
 	import access_log
-	@adminOnly path /admin /admin/* /app /app/* /auth/user/*
+	@adminOnly path /admin /admin/* /app /app/* /panel /panel/* /auth/user/*
 	respond @adminOnly 404
 	reverse_proxy server:9000 {
 		# The API throttles by CF-Connecting-IP. Overwrite it with the client IP Caddy
@@ -77,8 +77,9 @@ admin.{$SHOP_DOMAIN} {
 	import common
 	import access_log
 	header X-Frame-Options "DENY"
-	redir / /app permanent
-	@notAdmin not path /app* /admin/* /auth/* /static/* /health
+	# The shop panel (/panel) is the owner's start page; Medusa's dashboard stays at /app.
+	redir / /panel/ 302
+	@notAdmin not path /app* /panel /panel/* /admin/* /auth/* /static/* /health
 	respond @notAdmin 404
 	reverse_proxy server:9000 {
 		# Admin sign-in is throttled by this header too: same rule as on the API site.

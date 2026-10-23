@@ -79,7 +79,7 @@ check "customer sign-in reaches the backend" "200 backend /auth/customer/emailpa
   "$(req "$api" /auth/customer/emailpass -X POST | sed 's/ cf=.*//')"
 check "Stripe webhook reaches the backend" "200 backend /hooks/payment/stripe_stripe" \
   "$(req "$api" /hooks/payment/stripe_stripe -X POST -d '{}' | sed 's/ cf=.*//')"
-for path in /admin /admin/users /admin/orders/order_1 /ADMIN/users /app /app/login /app/orders /auth/user/emailpass /auth/user/emailpass/reset-password; do
+for path in /admin /admin/users /admin/orders/order_1 /ADMIN/users /app /app/login /app/orders /panel /panel/ /panel/orders /auth/user/emailpass /auth/user/emailpass/reset-password; do
   check "$path is not served" "404" "$(status "$api" "$path" -X POST)"
   check "$path is not served (GET)" "404" "$(status "$api" "$path")"
 done
@@ -92,7 +92,9 @@ check "dashboard reaches the backend" "200 backend /app/login" "$(req "$admin" /
 check "admin API reaches the backend" "200 backend /admin/users" "$(req "$admin" /admin/users | sed 's/ cf=.*//')"
 check "admin sign-in reaches the backend" "200 backend /auth/user/emailpass" \
   "$(req "$admin" /auth/user/emailpass -X POST | sed 's/ cf=.*//')"
-check "/ goes to the dashboard" "301" "$(status "$admin" /)"
+check "shop panel reaches the backend" "200 backend /panel/orders/order_1" "$(req "$admin" /panel/orders/order_1 | sed 's/ cf=.*//')"
+check "/ goes to the shop panel" "302" "$(status "$admin" /)"
+check "/ goes to the shop panel (where)" "/panel/" "$(curl -sk -o /dev/null -w '%{redirect_url}' --max-time 10 --resolve "$admin:$port:127.0.0.1" "https://$admin:$port/" | sed -E 's#^https://[^/]+##')"
 check "store API is not served" "404" "$(status "$admin" /store/products)"
 check "webhook is not served" "404" "$(status "$admin" /hooks/payment/stripe_stripe -X POST)"
 check "a visitor cannot choose the client IP" "0" "$(req "$admin" /auth/user/emailpass -X POST "${spoof[@]}" | grep -c '6\.6\.6\.6')"

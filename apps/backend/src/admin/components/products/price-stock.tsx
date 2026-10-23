@@ -29,7 +29,7 @@ export const PRICE_STOCK_QUERY_KEY = ["price-stock"] as const
 const PRICE_HINT = "Price must be pounds and pence, like 4.99"
 const STOCK_HINT = "Stock must be a whole number, like 12"
 
-function VariantRowCard({ row }: { row: VariantRow }) {
+export function VariantRowCard({ row }: { row: VariantRow }) {
   const queryClient = useQueryClient()
   const [price, setPrice] = useState(row.price_pence === null ? "" : penceToPoundsInput(row.price_pence))
   const [stock, setStock] = useState(row.stock === null ? "" : String(row.stock))

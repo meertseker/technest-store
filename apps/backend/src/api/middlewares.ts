@@ -21,11 +21,14 @@ import { adminTradeMiddlewares } from './admin/trade-applications/middlewares'
 import { storeRepairMiddlewares } from './store/repair-bookings/middlewares'
 import { storeTradeMiddlewares } from './store/trade-applications/middlewares'
 import { authThrottleMiddlewares } from '../lib/auth-throttle'
+import { servePanel } from '../lib/panel/serve'
 
 export default defineMiddlewares({
   // E4: Medusa's default error handler + report 5xx to Sentry (no-op without SENTRY_DSN).
   errorHandler: sentryErrorHandler,
   routes: [
+    // The shop panel's built files (lib/panel/serve.ts). Caddy exposes /panel on the admin host only.
+    { matcher: '/panel', middlewares: [servePanel] },
     // Sign-in, registration, password reset and trade applications are counted per
     // visitor IP and per email; over the limit the answer is 429 (lib/auth-throttle.ts).
     ...authThrottleMiddlewares,
