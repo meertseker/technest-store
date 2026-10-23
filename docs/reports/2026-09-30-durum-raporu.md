@@ -162,7 +162,7 @@ Açık uyarılar:
 52. Q38 – Otomatik `ADDONS-3-FOR-2` kampanyası üretimde de oluşturulsun mu? *Varsayılan:* evet.
 53. Q39 – Kampanya "£1 Deals" kategorisine, sepet kuralı `is_addon_item` işaretine bakıyor; ikisi uyumlu tutulmalı. *Varsayılan:* evet.
 54. Q40 – Düşük stok = stok − rezerve ≤ yeniden sipariş seviyesi, 08:00'de; yayında olmayanlar hariç. *Varsayılan:* evet.
-55. Q50 – `hello@technest.co.uk` bugün nerede? MX değişince tüm alan adı e-postası sunucumuza gelir. *Varsayılan:* sunucumuz yönetir; değiştirmeden önce kontrol edin.
+55. Q50 – `hello@technestlondon.co.uk` bugün nerede? MX değişince tüm alan adı e-postası sunucumuza gelir. *Varsayılan:* sunucumuz yönetir; değiştirmeden önce kontrol edin.
 56. Q51 – `orders@` yalnızca IMAPS 993 ile okunuyor; gönderme portları kapalı. *Varsayılan:* kapalı.
 57. Q52 – DMARC 2–4 hafta `p=none`, sonra `quarantine`. *Varsayılan:* evet.
 58. Q53 – İadeler yalnızca admin sipariş sayfasından (Stripe panelinden değil). *Varsayılan:* evet.

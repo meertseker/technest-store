@@ -1,7 +1,7 @@
 # Senaryo 10: "Price & stock", fiyat ya da stok değiştirme
 
 - **Süre:** yaklaşık 3 dakika
-- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefonunuz ve bir deneme ürünü (senaryo 1'dekilerden biri olur).
+- **Gerekenler:** admin.technestlondon.co.uk'a giriş yapılmış telefonunuz ve bir deneme ürünü (senaryo 1'dekilerden biri olur).
 - **Nerede:** menü → **"Products"** (Ürünler) → **"Price & stock"** (Fiyat ve stok) sekmesi (adres `/app/shop-products?tab=stock`). **"Today"** sayfasındaki "draft products to publish" (yayınlanacak taslak ürünler) de aynı sekmeyi **"Drafts only"** açık olarak açar.
 - **Durum:** 2026-10-11'de panel koduyla karşılaştırıldı.
 - **Hedef:** ürünü bulun, fiyatını ya da kaç tane olduğunu değiştirin, Save'e basın. Ürünle ilgili diğer her şey ürün sayfasında kalır.

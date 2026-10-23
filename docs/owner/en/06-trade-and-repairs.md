@@ -1,7 +1,7 @@
 # Script 6: Trade applications and repair bookings
 
 - **Length:** about 5 minutes
-- **You need:** your phone, logged in to admin.technest.co.uk; two **test** trade applications (sent from the website's trade form with two test customer accounts) and one **test** repair booking (sent from the website's repair form with your own phone number).
+- **You need:** your phone, logged in to admin.technestlondon.co.uk; two **test** trade applications (sent from the website's trade form with two test customer accounts) and one **test** repair booking (sent from the website's repair form with your own phone number).
 - **Where:** menu → **Orders** → **Trade** tab (`/app/shop-orders?tab=trade`) and **Repairs** tab (`/app/shop-orders?tab=repairs`); the old addresses still land there.
 - **Status:** checked against the admin code on 2026-10-11 (menu: Today, Orders, Products, Shop settings, each with tabs). Steps marked ⚠ use Medusa's own screens.
 

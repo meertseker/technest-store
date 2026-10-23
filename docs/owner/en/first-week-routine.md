@@ -1,7 +1,7 @@
 # Your daily routine and your first week
 
-Shop hours: Mon-Sat 9am-8pm, Sun 11am-5pm. Shop emails go to **hello@technest.co.uk**.
-The admin is at **admin.technest.co.uk**. On a phone, the menu button is at the top left.
+Shop hours: Mon-Sat 9am-8pm, Sun 11am-5pm. Shop emails go to **hello@technestlondon.co.uk**.
+The admin is at **admin.technestlondon.co.uk**. On a phone, the menu button is at the top left.
 
 The menu has four pages: **Today** (what needs doing now; the admin opens here), **Orders** (tabs **Collect**,
 **Delivery**, **Repairs**, **Trade**), **Products** (tabs **Add**, **Price & stock**, **Import**) and **Shop settings**
@@ -43,7 +43,7 @@ The menu has four pages: **Today** (what needs doing now; the admin opens here),
 
 **Day 1**
 - [ ] Log in on your phone and on the shop laptop. Find every page listed at the top.
-- [ ] Check emails arrive at hello@technest.co.uk: a new order, a new trade application, a new repair booking. If one is missing, tell the lead.
+- [ ] Check emails arrive at hello@technestlondon.co.uk: a new order, a new trade application, a new repair booking. If one is missing, tell the lead.
 - [ ] Load stock that isn't online yet with **Products → Import** (script 7): download the template, fill it in, check the preview, fix the **Problems**, then **Import**.
 
 **Day 2**

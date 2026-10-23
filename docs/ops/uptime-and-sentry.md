@@ -16,9 +16,9 @@ cannot see:
 
 | # | Name | Type | URL | "Up" means | Why |
 |---|---|---|---|---|---|
-| 1 | Shop home | HTTP(s) GET | `https://technest.co.uk/` | 200 | Storefront + Caddy + Cloudflare |
-| 2 | Checkout | HTTP(s) GET | `https://technest.co.uk/checkout` | status `404` (set "Up HTTP status codes" to `200-299,404`) | Without a cart the page answers 404 from inside the checkout layout, so middleware + CSP + render all ran; 5xx = broken |
-| 3 | API health | Keyword GET | `https://api.technest.co.uk/health` | body contains `OK` | Medusa server process |
+| 1 | Shop home | HTTP(s) GET | `https://technestlondon.co.uk/` | 200 | Storefront + Caddy + Cloudflare |
+| 2 | Checkout | HTTP(s) GET | `https://technestlondon.co.uk/checkout` | status `404` (set "Up HTTP status codes" to `200-299,404`) | Without a cart the page answers 404 from inside the checkout layout, so middleware + CSP + render all ran; 5xx = broken |
+| 3 | API health | Keyword GET | `https://api.technestlondon.co.uk/health` | body contains `OK` | Medusa server process |
 
 A monitor on the Stripe webhook URL is optional: an unsigned POST to
 `/hooks/payment/stripe_stripe` is answered 400 (the signature is checked on the server before

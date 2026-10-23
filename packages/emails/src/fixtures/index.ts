@@ -15,7 +15,7 @@ const order: OrderEmailData = {
   total_pence: 1447,
   fulfilment: { type: "delivery", method_name: "Standard delivery" },
   shipping_address: { name: "Sam Smith", address_1: "1 High St", city: "London", postcode: "SE16 1AA" },
-  order_url: "https://technest.co.uk/order/order_1/confirmed",
+  order_url: "https://technestlondon.co.uk/order/order_1/confirmed",
 }
 
 const collectionOrder: OrderEmailData = {
@@ -42,7 +42,7 @@ export const fixtures: Record<TemplateId, Record<string, unknown>> = {
   "order-confirmation": order,
   "shop-new-order": collectionOrder,
   "password-reset": {
-    reset_url: "https://technest.co.uk/account/reset-password?token=example",
+    reset_url: "https://technestlondon.co.uk/account/reset-password?token=example",
     actor: "customer",
   },
   "order-dispatched": {
@@ -78,13 +78,13 @@ export const fixtures: Record<TemplateId, Record<string, unknown>> = {
     status: "needs_response",
     due_by: "Friday 24 October",
     dispute_url: "https://dashboard.stripe.com/test/disputes/dp_example",
-    admin_order_url: "https://admin.technest.co.uk/app/orders/order_1",
+    admin_order_url: "https://admin.technestlondon.co.uk/app/orders/order_1",
   },
   "shop-payment-notice": {
     kind: "external_refund",
     display_id: 1042,
     amount_pence: 499,
-    admin_order_url: "https://admin.technest.co.uk/app/orders/order_1",
+    admin_order_url: "https://admin.technestlondon.co.uk/app/orders/order_1",
   },
   "trade-application-received": { first_name: "Jane" },
   "trade-application-approved": { first_name: "Jane" },
@@ -99,7 +99,7 @@ export const fixtures: Record<TemplateId, Record<string, unknown>> = {
     vat_number: "GB123456789",
     companies_house_number: "01234567",
     contact: { name: "Jane Smith", phone: "020 7946 0000", email: "jane@acme.test" },
-    admin_url: "https://admin.technest.co.uk/app",
+    admin_url: "https://admin.technestlondon.co.uk/app",
   },
   "shop-repair-booking": {
     name: "Sam Jones",
@@ -108,7 +108,7 @@ export const fixtures: Record<TemplateId, Record<string, unknown>> = {
     device: "iPhone 13 mini",
     fault: "Cracked screen, touch still works",
     preferred_time: "Weekday mornings",
-    admin_url: "https://admin.technest.co.uk/app",
+    admin_url: "https://admin.technestlondon.co.uk/app",
   },
   "shop-low-stock-digest": {
     date: "Monday 5 October",
@@ -116,6 +116,6 @@ export const fixtures: Record<TemplateId, Record<string, unknown>> = {
       { product_title: "USB-C to USB-C cable", variant_title: "1 m, black", sku: "CAB-CC-1M-BLK", stocked: 2, reorder_level: 5 },
       { product_title: "Clear case", variant_title: "iPhone 16", sku: null, stocked: 0, reorder_level: 3 },
     ],
-    admin_url: "https://admin.technest.co.uk/app/inventory",
+    admin_url: "https://admin.technestlondon.co.uk/app/inventory",
   },
 }

@@ -32,7 +32,7 @@ const customer = { email: "jane@account.test", first_name: "Jane" }
 
 beforeEach(() => {
   process.env.SHOP_NOTIFY_EMAIL = "shop@technest.test"
-  process.env.ADMIN_URL = "https://admin.technest.co.uk/app/"
+  process.env.ADMIN_URL = "https://admin.technestlondon.co.uk/app/"
 })
 
 describe("trade application emails", () => {
@@ -72,7 +72,7 @@ describe("trade application emails", () => {
       vat_number: "GB123456789",
       companies_house_number: null,
       contact: { name: "Jane Smith", phone: "020 7946 0000", email: "typed@elsewhere.test" },
-      admin_url: "https://admin.technest.co.uk/app/trade-applications/tapp_1",
+      admin_url: "https://admin.technestlondon.co.uk/app/trade-applications/tapp_1",
     })
   })
 
@@ -157,7 +157,7 @@ describe("repair booking email", () => {
         device: "iPhone 13 mini",
         fault: "Cracked screen",
         preferred_time: "Weekday mornings",
-        admin_url: "https://admin.technest.co.uk/app/repair-bookings/rep_1",
+        admin_url: "https://admin.technestlondon.co.uk/app/repair-bookings/rep_1",
       },
     })
     expect(await resolveEmail(container, "shop-repair-booking", "rep_1", "customer")).toBeNull()

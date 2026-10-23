@@ -20,7 +20,7 @@ jest.setTimeout(300 * 1000)
 
 const RUN = Date.now()
 process.env.SHOP_NOTIFY_EMAIL = `e2-shop-trade-${RUN}@example.com`
-process.env.ADMIN_URL = "https://admin.technest.co.uk/app"
+process.env.ADMIN_URL = "https://admin.technestlondon.co.uk/app"
 
 /**
  * End to end with E1's trade and repair modules: the records are created by
@@ -95,7 +95,7 @@ medusaIntegrationTestRunner({
         expect(alert).toBeDefined()
         const text = await textOf(alert.ID)
         expect(text).toContain("Jane Smith")
-        expect(text).toContain(`https://admin.technest.co.uk/app/trade-applications/${app.id}`)
+        expect(text).toContain(`https://admin.technestlondon.co.uk/app/trade-applications/${app.id}`)
 
         // A duplicate event sends nothing more.
         await emit(tradeApplicationEmails, "technest.trade_application.created", { id: app.id, customer_id: c.id })
@@ -201,7 +201,7 @@ medusaIntegrationTestRunner({
         expect(alert).toBeDefined()
         const text = await textOf(alert.ID)
         expect(text).toContain("Cracked screen, touch still works")
-        expect(text).toContain(`https://admin.technest.co.uk/app/repair-bookings/${booking.id}`)
+        expect(text).toContain(`https://admin.technestlondon.co.uk/app/repair-bookings/${booking.id}`)
 
         // The customer gets nothing, and a replayed event sends nothing new.
         await emit(repairBookingEmail, "technest.repair_booking.created", { id: booking.id })

@@ -1,6 +1,6 @@
 # Tech Nest Online: işletme sahibi rehberleri
 
-Bu rehberler dükkan sahibi için. Online mağazanın **admin.technest.co.uk** adresindeki yönetim
+Bu rehberler dükkan sahibi için. Online mağazanın **admin.technestlondon.co.uk** adresindeki yönetim
 panelinden (admin) nasıl yönetileceğini anlatır. Telefonda da bilgisayarda da kullanılabilir.
 
 Telefonda sol üstteki menü düğmesine basın. Tech Nest sayfaları açılan sol menüde (sidebar) yer alır.

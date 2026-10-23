@@ -22,7 +22,7 @@ function svixHeaders(body: string, over: { ts?: number; key?: Buffer } = {}) {
 
 /** A Resend event as raw JSON, deliberately not in JSON.stringify's canonical form. */
 const event = (type: string, to: string, extra = "") =>
-  `{ "type": "${type}",\n  "created_at": "2026-10-10T09:00:00.000Z",\n  "data": { "email_id": "re_${RUN}", "from": "Tech Nest <orders@technest.co.uk>", "to": ["${to}"], "subject": "Order confirmed: #1042"${extra} } }`
+  `{ "type": "${type}",\n  "created_at": "2026-10-10T09:00:00.000Z",\n  "data": { "email_id": "re_${RUN}", "from": "Tech Nest <orders@technestlondon.co.uk>", "to": ["${to}"], "subject": "Order confirmed: #1042"${extra} } }`
 
 const bounce = `, "bounce": { "message": "mailbox unavailable", "type": "Permanent", "subType": "General" }`
 

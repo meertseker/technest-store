@@ -1,7 +1,7 @@
 # Script 7: Import products from a spreadsheet, and the product rules
 
 - **Length:** about 5 minutes
-- **You need:** a laptop (a spreadsheet is easier on a big screen), logged in to admin.technest.co.uk; Excel, Numbers or Google Sheets.
+- **You need:** a laptop (a spreadsheet is easier on a big screen), logged in to admin.technestlondon.co.uk; Excel, Numbers or Google Sheets.
 - **Where:** menu → **Products** → **Import** tab (address `/app/shop-products?tab=import`; the old `/app/import` address still lands there).
 - **Status:** checked against the admin code on 2026-10-11 (menu: Today, Orders, Products, Shop settings, each with tabs). Steps marked ⚠ use Medusa's own screens.
 

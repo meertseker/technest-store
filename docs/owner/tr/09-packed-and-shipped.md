@@ -1,7 +1,7 @@
 # Senaryo 9: Kargolu siparişler, "Packed & shipped"
 
 - **Süre:** yaklaşık 3 dakika
-- **Gerekenler:** bir deneme kargolu sipariş (sitede kargo seçeneğiyle, deneme kartıyla verilmiş) ve admin.technest.co.uk'a giriş yapılmış telefonunuz.
+- **Gerekenler:** bir deneme kargolu sipariş (sitede kargo seçeneğiyle, deneme kartıyla verilmiş) ve admin.technestlondon.co.uk'a giriş yapılmış telefonunuz.
 - **Nerede:** menü → **"Orders"** (Siparişler) → **"Delivery"** (Kargo) sekmesi (adres `/app/shop-orders?tab=delivery`). Aynı kartlar **"Today"** sayfasında "delivery orders to pack" altında da çıkar.
 - **Durum:** 2026-10-11'de panel koduyla karşılaştırıldı.
 - **Hedef:** paketi hazırlayın, kargocuya verin, tek düğmeye basın; müşteriye "yolda" e-postası gider, yazdıysanız takip numarasıyla birlikte.

@@ -1,7 +1,7 @@
 # Senaryo 5: "Shop settings" (Mağaza ayarları: ücretsiz kargo ve Klarna)
 
 - **Süre:** yaklaşık 3 dakika
-- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefon veya bilgisayar; etkisini göstermek için ikinci bir sekmede açık site. Sonunda her değeri eski haline getirin.
+- **Gerekenler:** admin.technestlondon.co.uk'a giriş yapılmış telefon veya bilgisayar; etkisini göstermek için ikinci bir sekmede açık site. Sonunda her değeri eski haline getirin.
 - **Nerede:** menü → **"Shop settings"** (Mağaza ayarları) → **"Delivery & Klarna"** (Kargo ve Klarna) sekmesi (adres `/app/shop-settings?tab=thresholds`; eski `/app/settings/technest` adresi de buraya açılır).
 - **Durum:** 2026-10-11'de panel koduyla karşılaştırıldı (menü: Today, Orders, Products, Shop settings; her birinde sekmeler). Shop settings artık Medusa'nın Settings menüsünün içinde değil, bizim dört menü sayfamızdan biri.
 

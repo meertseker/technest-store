@@ -1,7 +1,7 @@
 # Senaryo 4: Cihazlar ve "Fits these devices" (Uyumlu cihazlar)
 
 - **Süre:** yaklaşık 5 dakika
-- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefon veya bilgisayar; bir deneme ürünü (ör. telefon kılıfı); ekleyip sonra sileceğiniz uydurma bir deneme cihazı.
+- **Gerekenler:** admin.technestlondon.co.uk'a giriş yapılmış telefon veya bilgisayar; bir deneme ürünü (ör. telefon kılıfı); ekleyip sonra sileceğiniz uydurma bir deneme cihazı.
 - **Nerede:** menü → **"Shop settings"** (Mağaza ayarları) → **"Devices"** (Cihazlar) sekmesi (adres `/app/shop-settings?tab=devices`; eski `/app/devices` adresi de buraya açılır) ve her ürün sayfasındaki **"Fits these devices"** kutusu.
 - **Durum:** 2026-10-11'de panel koduyla karşılaştırıldı (menü: Today, Orders, Products, Shop settings; her birinde sekmeler).
 

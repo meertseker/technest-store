@@ -3,8 +3,8 @@ import { buildCheckoutCsp } from "./checkout-csp"
 
 const prod = buildCheckoutCsp({
   isDev: false,
-  backendUrl: "https://api.technest.co.uk",
-  imageHost: "images.technest.co.uk",
+  backendUrl: "https://api.technestlondon.co.uk",
+  imageHost: "images.technestlondon.co.uk",
   nonce: "bm9uY2U",
 })
 
@@ -51,7 +51,7 @@ describe("checkout CSP", () => {
 
   it("lets the browser talk to Stripe's API and our Medusa backend", () => {
     expect(directive(prod, "connect-src")).toEqual(
-      expect.arrayContaining(["'self'", "https://api.stripe.com", "https://api.technest.co.uk"])
+      expect.arrayContaining(["'self'", "https://api.stripe.com", "https://api.technestlondon.co.uk"])
     )
   })
 
@@ -60,13 +60,13 @@ describe("checkout CSP", () => {
     expect(prod).not.toContain("sentry")
     const offsite = prod.split(/[;\s]+/).filter((v) => v.startsWith("https://"))
     for (const host of offsite) {
-      expect(host, host).toMatch(/^https:\/\/(\*\.)?((js|api|hooks)\.)?(stripe|link)\.com$|^https:\/\/(api|images)\.technest\.co\.uk$/)
+      expect(host, host).toMatch(/^https:\/\/(\*\.)?((js|api|hooks)\.)?(stripe|link)\.com$|^https:\/\/(api|images)\.technestlondon\.co\.uk$/)
     }
   })
 
   it("allows product images from our image host and Stripe's", () => {
     expect(directive(prod, "img-src")).toEqual(
-      expect.arrayContaining(["'self'", "https://images.technest.co.uk", "https://*.stripe.com"])
+      expect.arrayContaining(["'self'", "https://images.technestlondon.co.uk", "https://*.stripe.com"])
     )
   })
 

@@ -28,12 +28,12 @@ x-backend-env: &backend-env
   REDIS_URL: redis://:${REDIS_PASSWORD:?}@redis:6379
   JWT_SECRET: ${JWT_SECRET:?}
   COOKIE_SECRET: ${COOKIE_SECRET:?}
-  STORE_CORS: https://${SHOP_DOMAIN:-technest.co.uk}
-  ADMIN_CORS: https://admin.${SHOP_DOMAIN:-technest.co.uk}
-  AUTH_CORS: https://${SHOP_DOMAIN:-technest.co.uk},https://admin.${SHOP_DOMAIN:-technest.co.uk}
-  MEDUSA_BACKEND_URL: https://api.${SHOP_DOMAIN:-technest.co.uk}
+  STORE_CORS: https://${SHOP_DOMAIN:-technestlondon.co.uk}
+  ADMIN_CORS: https://admin.${SHOP_DOMAIN:-technestlondon.co.uk}
+  AUTH_CORS: https://${SHOP_DOMAIN:-technestlondon.co.uk},https://admin.${SHOP_DOMAIN:-technestlondon.co.uk}
+  MEDUSA_BACKEND_URL: https://api.${SHOP_DOMAIN:-technestlondon.co.uk}
   # Staff links in emails (password reset, new trade application, repair, stock) point here directly.
-  ADMIN_URL: https://admin.${SHOP_DOMAIN:-technest.co.uk}/app
+  ADMIN_URL: https://admin.${SHOP_DOMAIN:-technestlondon.co.uk}/app
   S3_FILE_URL: ${S3_FILE_URL:?}
   S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?}
   S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?}
@@ -69,10 +69,10 @@ x-backend-env: &backend-env
   SMTP_SECURE: ${SMTP_SECURE:-false}
   SMTP_REQUIRE_TLS: ${SMTP_REQUIRE_TLS:-true}
   # The address's domain must be verified in Resend (DEPLOY.md section 11).
-  MAIL_FROM: ${MAIL_FROM:-Tech Nest <orders@${SHOP_DOMAIN:-technest.co.uk}>}
-  MAIL_REPLY_TO: ${MAIL_REPLY_TO:-hello@technest.co.uk}
-  SHOP_NOTIFY_EMAIL: ${SHOP_NOTIFY_EMAIL:-hello@technest.co.uk}
-  STOREFRONT_URL: https://${SHOP_DOMAIN:-technest.co.uk}
+  MAIL_FROM: ${MAIL_FROM:-Tech Nest <orders@${SHOP_DOMAIN:-technestlondon.co.uk}>}
+  MAIL_REPLY_TO: ${MAIL_REPLY_TO:-hello@technestlondon.co.uk}
+  SHOP_NOTIFY_EMAIL: ${SHOP_NOTIFY_EMAIL:-hello@technestlondon.co.uk}
+  STOREFRONT_URL: https://${SHOP_DOMAIN:-technestlondon.co.uk}
   # Stored email attempts (and the addresses in them) are deleted after this many days.
   NOTIFICATION_RETENTION_DAYS: ${NOTIFICATION_RETENTION_DAYS:-90}
 
@@ -86,8 +86,8 @@ services:
     # TCP only: Cloudflare proxies to the origin over TCP, so HTTP/3 (UDP 443) is never used here.
     ports: ["80:80", "443:443"]
     environment:
-      SHOP_DOMAIN: ${SHOP_DOMAIN:-technest.co.uk}
-      ACME_EMAIL: ${ACME_EMAIL:-hello@technest.co.uk}
+      SHOP_DOMAIN: ${SHOP_DOMAIN:-technestlondon.co.uk}
+      ACME_EMAIL: ${ACME_EMAIL:-hello@technestlondon.co.uk}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

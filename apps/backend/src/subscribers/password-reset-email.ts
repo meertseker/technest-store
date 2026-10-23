@@ -25,7 +25,7 @@ const ACTORS: Record<string, { idKey: string; audience: "customer" | "staff" }> 
 const RETRY_DELAYS_MS = [2_000, 10_000]
 
 /**
- * The admin dashboard's base URL (ADMIN_URL, e.g. https://admin.technest.co.uk/app),
+ * The admin dashboard's base URL (ADMIN_URL, e.g. https://admin.technestlondon.co.uk/app),
  * else the backend's /app. Production must configure one: the link carries a
  * live token, so never guess a host there.
  */

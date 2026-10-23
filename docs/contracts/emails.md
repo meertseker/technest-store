@@ -3,8 +3,8 @@
 Every email goes through the Medusa Notification module (`channel: "email"`, provider `smtp`), so every send is stored as a `notification` row. Templates live in `packages/emails` and are rendered by the `smtp` provider from `notification.template` + `notification.data`.
 
 - **Customer recipient:** `order.email` for order events, `customer.email` for account events.
-- **Shop recipient:** env `SHOP_NOTIFY_EMAIL` (default `hello@technest.co.uk`).
-- **Sender:** `MAIL_FROM` (`"Tech Nest" <orders@technest.co.uk>`), `MAIL_REPLY_TO` (`hello@technest.co.uk`).
+- **Shop recipient:** env `SHOP_NOTIFY_EMAIL` (default `hello@technestlondon.co.uk`).
+- **Sender:** `MAIL_FROM` (`"Tech Nest" <orders@technestlondon.co.uk>`), `MAIL_REPLY_TO` (`hello@technestlondon.co.uk`).
 - **Idempotency:** every email is sent at most once per (template, entity id, recipient): the `send-email` workflow checks for an earlier successful notification under a lock before sending (`src/lib/email/send-email-once.ts`). Failed SMTP attempts retry every 60 s, up to 5 times.
 - **Workflow inputs are IDs only** (`{ template, recipient: "customer" | "shop", resource_id, resource_type, trigger_type, ids? }`, where `ids` are extra entity ids such as the variants of a low-stock digest): the workflow engine persists inputs, so no addresses, order contents or tokens go in. Each attempt loads fresh data from the id (`src/lib/email/sources.ts`). Password reset is the exception: it bypasses the workflow so the token is never stored.
 - **Payloads:** event payloads carry IDs only. Subscribers load the data with `query.graph`. Nobody else needs to send anything beyond the payloads below.
@@ -76,5 +76,5 @@ The email uses only `variant_id` (workflow inputs are IDs only) and reloads the 
 - The checkout CSP lives in `apps/storefront/checkout-csp.js` (E2), exporting `{ checkoutCsp: string }`
 
 ## New env vars (backend)
-`SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, `MAIL_REPLY_TO`, `SHOP_NOTIFY_EMAIL`, `STOREFRONT_URL` (for links), `ADMIN_URL` (admin dashboard base URL incl. `/app`, e.g. `https://admin.technest.co.uk/app`, for staff password reset; falls back to `MEDUSA_BACKEND_URL/app`; production refuses to send a staff reset link without one of them).
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, `MAIL_REPLY_TO`, `SHOP_NOTIFY_EMAIL`, `STOREFRONT_URL` (for links), `ADMIN_URL` (admin dashboard base URL incl. `/app`, e.g. `https://admin.technestlondon.co.uk/app`, for staff password reset; falls back to `MEDUSA_BACKEND_URL/app`; production refuses to send a staff reset link without one of them).
 Dev: `SMTP_HOST=localhost SMTP_PORT=1025 SMTP_SECURE=false` (Mailpit).

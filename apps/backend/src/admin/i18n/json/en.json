@@ -1,0 +1,11 @@
+{
+  "login": {
+    "title": "Welcome to Tech Nest",
+    "hint": "Sign in to run your shop"
+  },
+  "invite": {
+    "title": "Welcome to Tech Nest",
+    "successHint": "You can start running the shop right away.",
+    "successAction": "Open Tech Nest admin"
+  }
+}

@@ -7,9 +7,9 @@ import { BasketRuleShippingOptionRow, isPickupOption } from "../basket-rules"
 export const toPence = (amount: unknown) => Math.round(Number(amount ?? 0) * 100)
 
 export const storefrontUrl = () =>
-  (process.env.STOREFRONT_URL || "https://technest.co.uk").replace(/\/$/, "")
+  (process.env.STOREFRONT_URL || "https://technestlondon.co.uk").replace(/\/$/, "")
 
-export const shopNotifyEmail = () => process.env.SHOP_NOTIFY_EMAIL || "hello@technest.co.uk"
+export const shopNotifyEmail = () => process.env.SHOP_NOTIFY_EMAIL || "hello@technestlondon.co.uk"
 
 /**
  * True when the order's shipping method is Click & Collect: a native pickup

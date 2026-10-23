@@ -7,7 +7,7 @@ type Ld = Record<string, unknown> & {
 }
 
 describe("buildLocalBusinessJsonLd", () => {
-  const ld = buildLocalBusinessJsonLd(siteConfig, "https://technest.co.uk") as Ld
+  const ld = buildLocalBusinessJsonLd(siteConfig, "https://technestlondon.co.uk") as Ld
 
   it("describes the shop", () => {
     expect(ld["@context"]).toBe("https://schema.org")
@@ -23,7 +23,7 @@ describe("buildLocalBusinessJsonLd", () => {
       latitude: 51.4923393,
       longitude: -0.0643359,
     })
-    expect(ld.url).toBe("https://technest.co.uk")
+    expect(ld.url).toBe("https://technestlondon.co.uk")
     expect(ld.hasMap).toBe(siteConfig.mapsUrl)
   })
 
@@ -47,7 +47,7 @@ describe("buildLocalBusinessJsonLd", () => {
   it("includes email once one is configured", () => {
     const withEmail = buildLocalBusinessJsonLd(
       { ...siteConfig, email: "shop@example.com" },
-      "https://technest.co.uk"
+      "https://technestlondon.co.uk"
     ) as Ld
     expect(withEmail.email).toBe("shop@example.com")
   })

@@ -1,7 +1,7 @@
 # Senaryo 1: "Quick add" (Hızlı ekle), fotoğraftan yeni ürün
 
 - **Süre:** yaklaşık 5 dakika
-- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefonunuz; paketinde gerçek bir aksesuar (üzerindeki güvenlik işaretini gösterebilmek için en iyisi bir şarj aleti); düz, açık renkli bir zemin; iyi ışık. Deneme ürününü sonra silebilirsiniz.
+- **Gerekenler:** admin.technestlondon.co.uk'a giriş yapılmış telefonunuz; paketinde gerçek bir aksesuar (üzerindeki güvenlik işaretini gösterebilmek için en iyisi bir şarj aleti); düz, açık renkli bir zemin; iyi ışık. Deneme ürününü sonra silebilirsiniz.
 - **Nerede:** menü → **"Products"** (Ürünler) → **"Add"** (Ekle) sekmesi (adres `/app/shop-products?tab=add`; eski `/app/quick-add` adresi de buraya açılır).
 - **Durum:** 2026-10-11'de panel koduyla karşılaştırıldı (menü: Today, Orders, Products, Shop settings; her birinde sekmeler). ⚠ işaretli adımlar Medusa'nın kendi ürün sayfasını kullanır: kayıttan önce canlı panelde bir kez bakın.
 - **Hedef:** fotoğraftan taslak ürüne yaklaşık bir dakika, sonra ürün sayfasından yayınlamak.

@@ -6,27 +6,27 @@ const empty = { products: [], categories: [], collections: [] }
 
 describe("buildSitemap", () => {
   it("lists the static pages with the home page first", () => {
-    const urls = buildSitemap("https://technest.co.uk/", empty).map((e) => e.url)
-    expect(urls[0]).toBe("https://technest.co.uk")
+    const urls = buildSitemap("https://technestlondon.co.uk/", empty).map((e) => e.url)
+    expect(urls[0]).toBe("https://technestlondon.co.uk")
     for (const p of STATIC_PATHS.filter((p) => p !== "/")) {
-      expect(urls).toContain(`https://technest.co.uk${p}`)
+      expect(urls).toContain(`https://technestlondon.co.uk${p}`)
     }
   })
 
   it("includes the service pages shoppers search for", () => {
-    const urls = buildSitemap("https://technest.co.uk", empty).map((e) => e.url)
+    const urls = buildSitemap("https://technestlondon.co.uk", empty).map((e) => e.url)
     for (const p of ["/repairs", "/trade", "/click-and-collect"]) {
-      expect(urls).toContain(`https://technest.co.uk${p}`)
+      expect(urls).toContain(`https://technestlondon.co.uk${p}`)
     }
   })
 
   it("leaves draft legal pages out", () => {
-    const urls = buildSitemap("https://technest.co.uk", empty).map((e) => e.url)
+    const urls = buildSitemap("https://technestlondon.co.uk", empty).map((e) => e.url)
     expect(urls.some((u) => u.includes("/legal/"))).toBe(false)
   })
 
   it("adds products, categories and collections with lastModified", () => {
-    const map = buildSitemap("https://technest.co.uk", {
+    const map = buildSitemap("https://technestlondon.co.uk", {
       products: [{ handle: "usb-c-cable-1m", updated_at: "2026-09-01T10:00:00Z" }],
       categories: [{ handle: "chargers-cables" }],
       collections: [{ handle: "one-pound-deals", updated_at: null }],
@@ -34,34 +34,34 @@ describe("buildSitemap", () => {
     const product = map.find((e) => e.url.endsWith("/p/usb-c-cable-1m"))
     expect(product?.lastModified).toEqual(new Date("2026-09-01T10:00:00Z"))
     expect(product?.priority).toBe(0.8)
-    expect(map.some((e) => e.url === "https://technest.co.uk/c/chargers-cables")).toBe(true)
-    expect(map.some((e) => e.url === "https://technest.co.uk/collections/one-pound-deals")).toBe(true)
+    expect(map.some((e) => e.url === "https://technestlondon.co.uk/c/chargers-cables")).toBe(true)
+    expect(map.some((e) => e.url === "https://technestlondon.co.uk/collections/one-pound-deals")).toBe(true)
   })
 
   it("uses nested category paths and device pages", () => {
-    const map = buildSitemap("https://technest.co.uk", {
+    const map = buildSitemap("https://technestlondon.co.uk", {
       ...empty,
       categories: [{ handle: "phone-accessories/cases" }],
       devices: [{ handle: "apple/iphone-16" }],
     })
     const urls = map.map((e) => e.url)
-    expect(urls).toContain("https://technest.co.uk/c/phone-accessories/cases")
-    expect(urls).toContain("https://technest.co.uk/devices/apple/iphone-16")
-    expect(urls).not.toContain("https://technest.co.uk/store")
+    expect(urls).toContain("https://technestlondon.co.uk/c/phone-accessories/cases")
+    expect(urls).toContain("https://technestlondon.co.uk/devices/apple/iphone-16")
+    expect(urls).not.toContain("https://technestlondon.co.uk/store")
   })
 
   it("skips handles that are not URL-safe", () => {
-    const map = buildSitemap("https://technest.co.uk", {
+    const map = buildSitemap("https://technestlondon.co.uk", {
       ...empty,
       products: [{ handle: "" }, { handle: "../x" }, { handle: "<script>" }, { handle: "ok-one" }],
     })
     expect(map.filter((e) => e.url.includes("/p/")).map((e) => e.url)).toEqual([
-      "https://technest.co.uk/p/ok-one",
+      "https://technestlondon.co.uk/p/ok-one",
     ])
   })
 
   it("never lists private paths", () => {
-    const map = buildSitemap("https://technest.co.uk", empty)
+    const map = buildSitemap("https://technestlondon.co.uk", empty)
     for (const p of PRIVATE_PATHS) {
       expect(map.some((e) => new URL(e.url).pathname.startsWith(p))).toBe(false)
     }

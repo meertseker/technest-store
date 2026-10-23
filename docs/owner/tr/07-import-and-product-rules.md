@@ -1,7 +1,7 @@
 # Senaryo 7: Tablodan ürün yükleme (CSV) ve ürün kuralları
 
 - **Süre:** yaklaşık 5 dakika
-- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış bir bilgisayar (tablo büyük ekranda daha kolay); Excel, Numbers veya Google E-Tablolar.
+- **Gerekenler:** admin.technestlondon.co.uk'a giriş yapılmış bir bilgisayar (tablo büyük ekranda daha kolay); Excel, Numbers veya Google E-Tablolar.
 - **Nerede:** menü → **"Products"** (Ürünler) → **"Import"** (İçe aktar) sekmesi (adres `/app/shop-products?tab=import`; eski `/app/import` adresi de buraya açılır).
 - **Durum:** 2026-10-11'de panel koduyla karşılaştırıldı (menü: Today, Orders, Products, Shop settings; her birinde sekmeler). ⚠ işaretli adımlar Medusa'nın kendi ekranlarıdır.
 

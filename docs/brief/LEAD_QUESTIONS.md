@@ -61,7 +61,7 @@ Format: `Q<n> (<area>, <date>)`: question. **Default:** what we did.
 - Q47 (checkout/E3): Click & Collect orders store the shop's address as the "delivery" address (customer's name) and a name+country billing address; delivery orders use the delivery address as billing. **Default:** yes (Stripe asks for whatever the card needs).
 - Q48 (checkout/E3): The add-on notice says "Add another item, or choose free Click & Collect" (the spec's "Add £X more" has no defined X). **Default:** yes.
 - Q49 (checkout/E3): Not built yet: "Add for £1" suggestion row in the basket drawer, payment-method icons (text line instead), bank holidays in delivery-date estimates. **Default:** follow-up work.
-- Q50 (mail/E2): Where does `hello@technest.co.uk` live today? Pointing MX at our server moves all domain mail there. **Default:** our mailserver handles the domain; DEPLOY.md 11.4 shows creating/forwarding `hello@`; check before changing MX.
+- Q50 (mail/E2): Where does `hello@technestlondon.co.uk` live today? Pointing MX at our server moves all domain mail there. **Default:** our mailserver handles the domain; DEPLOY.md 11.4 shows creating/forwarding `hello@`; check before changing MX.
 - Q51 (mail/E2): Staff read `orders@` via IMAPS 993 only; sending from a mail app would need 587/465 open. **Default:** not opened.
 - Q52 (mail/E2): DMARC starts at `p=none` for 2-4 weeks, then `quarantine`. **Default:** yes.
 - Q53 (payments/E2): Refunds are done only from the Medusa admin order page (Stripe-dashboard refunds don't sync back). Uncollected Click & Collect orders are cancelled, not refunded. **Default:** yes; to be covered in the owner walkthrough.

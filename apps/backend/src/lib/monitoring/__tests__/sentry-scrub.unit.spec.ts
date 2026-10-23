@@ -78,10 +78,10 @@ describe("scrubText: one test per PII / secret category", () => {
 
   it("query strings with tokens, emails and other values", () => {
     const out = scrubText(
-      "GET https://technest.co.uk/reset-password?token=abc123&email=bob@example.com&x=1"
+      "GET https://technestlondon.co.uk/reset-password?token=abc123&email=bob@example.com&x=1"
     )
     expect(out).toBe(
-      `GET https://technest.co.uk/reset-password?token=${FILTERED}&email=${FILTERED}&x=${FILTERED}`
+      `GET https://technestlondon.co.uk/reset-password?token=${FILTERED}&email=${FILTERED}&x=${FILTERED}`
     )
   })
 
@@ -150,7 +150,7 @@ describe("scrubEvent", () => {
       transaction: "POST /store/carts?email=bob@example.com",
       user: { id: "cus_1", email: "bob@example.com", ip_address: "1.2.3.4", username: "bob" },
       request: {
-        url: "https://api.technest.co.uk/store/carts/cart_1/complete?token=abc&email=bob@example.com",
+        url: "https://api.technestlondon.co.uk/store/carts/cart_1/complete?token=abc&email=bob@example.com",
         method: "POST",
         cookies: { connect_sid: "s%3Aabc" },
         data: { email: "bob@example.com", card: "4242424242424242" },
@@ -163,7 +163,7 @@ describe("scrubEvent", () => {
           "stripe-signature": "t=1,v1=abc",
           "x-forwarded-for": "1.2.3.4",
           "cf-connecting-ip": "1.2.3.4",
-          referer: "https://technest.co.uk/account?email=bob@example.com",
+          referer: "https://technestlondon.co.uk/account?email=bob@example.com",
           "user-agent": "Mozilla",
         },
       },
@@ -198,7 +198,7 @@ describe("scrubEvent", () => {
     const out = scrubEvent(event) as any
     expect(out.user).toEqual({ id: "cus_1" })
     expect(out.request).toEqual({
-      url: "https://api.technest.co.uk/store/carts/cart_1/complete",
+      url: "https://api.technestlondon.co.uk/store/carts/cart_1/complete",
       method: "POST",
       headers: { "user-agent": "Mozilla" },
     })

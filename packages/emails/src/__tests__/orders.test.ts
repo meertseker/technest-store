@@ -17,7 +17,7 @@ const delivery: OrderEmailData = {
   total_pence: 1447,
   fulfilment: { type: "delivery", method_name: "Standard delivery" },
   shipping_address: { name: "Sam Smith", address_1: "1 High St", city: "London", postcode: "SE16 1AA" },
-  order_url: "https://technest.co.uk/order/order_1/confirmed",
+  order_url: "https://technestlondon.co.uk/order/order_1/confirmed",
 }
 
 const collection: OrderEmailData = {

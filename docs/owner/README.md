@@ -1,7 +1,7 @@
 # Tech Nest Online: owner guides
 
 These guides are for the shop owner. They show how to run the online shop from the admin at
-**admin.technest.co.uk**, on a phone or a laptop.
+**admin.technestlondon.co.uk**, on a phone or a laptop.
 
 On a phone, open the menu with the button at the top left. The Tech Nest pages are in that
 left-hand menu (the sidebar). The admin is in English, so the guides use the exact English button names.

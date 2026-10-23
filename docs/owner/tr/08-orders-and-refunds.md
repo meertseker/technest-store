@@ -1,7 +1,7 @@
 # Senaryo 8: Kargolu siparişler, iptal ve iade
 
 - **Süre:** yaklaşık 4 dakika
-- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefon veya bilgisayar; kayıttan önce test kartıyla verilmiş bir **deneme** kargolu sipariş.
+- **Gerekenler:** admin.technestlondon.co.uk'a giriş yapılmış telefon veya bilgisayar; kayıttan önce test kartıyla verilmiş bir **deneme** kargolu sipariş.
 - **Nerede:** menü → **"Orders"** (Siparişler) → **"Delivery"** sekmesi → karttaki **"open the order"** (siparişi aç); herhangi bir sipariş için sağ üstteki **"All orders"** (tüm siparişler). Sipariş sayfasının kendisi Medusa'nındır.
 - **Durum:** gezinme 2026-10-11'de panel koduyla karşılaştırıldı. ⚠ 3. sahneden itibaren bizim değil, Medusa'nın kendi sipariş sayfası kullanılır: kurallar (karttan paranın ne zaman çekildiği, iadenin nereden yapıldığı) kodla karşılaştırıldı; oradaki düğme adları Medusa'nındır, biraz farklı olabilir.
 
@@ -9,7 +9,7 @@
 
 ### Sahne 1 (0:00-0:40) Yeni bir kargolu sipariş
 
-**Göreceğiniz:** hello@technest.co.uk'a "New order #1043 · Delivery · £24.98" konulu bir e-posta. (Click & Collect siparişlerinin konusunda "CLICK & COLLECT" yazar; onlar panoya düşer, senaryo 3.)
+**Göreceğiniz:** hello@technestlondon.co.uk'a "New order #1043 · Delivery · £24.98" konulu bir e-posta. (Click & Collect siparişlerinin konusunda "CLICK & COLLECT" yazar; onlar panoya düşer, senaryo 3.)
 
 **Dokunun:** menü → **"Orders"** → **"Delivery"**. Sipariş bir kartta; **"open the order"**a dokunun (ya da sağ üstte **"All orders"**, sonra #1043).
 

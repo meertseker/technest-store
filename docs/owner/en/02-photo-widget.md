@@ -1,7 +1,7 @@
 # Script 2: The "Product photo" box on the product page
 
 - **Length:** about 4 minutes
-- **You need:** your phone or laptop, logged in to admin.technest.co.uk; a test product; the product in front of you so you can photograph it.
+- **You need:** your phone or laptop, logged in to admin.technestlondon.co.uk; a test product; the product in front of you so you can photograph it.
 - **Where:** menu → **Products** → **All products** (top right: Medusa's product list) → open a product → the **Product photo** box. (Its place on the page can be moved in the admin's layout editor, so it may be lower or higher.)
 - **Status:** checked against the admin code on 2026-10-11 (menu: Today, Orders, Products, Shop settings, each with tabs). Steps marked ⚠ use Medusa's own screens.
 

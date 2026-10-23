@@ -1,7 +1,7 @@
 # Script 1: Quick add, a new product from a photo
 
 - **Length:** about 5 minutes
-- **You need:** your phone, logged in to admin.technest.co.uk; one real accessory in its packet (a charger is best, so you can show the safety mark); a plain, light surface; good light. You can delete the test product afterwards.
+- **You need:** your phone, logged in to admin.technestlondon.co.uk; one real accessory in its packet (a charger is best, so you can show the safety mark); a plain, light surface; good light. You can delete the test product afterwards.
 - **Where:** menu → **Products** → **Add** tab (address `/app/shop-products?tab=add`; the old `/app/quick-add` address still lands there).
 - **Status:** checked against the admin code on 2026-10-11 (menu: Today, Orders, Products, Shop settings, each with tabs). Steps marked ⚠ use Medusa's own product page: check them once on the live admin before recording.
 - **Goal:** photo to saved draft in about a minute, then publish from the product page.

@@ -3,7 +3,7 @@ import assert from "node:assert/strict"
 import { renderEmail } from "../index"
 import { fixtures } from "../fixtures"
 
-const ref = { display_id: 1042, first_name: "Sam", order_url: "https://technest.co.uk/order/order_1/confirmed" }
+const ref = { display_id: 1042, first_name: "Sam", order_url: "https://technestlondon.co.uk/order/order_1/confirmed" }
 
 test("dispatched email lists items, the address and a tracking link", async () => {
   const e = await renderEmail("order-dispatched", fixtures["order-dispatched"])

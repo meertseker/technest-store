@@ -9,7 +9,7 @@
 #     infra/deploy/setup-deploy-key.sh has restricted to the deploy gate on that server),
 #     SSH_KNOWN_HOSTS,
 #     NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY, NEXT_PUBLIC_STRIPE_KEY, NEXT_PUBLIC_SENTRY_DSN
-#   variables per environment: SHOP_DOMAIN (technest.co.uk or staging.technest.co.uk),
+#   variables per environment: SHOP_DOMAIN (technestlondon.co.uk or staging.technestlondon.co.uk),
 #     NEXT_PUBLIC_IMAGE_HOSTNAME, NEXT_PUBLIC_TURNSTILE_SITE_KEY (public site key)
 # Third-party actions are pinned to a commit: a moved tag must not be able to change what
 # runs here with the production secrets.

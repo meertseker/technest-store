@@ -16,10 +16,10 @@ describe("next.config images", () => {
 
   it("allows the backend host and the configured image host", () => {
     vi.stubEnv("NEXT_PUBLIC_MEDUSA_BACKEND_URL", "http://localhost:9003")
-    vi.stubEnv("NEXT_PUBLIC_IMAGE_HOSTNAME", "files.technest.co.uk")
+    vi.stubEnv("NEXT_PUBLIC_IMAGE_HOSTNAME", "files.technestlondon.co.uk")
     const h = hosts(loadConfig())
     expect(h).toContain("localhost")
-    expect(h).toContain("files.technest.co.uk")
+    expect(h).toContain("files.technestlondon.co.uk")
   })
 
   it("uses the same default backend port as the SDK when unset", () => {

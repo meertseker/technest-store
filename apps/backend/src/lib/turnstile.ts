@@ -33,7 +33,7 @@ type SiteVerifyResponse = {
   hostname?: string
 }
 
-/** True for the host itself and its subdomains (www.technest.co.uk for technest.co.uk). */
+/** True for the host itself and its subdomains (www.technestlondon.co.uk for technestlondon.co.uk). */
 export function hostnameMatches(actual: string | undefined, expected: string): boolean {
   const host = (actual ?? "").trim().toLowerCase()
   const want = expected.trim().toLowerCase()

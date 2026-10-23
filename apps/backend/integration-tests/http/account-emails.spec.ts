@@ -9,8 +9,8 @@ import passwordResetEmail from "../../src/subscribers/password-reset-email"
 jest.setTimeout(300 * 1000)
 
 const RUN = Date.now()
-process.env.STOREFRONT_URL = "https://technest.co.uk"
-process.env.MEDUSA_BACKEND_URL = "https://admin.technest.co.uk"
+process.env.STOREFRONT_URL = "https://technestlondon.co.uk"
+process.env.MEDUSA_BACKEND_URL = "https://admin.technestlondon.co.uk"
 
 medusaIntegrationTestRunner({
   inApp: true,
@@ -67,7 +67,7 @@ medusaIntegrationTestRunner({
         expect(mail.Subject).toBe("Reset your Tech Nest password")
         const text = await textOf(mail.ID)
         // The link carries the token only: the address is not repeated in the URL.
-        expect(text).toContain(`https://technest.co.uk/account/reset-password?token=${token}`)
+        expect(text).toContain(`https://technestlondon.co.uk/account/reset-password?token=${token}`)
         expect(text).not.toContain("&email=")
         expect(text).not.toContain(encodeURIComponent(email))
 
@@ -118,7 +118,7 @@ medusaIntegrationTestRunner({
 
         const [mail] = await mailTo(email, 1)
         expect(mail.Subject).toBe("Reset your Tech Nest admin password")
-        expect(await textOf(mail.ID)).toContain("https://admin.technest.co.uk/app/reset-password?token=t.staff")
+        expect(await textOf(mail.ID)).toContain("https://admin.technestlondon.co.uk/app/reset-password?token=t.staff")
       })
     })
   },

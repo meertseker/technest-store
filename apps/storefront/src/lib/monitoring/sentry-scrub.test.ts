@@ -29,14 +29,14 @@ describe("scrubEvent", () => {
     const out = scrubEvent({
       user: { id: "cus_1", email: "x@y.co" },
       request: {
-        url: "https://technest.co.uk/account?email=x@y.co",
+        url: "https://technestlondon.co.uk/account?email=x@y.co",
         cookies: { a: "b" },
         data: "{}",
         headers: { Cookie: "_medusa_jwt=abc", "User-Agent": "Mozilla" },
       },
     })
     expect(out.user).toEqual({ id: "cus_1" })
-    expect(out.request).toEqual({ url: "https://technest.co.uk/account", headers: { "User-Agent": "Mozilla" } })
+    expect(out.request).toEqual({ url: "https://technestlondon.co.uk/account", headers: { "User-Agent": "Mozilla" } })
   })
 })
 

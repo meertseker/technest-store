@@ -1,7 +1,7 @@
 # Script 3: The Click & Collect board
 
 - **Length:** about 5 minutes
-- **You need:** your phone, logged in to admin.technest.co.uk; a **test** Click & Collect order (place one on the website with a test card before recording, choosing Click & Collect at checkout). Never use a real customer's order.
+- **You need:** your phone, logged in to admin.technestlondon.co.uk; a **test** Click & Collect order (place one on the website with a test card before recording, choosing Click & Collect at checkout). Never use a real customer's order.
 - **Where:** menu → **Orders** → **Collect** tab (address `/app/shop-orders?tab=collect`; the old `/app/click-collect` address still lands there).
 - **Status:** checked against the admin code on 2026-10-11 (menu: Today, Orders, Products, Shop settings, each with tabs).
 

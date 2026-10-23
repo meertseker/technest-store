@@ -1,7 +1,7 @@
 # Script 5: Shop settings (free delivery and Klarna)
 
 - **Length:** about 3 minutes
-- **You need:** your phone or laptop, logged in to admin.technest.co.uk; the website open in a second tab to show the effect. Put every value back as it was at the end.
+- **You need:** your phone or laptop, logged in to admin.technestlondon.co.uk; the website open in a second tab to show the effect. Put every value back as it was at the end.
 - **Where:** menu → **Shop settings** → **Delivery & Klarna** tab (address `/app/shop-settings?tab=thresholds`; the old `/app/settings/technest` address still lands there).
 - **Status:** checked against the admin code on 2026-10-11 (menu: Today, Orders, Products, Shop settings, each with tabs). Shop settings is one of our four menu pages now, not inside Medusa's Settings menu.
 

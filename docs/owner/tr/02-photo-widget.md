@@ -1,7 +1,7 @@
 # Senaryo 2: Ürün sayfasındaki "Product photo" (Ürün fotoğrafı) kutusu
 
 - **Süre:** yaklaşık 4 dakika
-- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefon veya bilgisayar; bir deneme ürünü; fotoğrafını çekebilmek için ürünün kendisi.
+- **Gerekenler:** admin.technestlondon.co.uk'a giriş yapılmış telefon veya bilgisayar; bir deneme ürünü; fotoğrafını çekebilmek için ürünün kendisi.
 - **Nerede:** menü → **"Products"** (Ürünler) → sağ üstteki **"All products"** (tüm ürünler; Medusa'nın ürün listesi) → bir ürün → **"Product photo"** kutusu. (Kutunun sayfadaki yeri panelin düzen editöründen değiştirilebilir; biraz yukarıda ya da aşağıda olabilir.)
 - **Durum:** 2026-10-11'de panel koduyla karşılaştırıldı (menü: Today, Orders, Products, Shop settings; her birinde sekmeler). ⚠ işaretli adımlar Medusa'nın kendi ekranlarıdır.
 

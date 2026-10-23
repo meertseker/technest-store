@@ -1,7 +1,7 @@
 # Script 9: Delivery orders, "Packed & shipped"
 
 - **Length:** about 3 minutes
-- **You need:** a test delivery order (place one on the website with a delivery option, paid with a test card), and your phone logged in to admin.technest.co.uk.
+- **You need:** a test delivery order (place one on the website with a delivery option, paid with a test card), and your phone logged in to admin.technestlondon.co.uk.
 - **Where:** menu → **Orders** → **Delivery** tab (address `/app/shop-orders?tab=delivery`). The same cards also show on **Today** under "delivery orders to pack".
 - **Status:** checked against the admin code on 2026-10-11.
 - **Goal:** pack the parcel, hand it to the carrier, press one button; the customer gets the "on its way" email, with the tracking number if you typed one.

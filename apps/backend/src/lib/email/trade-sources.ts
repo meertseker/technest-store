@@ -23,7 +23,7 @@ export const adminBase = () =>
   (
     process.env.ADMIN_URL ||
     (process.env.MEDUSA_BACKEND_URL ? `${process.env.MEDUSA_BACKEND_URL.replace(/\/$/, "")}/app` : "") ||
-    "https://admin.technest.co.uk/app"
+    "https://admin.technestlondon.co.uk/app"
   ).replace(/\/$/, "")
 
 const query = (container: MedusaContainer) => container.resolve(ContainerRegistrationKeys.QUERY)

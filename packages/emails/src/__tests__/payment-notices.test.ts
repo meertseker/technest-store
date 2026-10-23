@@ -3,7 +3,7 @@ import assert from "node:assert/strict"
 import { renderEmail } from "../index"
 import { fixtures } from "../fixtures"
 
-const admin = "https://admin.technest.co.uk/app/orders/order_1"
+const admin = "https://admin.technestlondon.co.uk/app/orders/order_1"
 
 test("dispute email leads with the deadline, the Stripe link and the no-refund warning", async () => {
   const e = await renderEmail("shop-payment-dispute", fixtures["shop-payment-dispute"])

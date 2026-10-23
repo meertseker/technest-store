@@ -13,4 +13,4 @@ pnpm --filter @technest/emails preview   # writes .preview/<id>.html and .txt
 
 To add a template: create `src/templates/<id>.tsx` exporting `subject(data)` and `Email`, register it in `src/index.ts`, add a fixture in `src/fixtures/index.ts`, and add the id to the contract.
 
-Links use `STOREFRONT_URL` (default `https://technest.co.uk`).
+Links use `STOREFRONT_URL` (default `https://technestlondon.co.uk`).

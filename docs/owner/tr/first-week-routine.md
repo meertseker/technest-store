@@ -1,7 +1,7 @@
 # Günlük rutin ve ilk hafta
 
-Dükkan saatleri: Pzt-Cmt 09:00-20:00, Paz 11:00-17:00. Dükkan e-postaları **hello@technest.co.uk** adresine gelir.
-Panel **admin.technest.co.uk** adresinde. Telefonda menü düğmesi sol üstte.
+Dükkan saatleri: Pzt-Cmt 09:00-20:00, Paz 11:00-17:00. Dükkan e-postaları **hello@technestlondon.co.uk** adresine gelir.
+Panel **admin.technestlondon.co.uk** adresinde. Telefonda menü düğmesi sol üstte.
 
 Menüde dört sayfa var: **"Today"** (bugün yapılacaklar; panel burada açılır), **"Orders"** (sekmeler: **"Collect"**,
 **"Delivery"**, **"Repairs"**, **"Trade"**), **"Products"** (sekmeler: **"Add"**, **"Price & stock"**, **"Import"**) ve
@@ -43,7 +43,7 @@ Menüde dört sayfa var: **"Today"** (bugün yapılacaklar; panel burada açıl�
 
 **1. gün**
 - [ ] Telefonunuzdan ve dükkandaki bilgisayardan giriş yapın. Yukarıdaki sayfaların hepsini menüde bulun.
-- [ ] hello@technest.co.uk'a e-postaların geldiğini kontrol edin: yeni sipariş, yeni trade başvurusu, yeni tamir randevusu. Biri gelmiyorsa lead'e haber verin.
+- [ ] hello@technestlondon.co.uk'a e-postaların geldiğini kontrol edin: yeni sipariş, yeni trade başvurusu, yeni tamir randevusu. Biri gelmiyorsa lead'e haber verin.
 - [ ] Sitede henüz olmayan stoğu **"Products" → "Import"** ile yükleyin (senaryo 7): şablonu indirin, doldurun, önizlemeye bakın, **"Problems"**i düzeltin, sonra **"Import"**.
 
 **2. gün**

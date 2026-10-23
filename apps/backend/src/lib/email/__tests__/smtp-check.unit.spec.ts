@@ -3,7 +3,7 @@ import { setAlertSinkForTests, type Alert } from "../../alerting"
 import { checkSmtpLogin } from "../../../modules/smtp/service"
 import { checkSmtpAtStart, resetSmtpCheckForTests, smtpOptionsOf } from "../smtp-check"
 
-const options = { host: "smtp.example.com", port: 587, user: "resend", pass: "re_secret", from: "Tech Nest <orders@technest.co.uk>" }
+const options = { host: "smtp.example.com", port: 587, user: "resend", pass: "re_secret", from: "Tech Nest <orders@technestlondon.co.uk>" }
 
 function logger() {
   const lines: string[] = []

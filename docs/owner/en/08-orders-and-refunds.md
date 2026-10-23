@@ -1,7 +1,7 @@
 # Script 8: Delivery orders, cancelling and refunds
 
 - **Length:** about 4 minutes
-- **You need:** your phone or laptop, logged in to admin.technest.co.uk; a **test** delivery order placed with a test card before recording.
+- **You need:** your phone or laptop, logged in to admin.technestlondon.co.uk; a **test** delivery order placed with a test card before recording.
 - **Where:** menu → **Orders** → **Delivery** tab → **open the order** on a card; or **All orders** (top right) for any order. The order page itself is Medusa's own.
 - **Status:** navigation checked against the admin code on 2026-10-11. ⚠ Scenes 3 onwards use Medusa's own order page, which is not ours: the rules (who charges the card, where refunds are made) are checked against the code; the button names there are Medusa's and may differ slightly.
 
@@ -9,7 +9,7 @@
 
 ### Scene 1 (0:00-0:40) A new delivery order
 
-**You'll see:** an email "New order #1043 · Delivery · £24.98" at hello@technest.co.uk. (Click & Collect orders say "CLICK & COLLECT" in the subject: those go on the board, script 3.)
+**You'll see:** an email "New order #1043 · Delivery · £24.98" at hello@technestlondon.co.uk. (Click & Collect orders say "CLICK & COLLECT" in the subject: those go on the board, script 3.)
 
 **Tap:** menu → **Orders** → **Delivery**. The order is on a card; tap **open the order** (or **All orders** at the top right, then #1043).
 

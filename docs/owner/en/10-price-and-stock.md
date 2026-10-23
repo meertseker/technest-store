@@ -1,7 +1,7 @@
 # Script 10: Price & stock, change a price or a stock count
 
 - **Length:** about 3 minutes
-- **You need:** your phone logged in to admin.technest.co.uk and a test product (one from script 1 is fine).
+- **You need:** your phone logged in to admin.technestlondon.co.uk and a test product (one from script 1 is fine).
 - **Where:** menu → **Products** → **Price & stock** tab (address `/app/shop-products?tab=stock`). **Today** → "draft products to publish" opens the same tab with **Drafts only** on.
 - **Status:** checked against the admin code on 2026-10-11.
 - **Goal:** find a product, change its price or how many you have, press Save. Everything else about a product stays on its product page.

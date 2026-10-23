@@ -13,9 +13,9 @@ RUN corepack enable && corepack prepare pnpm@10.11.1 --activate
 WORKDIR /repo
 
 FROM base AS build
-ARG NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://api.technest.co.uk
+ARG NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://api.technestlondon.co.uk
 ARG NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
-ARG NEXT_PUBLIC_BASE_URL=https://technest.co.uk
+ARG NEXT_PUBLIC_BASE_URL=https://technestlondon.co.uk
 ARG NEXT_PUBLIC_DEFAULT_REGION=gb
 ARG NEXT_PUBLIC_STRIPE_KEY
 ARG NEXT_PUBLIC_IMAGE_HOSTNAME

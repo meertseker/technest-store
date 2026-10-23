@@ -5,8 +5,8 @@ const baseOptions = {
   host: "localhost",
   port: 1025,
   secure: false,
-  from: "Tech Nest <hello@technest.co.uk>",
-  reply_to: "hello@technest.co.uk",
+  from: "Tech Nest <hello@technestlondon.co.uk>",
+  reply_to: "hello@technestlondon.co.uk",
 }
 
 function makeLogger() {
@@ -130,8 +130,8 @@ describe("SmtpNotificationService.send", () => {
     const info: any = await sendMail.mock.results[0].value
     const sent = JSON.parse(info.message)
     expect(sent.to).toEqual([{ address: "customer@example.com", name: "" }])
-    expect(sent.from).toEqual({ address: "hello@technest.co.uk", name: "Tech Nest" })
-    expect(sent.replyTo).toEqual([{ address: "hello@technest.co.uk", name: "" }])
+    expect(sent.from).toEqual({ address: "hello@technestlondon.co.uk", name: "Tech Nest" })
+    expect(sent.replyTo).toEqual([{ address: "hello@technestlondon.co.uk", name: "" }])
     expect(sent.subject).toBe("Your order")
     expect(sent.html).toBe("<p>Hi</p>")
     expect(sent.text).toBe("Hi")

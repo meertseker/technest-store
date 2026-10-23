@@ -1,7 +1,7 @@
 # Script 4: Devices, and "Fits these devices"
 
 - **Length:** about 5 minutes
-- **You need:** your phone or laptop, logged in to admin.technest.co.uk; a test product (for example a phone case); a made-up test device to add and delete afterwards.
+- **You need:** your phone or laptop, logged in to admin.technestlondon.co.uk; a test product (for example a phone case); a made-up test device to add and delete afterwards.
 - **Where:** menu → **Shop settings** → **Devices** tab (address `/app/shop-settings?tab=devices`; the old `/app/devices` address still lands there), and the **Fits these devices** box on each product page.
 - **Status:** checked against the admin code on 2026-10-11 (menu: Today, Orders, Products, Shop settings, each with tabs).
 

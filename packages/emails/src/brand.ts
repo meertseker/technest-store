@@ -6,7 +6,7 @@ export const BRAND = {
   legalName: "Tech Nest",
   address: "Unit 2A, Southwark Park Rd., London SE16 3TU",
   phone: "07775 669000",
-  email: "hello@technest.co.uk",
+  email: "hello@technestlondon.co.uk",
   accent: "#D6001C",
   text: "#111827",
   muted: "#4B5563",
@@ -17,7 +17,7 @@ export const BRAND = {
 } as const
 
 export const storefrontUrl = () =>
-  (process.env.STOREFRONT_URL || "https://technest.co.uk").replace(/\/$/, "")
+  (process.env.STOREFRONT_URL || "https://technestlondon.co.uk").replace(/\/$/, "")
 
 // Opening hours from google-business-profile/profile.json, by weekday (0 = Sunday).
 export const OPENING_HOURS = [

@@ -61,9 +61,9 @@ Sunucuda **çalışmayan**, dışarıdan alınan iki hizmet (lead kararı, 2026-
 
 Alan adları:
 
-- `technest.co.uk` → mağaza (`www.` adresi buraya yönlenir)
-- `api.technest.co.uk` → Medusa API ve Stripe webhook'ları
-- `admin.technest.co.uk` → yönetim paneli (`/app`)
+- `technestlondon.co.uk` → mağaza (`www.` adresi buraya yönlenir)
+- `api.technestlondon.co.uk` → Medusa API ve Stripe webhook'ları
+- `admin.technestlondon.co.uk` → yönetim paneli (`/app`)
 
 İmajlar (Docker image) **GitHub Actions** üzerinde derlenir ve **GHCR**'ye gönderilir.
 Sunucuda hiçbir şey derlenmez; sunucu yalnızca imajları çeker (`docker compose pull`).
@@ -178,7 +178,7 @@ teslimini **etkilemez**. Yapılacak bir şey yok.
 
 ### 4.1 Alan adını Cloudflare'e taşıma
 
-1. https://dash.cloudflare.com → **Add a site** → `technest.co.uk` → Free plan.
+1. https://dash.cloudflare.com → **Add a site** → `technestlondon.co.uk` → Free plan.
 2. Cloudflare'in verdiği iki nameserver'ı alan adını aldığınız firmada (registrar) girin.
 3. Durum "Active" olunca devam edin (birkaç dakika ile 24 saat sürebilir).
 
@@ -186,9 +186,9 @@ teslimini **etkilemez**. Yapılacak bir şey yok.
 
 | Tür | Ad | Değer | Proxy |
 |---|---|---|---|
-| A | `technest.co.uk` (@) | ÜRETİM_IPv4 | Turuncu bulut (Proxied) |
+| A | `technestlondon.co.uk` (@) | ÜRETİM_IPv4 | Turuncu bulut (Proxied) |
 | AAAA | @ | ÜRETİM_IPv6 | Proxied |
-| CNAME | `www` | `technest.co.uk` | Proxied |
+| CNAME | `www` | `technestlondon.co.uk` | Proxied |
 | A | `api` | ÜRETİM_IPv4 | Proxied |
 | A | `admin` | ÜRETİM_IPv4 | Proxied |
 | A | `staging` | STAGING_IPv4 | Proxied |
@@ -197,9 +197,9 @@ teslimini **etkilemez**. Yapılacak bir şey yok.
 
 E-posta kayıtları (Resend'in DKIM/SPF kayıtları, DMARC, Cloudflare Email Routing) için bölüm 11'e bakın.
 
-> Not: `api.staging.technest.co.uk` gibi iki seviyeli alt alan adları Cloudflare'in ücretsiz
+> Not: `api.staging.technestlondon.co.uk` gibi iki seviyeli alt alan adları Cloudflare'in ücretsiz
 > Universal SSL sertifikasına dahil değildir. Staging için bunun yerine tek seviyeli adlar
-> kullanın: `SHOP_DOMAIN=staging.technest.co.uk` yerine staging'i ayrı bir alan adıyla (örneğin
+> kullanın: `SHOP_DOMAIN=staging.technestlondon.co.uk` yerine staging'i ayrı bir alan adıyla (örneğin
 > ucuz bir `technest-staging.co.uk`) kurmak en kolayıdır. Ya da staging kayıtlarını
 > **DNS only** yapın; Caddy o zaman kendi Let's Encrypt sertifikasını alır.
 
@@ -213,7 +213,7 @@ E-posta kayıtları (Resend'in DKIM/SPF kayıtları, DMARC, Cloudflare Email Rou
   adlarında "Bypass cache" kuralı ekleyin.
 - **Security → Bots**: "Bot Fight Mode" **kapalı** (Stripe webhook'larını engelleyebilir).
 - **Turnstile** (robot kontrolü, tamir randevu formu): Dashboard → Turnstile → **Add widget** →
-  alan adı `technest.co.uk` (staging için staging alan adını da ekleyin), mod **Managed**. İki anahtar verir:
+  alan adı `technestlondon.co.uk` (staging için staging alan adını da ekleyin), mod **Managed**. İki anahtar verir:
   - **Site key** → storefront, derleme sırasında: `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (GitHub **variable**, ortam başına; site key gizli değildir, 5.3).
   - **Secret key** → backend: `TURNSTILE_SECRET_KEY` (sunucu `.env`, 5.1).
 
@@ -228,9 +228,9 @@ E-posta kayıtları (Resend'in DKIM/SPF kayıtları, DMARC, Cloudflare Email Rou
 İki bucket açın:
 
 1. **R2 → Create bucket** → `technest-media` (ürün fotoğrafları). Location: Automatic (EU).
-   - **Settings → Public access → Custom domain**: `media.technest.co.uk` bağlayın.
-     Bu adres `S3_FILE_URL` olur (`https://media.technest.co.uk`) ve storefront'un
-     `NEXT_PUBLIC_IMAGE_HOSTNAME` değeri `media.technest.co.uk` olur.
+   - **Settings → Public access → Custom domain**: `media.technestlondon.co.uk` bağlayın.
+     Bu adres `S3_FILE_URL` olur (`https://media.technestlondon.co.uk`) ve storefront'un
+     `NEXT_PUBLIC_IMAGE_HOSTNAME` değeri `media.technestlondon.co.uk` olur.
 2. **R2 → Create bucket** → `technest-backups` (veritabanı yedekleri). **Public access kapalı.**
    - **Settings → Object lifecycle rules → Add rule**: "Delete objects **90** days after upload".
      Dikkat: bu kural bir güvenlik katmanı **değildir**, bağımsız bir silicidir: yedekleme sessizce
@@ -289,10 +289,10 @@ karşılaştırıldı (2026-09-30). "Zorunlu" = boşsa compose başlamaz ya da �
 
 | Değişken | Zorunlu mu | Nereden / not |
 |---|---|---|
-| `SHOP_DOMAIN` | Evet | `technest.co.uk` (staging'de staging alan adı). `api.` ve `admin.` bundan türetilir |
+| `SHOP_DOMAIN` | Evet | `technestlondon.co.uk` (staging'de staging alan adı). `api.` ve `admin.` bundan türetilir |
 | `GHCR_OWNER` | Evet | GitHub kullanıcı/organizasyon adı, **küçük harf** (`meertseker`) |
 | `IMAGE_TAG` | — | deploy.yml yazar; elle değiştirmeyin (yalnızca elle geri alma, bölüm 7) |
-| `ACME_EMAIL` | Hayır | Let's Encrypt hesap adresi; varsayılan `hello@technest.co.uk`. Let's Encrypt süre dolumu e-postalarını Haziran 2025'te bıraktı: sertifika sorunu buradan **duyulmaz**, bölüm 9'daki izleme duyurur |
+| `ACME_EMAIL` | Hayır | Let's Encrypt hesap adresi; varsayılan `hello@technestlondon.co.uk`. Let's Encrypt süre dolumu e-postalarını Haziran 2025'te bıraktı: sertifika sorunu buradan **duyulmaz**, bölüm 9'daki izleme duyurur |
 | `COMPOSE_FILE` | — | yalnızca staging / tatbikat: `docker-compose.yml:docker-compose.staging.yml` |
 | `POSTGRES_PASSWORD` | Evet | `openssl rand -hex 32` (**yalnızca hex**) |
 | `REDIS_PASSWORD` | Evet | `openssl rand -hex 32` (**yalnızca hex**). Boşsa compose başlamaz. Çalışan bir sunucuya ilk kez eklerken: `.env`'e yazın, sonra yayınlayın; `redis`, `server` ve `worker` yeni parolayla birlikte yeniden oluşturulur |
@@ -302,7 +302,7 @@ karşılaştırıldı (2026-09-30). "Zorunlu" = boşsa compose başlamaz ya da �
 
 | Değişken | Zorunlu mu | Nereden / not |
 |---|---|---|
-| `S3_FILE_URL` | Evet | `https://media.technest.co.uk` |
+| `S3_FILE_URL` | Evet | `https://media.technestlondon.co.uk` |
 | `S3_ENDPOINT` | Evet | `https://HESAP_ID.r2.cloudflarestorage.com` (yedek de aynı endpoint'i kullanır) |
 | `S3_BUCKET` | Evet | `technest-media` |
 | `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Evet | `technest-media-rw` token'ı |
@@ -325,7 +325,7 @@ karşılaştırıldı (2026-09-30). "Zorunlu" = boşsa compose başlamaz ya da �
 | `SMTP_PASS` | Evet | Resend **API key** (`re_…`), bölüm 11.2 |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_SECURE`, `SMTP_REQUIRE_TLS` | Hayır | Varsayılanlar Resend içindir: `smtp.resend.com`, `587`, `resend`, `false`, `true`. Başka bir SMTP sağlayıcısına geçerseniz bunları `.env`'de değiştirin |
 | `MAIL_FROM` | Hayır | varsayılan `Tech Nest <orders@SHOP_DOMAIN>`. Adresin alan adı Resend'de **doğrulanmış** olmalı |
-| `MAIL_REPLY_TO`, `SHOP_NOTIFY_EMAIL` | Hayır | ikisi de varsayılan `hello@technest.co.uk`. Dükkan bildirimleri (yeni sipariş, trade, tamir, düşük stok) `SHOP_NOTIFY_EMAIL`'e gider |
+| `MAIL_REPLY_TO`, `SHOP_NOTIFY_EMAIL` | Hayır | ikisi de varsayılan `hello@technestlondon.co.uk`. Dükkan bildirimleri (yeni sipariş, trade, tamir, düşük stok) `SHOP_NOTIFY_EMAIL`'e gider |
 | `STOREFRONT_URL` | — | compose `https://<SHOP_DOMAIN>` olarak kendisi verir; `.env`'e yazmayın |
 
 **Fotoğraf ve Hızlı Ekle (E4)**
@@ -389,8 +389,8 @@ Her ortamda:
 | Secret | `NEXT_PUBLIC_STRIPE_KEY` | Stripe publishable key (`pk_test_…`, canlıda `pk_live_…`) |
 | Secret | `NEXT_PUBLIC_SENTRY_DSN` | storefront Sentry DSN (isteğe bağlı) |
 | Variable | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile site key (4.3), deploy.yml bunu storefront imajına derler |
-| Variable | `SHOP_DOMAIN` | `technest.co.uk` veya staging alan adı |
-| Variable | `NEXT_PUBLIC_IMAGE_HOSTNAME` | `media.technest.co.uk` |
+| Variable | `SHOP_DOMAIN` | `technestlondon.co.uk` veya staging alan adı |
+| Variable | `NEXT_PUBLIC_IMAGE_HOSTNAME` | `media.technestlondon.co.uk` |
 
 Depo düzeyinde (Settings → Secrets and variables → Actions → **Variables**):
 `DEPLOY_ENABLED` = `true`. **Bu değişken yoksa deploy.yml hiçbir şey yapmaz.**
@@ -407,7 +407,7 @@ Ayrıntılı kurallar: `docs/contracts/payments.md`.
    - Publishable key `pk_live_…` → GitHub secret `NEXT_PUBLIC_STRIPE_KEY` (production ortamı)
    - Secret key `sk_live_…` → sunucu `.env`: `STRIPE_API_KEY`
 2. **Developers → Webhooks → Add endpoint**:
-   - URL: `https://api.technest.co.uk/hooks/payment/stripe_stripe`
+   - URL: `https://api.technestlondon.co.uk/hooks/payment/stripe_stripe`
    - Olaylar: `payment_intent.amount_capturable_updated`, `payment_intent.succeeded`,
      `payment_intent.payment_failed`, `payment_intent.canceled`, `payment_intent.processing`,
      `payment_intent.requires_action`, `payment_intent.partially_funded`, `charge.refunded`,
@@ -555,7 +555,7 @@ docker compose run --rm backup restore.sh --list    # hangi yedek?
 docker compose run --rm backup restore.sh latest --yes
 #   veya belirli bir dosya: restore.sh technest-20261115T031500Z.dump --yes
 docker compose up -d
-curl -fsS https://api.technest.co.uk/health
+curl -fsS https://api.technestlondon.co.uk/health
 ```
 
 `restore.sh` sırasıyla şunları yapar: (1) veritabanının **şu anki** halini
@@ -643,9 +643,9 @@ https://uptimerobot.com → **Add New Monitor** (3 adet):
 
 | Ad | Tür | Adres | Beklenen |
 |---|---|---|---|
-| Mağaza ana sayfa | HTTP(s) | `https://technest.co.uk/` | 200 |
-| Ödeme sayfası | HTTP(s) | `https://technest.co.uk/checkout` | **404** (sepet olmadan sayfa ödeme düzeni içinde 404 döner; 5xx = sorun) |
-| API sağlık | Keyword | `https://api.technest.co.uk/health` | "OK" içeriyor |
+| Mağaza ana sayfa | HTTP(s) | `https://technestlondon.co.uk/` | 200 |
+| Ödeme sayfası | HTTP(s) | `https://technestlondon.co.uk/checkout` | **404** (sepet olmadan sayfa ödeme düzeni içinde 404 döner; 5xx = sorun) |
+| API sağlık | Keyword | `https://api.technestlondon.co.uk/health` | "OK" içeriyor |
 
 Ödeme sayfası izleyicisinde "Up" sayılacak durum kodlarını ayarlayın
 (Advanced → "Up HTTP status codes"): `200-299, 404`.
@@ -711,14 +711,14 @@ Kural 1 (ücretsiz plan, tek kural): "Hassas POST istekleri"
 - Expression (Edit expression):
   ```
   (http.request.method eq "POST" and (
-     (http.host eq "api.technest.co.uk" and (
+     (http.host eq "api.technestlondon.co.uk" and (
         starts_with(http.request.uri.path, "/auth/")
         or http.request.uri.path contains "/complete"
         or starts_with(http.request.uri.path, "/store/trade-applications")
         or starts_with(http.request.uri.path, "/store/repair-bookings")
         or starts_with(http.request.uri.path, "/store/customers")
      ))
-     or (http.host eq "admin.technest.co.uk" and starts_with(http.request.uri.path, "/auth/"))
+     or (http.host eq "admin.technestlondon.co.uk" and starts_with(http.request.uri.path, "/auth/"))
   ))
   ```
 - Characteristics: IP
@@ -741,7 +741,7 @@ Uygulama tarafında da koruma var: tamir randevu formu Turnstile doğrular (E1);
 müşteri girişi ister ve müşteri başına tek bekleyen başvuruya izin verir.
 
 Test: kuralı kaydettikten sonra kendi bilgisayarınızdan
-`for i in $(seq 1 15); do curl -s -o /dev/null -w "%{http_code}\n" -X POST https://api.technest.co.uk/auth/customer/emailpass; done`
+`for i in $(seq 1 15); do curl -s -o /dev/null -w "%{http_code}\n" -X POST https://api.technestlondon.co.uk/auth/customer/emailpass; done`
 → ilk istekler 401/400, sonrakiler **429** dönmeli.
 
 ---
@@ -752,8 +752,8 @@ Sunucuda e-posta sunucusu **yoktur**. İki ayrı iş var:
 
 | İş | Kim yapar |
 |---|---|
-| **Gönderme**: mağazanın otomatik e-postaları (sipariş onayı, "siparişiniz hazır", iade, parola sıfırlama, dükkan bildirimleri) | **Resend**, SMTP ile. Gönderen: `orders@technest.co.uk` |
-| **Alma**: müşterilerin `hello@technest.co.uk` adresine yazdıkları ve yanıtlar | **Cloudflare Email Routing**: sahibin mevcut posta kutusuna (ör. Gmail) yönlendirir |
+| **Gönderme**: mağazanın otomatik e-postaları (sipariş onayı, "siparişiniz hazır", iade, parola sıfırlama, dükkan bildirimleri) | **Resend**, SMTP ile. Gönderen: `orders@technestlondon.co.uk` |
+| **Alma**: müşterilerin `hello@technestlondon.co.uk` adresine yazdıkları ve yanıtlar | **Cloudflare Email Routing**: sahibin mevcut posta kutusuna (ör. Gmail) yönlendirir |
 
 Hangi olayda hangi e-postanın gittiği: `docs/contracts/emails.md`. Backend'in kodu değişmedi:
 aynı SMTP sağlayıcısı (`smtp`), yalnızca adres Resend'e bakıyor (`docker-compose.yml`).
@@ -768,19 +768,19 @@ aynı SMTP sağlayıcısı (`smtp`), yalnızca adres Resend'e bakıyor (`docker-
 
 ### 11.2 Resend: alan adı ve API key
 
-1. https://resend.com → hesap açın → **Domains → Add Domain** → `technest.co.uk`, bölge: **eu-west-1 (Ireland)**.
+1. https://resend.com → hesap açın → **Domains → Add Domain** → `technestlondon.co.uk`, bölge: **eu-west-1 (Ireland)**.
 2. Resend birkaç DNS kaydı gösterir (DKIM için TXT, SPF için TXT ve MX; genellikle `send.` alt alan
    adında ve `resend._domainkey` adında). Hepsini Cloudflare → **DNS → Records**'a **aynen** girin
    (TXT/MX kayıtları proxy'lenmez). Kök alan adındaki (`@`) MX kayıtları Email Routing'e aittir (11.4);
    Resend'inkiler alt alan adında olduğu için çakışmaz.
-3. Ayrıca bir DMARC kaydı ekleyin: TXT, ad `_dmarc`, değer `v=DMARC1; p=none; rua=mailto:dmarc@technest.co.uk;`
+3. Ayrıca bir DMARC kaydı ekleyin: TXT, ad `_dmarc`, değer `v=DMARC1; p=none; rua=mailto:dmarc@technestlondon.co.uk;`
    (`dmarc@` adresini 11.4'teki Email Routing ile sahibin kutusuna yönlendirin: alıcı sunucular SPF/DKIM
    hizalama raporlarını buraya gönderir, sahte gönderimler böyle fark edilir. 2-4 hafta sorunsuz gönderimden
    sonra `p=quarantine` yapılabilir).
 4. Resend'de **Verify** → durum "Verified" olmalı (birkaç dakika sürebilir).
 5. **API Keys → Create API Key**: ad `technest-production`, izin **Sending access**, alan adı
-   `technest.co.uk`. Anahtar (`re_…`) yalnızca bir kez gösterilir. Staging için ayrı bir anahtar açın.
-6. **Webhooks → Add Webhook**: URL `https://api.technest.co.uk/hooks/email/resend`, olaylar yalnızca
+   `technestlondon.co.uk`. Anahtar (`re_…`) yalnızca bir kez gösterilir. Staging için ayrı bir anahtar açın.
+6. **Webhooks → Add Webhook**: URL `https://api.technestlondon.co.uk/hooks/email/resend`, olaylar yalnızca
    **email.bounced** ve **email.complained**. Resend'in gösterdiği imza anahtarını (`whsec_…`) `.env`'e
    `RESEND_WEBHOOK_SECRET=` olarak yazın (11.3). Bu anahtar yokken uç nokta 503 döner ve Resend'in webhook
    günlüğünde "failed" görünür; anahtar yanlışsa 400. Geri dönen (bounce) ya da spam işaretlenen her e-posta
@@ -792,7 +792,7 @@ aynı SMTP sağlayıcısı (`smtp`), yalnızca adres Resend'e bakıyor (`docker-
 
 ```bash
 SMTP_PASS=re_...                      # Resend API key
-MAIL_FROM=Tech Nest <orders@technest.co.uk>
+MAIL_FROM=Tech Nest <orders@technestlondon.co.uk>
 RESEND_WEBHOOK_SECRET=whsec_...       # Resend webhook imza anahtarı (11.2 adım 6)
 ```
 
@@ -805,22 +805,22 @@ e-posta `MAIL_REPLY_TO` adresine (`hello@`) gider.
 
 ### 11.4 Gelen posta: Cloudflare Email Routing
 
-1. Cloudflare → `technest.co.uk` → **Email → Email Routing → Get started**.
-2. **Custom address**: `hello@technest.co.uk` → **Destination**: sahibin mevcut adresi (ör. Gmail).
+1. Cloudflare → `technestlondon.co.uk` → **Email → Email Routing → Get started**.
+2. **Custom address**: `hello@technestlondon.co.uk` → **Destination**: sahibin mevcut adresi (ör. Gmail).
    Cloudflare o adrese bir doğrulama e-postası gönderir; sahibi onaylar.
 3. Cloudflare gerekli MX ve SPF kayıtlarını kök alan adına kendisi ekler ("Add records and enable").
 4. İsterseniz **Catch-all** kuralını da aynı adrese yönlendirin (`orders@`, `postmaster@` vb. için).
 
-> **Önce kontrol edin: `hello@technest.co.uk` şu an nerede?** Email Routing'i açtığınız anda
-> `@technest.co.uk` adresine gelen **tüm** e-postalar Cloudflare'e gelir. Alan adında zaten çalışan
+> **Önce kontrol edin: `hello@technestlondon.co.uk` şu an nerede?** Email Routing'i açtığınız anda
+> `@technestlondon.co.uk` adresine gelen **tüm** e-postalar Cloudflare'e gelir. Alan adında zaten çalışan
 > bir posta kutusu (Google Workspace, Outlook, hosting) varsa Email Routing'i **açmayın**; o kutu
 > kullanılmaya devam eder ve yalnızca 11.2'deki Resend kayıtları eklenir.
 
 **Sahibin `hello@` adresinden yanıt yazması** (isteğe bağlı): Email Routing yalnızca alır, göndermez.
 Gmail → Ayarlar → **Hesaplar → "Postaları şu adresten gönder" → Başka bir e-posta adresi ekle**:
-ad `Tech Nest`, adres `hello@technest.co.uk`, SMTP sunucusu `smtp.resend.com`, port `465` (SSL),
+ad `Tech Nest`, adres `hello@technestlondon.co.uk`, SMTP sunucusu `smtp.resend.com`, port `465` (SSL),
 kullanıcı adı `resend`, parola: bu iş için açılmış ayrı bir Resend API key. Bundan sonra Gmail'de
-gönderen olarak `hello@technest.co.uk` seçilebilir. Bunu yapmazsanız sahibi kendi adresinden yanıtlar.
+gönderen olarak `hello@technestlondon.co.uk` seçilebilir. Bunu yapmazsanız sahibi kendi adresinden yanıtlar.
 
 ### 11.5 Teslim testi
 
@@ -829,11 +829,11 @@ gönderen olarak `hello@technest.co.uk` seçilebilir. Bunu yapmazsanız sahibi k
    `DMARC: PASS` görmelisiniz. Spam klasörüne düşmemeli.
 2. https://www.mail-tester.com → verdiği adrese mağazadan bir e-posta gönderin (ör. o adresle bir
    müşteri hesabı açıp parola sıfırlama isteyin) → puan **9/10 veya üzeri** olmalı.
-3. Gelen posta: kendi adresinizden `hello@technest.co.uk`'ya yazın → sahibin kutusuna düşmeli.
+3. Gelen posta: kendi adresinizden `hello@technestlondon.co.uk`'ya yazın → sahibin kutusuna düşmeli.
 4. Dükkan uyarıları: staging'de bir tamir talebi ya da trade başvurusu gönderin → `SHOP_NOTIFY_EMAIL`
    adresine giden uyarı (Cloudflare Email Routing üzerinden) sahibin kutusuna **gelen kutusunda** düşmeli,
    spam'de değil; "Show original"da SPF/DKIM/DMARC PASS olmalı. Spam'e düşerse Gmail'de "Not spam" + filtre
-   (gönderen `orders@technest.co.uk` → asla spam'e gitmesin) ekleyin.
+   (gönderen `orders@technestlondon.co.uk` → asla spam'e gitmesin) ekleyin.
 5. Webhook: Resend → Webhooks → eklediğiniz webhook → **Send test event** (`email.bounced`) → Sentry'de
    "Resend: an email bounced" uyarısı görünmeli; Resend tarafında yanıt 200 olmalı.
 6. Resend → **Emails**: gönderilen her e-posta ve durumu (delivered / bounced) burada görünür.
@@ -864,7 +864,7 @@ başarısızsa canlıya geçmeyin.
 **Stripe (5.4)**
 - [ ] `.env`'de `STRIPE_API_KEY=sk_live_…`, GitHub `production` ortamında `NEXT_PUBLIC_STRIPE_KEY=pk_live_…`
       (canlı anahtarlar yalnızca `production`'da; staging'de test anahtarları)
-- [ ] Canlı webhook uç noktası `https://api.technest.co.uk/hooks/payment/stripe_stripe`, 7 olay seçili,
+- [ ] Canlı webhook uç noktası `https://api.technestlondon.co.uk/hooks/payment/stripe_stripe`, 7 olay seçili,
       `STRIPE_WEBHOOK_SECRET` canlı uç noktanın `whsec_…` değeri
 - [ ] "Send test webhook" → 200; Cloudflare'de `/hooks/` hız sınırı ve bot kontrolü dışında (bölüm 10)
 - [ ] Stripe'ta Klarna açık; staging'de £30 altı sepette Klarna **görünmüyor**, £30 üstünde görünüyor
@@ -883,10 +883,10 @@ başarısızsa canlıya geçmeyin.
 - [ ] Resend'de alan adı "Verified"; `SMTP_PASS` (API key) `.env`'de; DMARC kaydı var (11.2, 11.3)
 - [ ] mail-tester.com **9/10 veya üzeri**; Gmail'de SPF/DKIM/DMARC PASS (11.5)
 - [ ] Cloudflare Email Routing açık: `hello@`'ya yazılan e-posta sahibin kutusuna düşüyor (11.4)
-- [ ] `hello@technest.co.uk`'a dükkan bildirimleri geliyor (yeni sipariş, trade, tamir, 08:00 düşük stok)
+- [ ] `hello@technestlondon.co.uk`'a dükkan bildirimleri geliyor (yeni sipariş, trade, tamir, 08:00 düşük stok)
 
 **R2 (4.4)**
-- [ ] `technest-media` herkese açık, `media.technest.co.uk` bağlı; admin'den yüklenen bir fotoğraf
+- [ ] `technest-media` herkese açık, `media.technestlondon.co.uk` bağlı; admin'den yüklenen bir fotoğraf
       bu adresten açılıyor ve storefront'ta görünüyor (`NEXT_PUBLIC_IMAGE_HOSTNAME` doğru)
 - [ ] `technest-backups` **kapalı** (public access yok), 30 gün kuralı var; iki ayrı token
 
@@ -922,7 +922,7 @@ Lead ve E4 birlikte yapar.
 - [ ] Staging'de tam duman testi geçti (aşağıdaki liste)
 - [ ] Geri yükleme tatbikatı yapıldı, süre < 1 saat (bölüm 8.4)
 - [ ] Stripe **canlı** anahtarlar `.env`'de ve GitHub secret'ında; canlı webhook uç noktası
-      Stripe'ta tanımlı: `https://api.technest.co.uk/hooks/payment/stripe_stripe`
+      Stripe'ta tanımlı: `https://api.technestlondon.co.uk/hooks/payment/stripe_stripe`
 - [ ] E-posta: mail-tester.com puanı 9/10 veya üzeri
 - [ ] UptimeRobot 3 izleyici yeşil, Sentry DSN'ler girili
 - [ ] Hetzner Backups açık

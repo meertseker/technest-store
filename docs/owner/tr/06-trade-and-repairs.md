@@ -1,7 +1,7 @@
 # Senaryo 6: Toptan (trade) başvuruları ve tamir randevuları
 
 - **Süre:** yaklaşık 5 dakika
-- **Gerekenler:** admin.technest.co.uk'a giriş yapılmış telefonunuz; iki **deneme** trade başvurusu (sitedeki trade formundan iki deneme müşteri hesabıyla gönderin) ve bir **deneme** tamir randevusu (sitedeki tamir formundan kendi telefon numaranızla gönderin).
+- **Gerekenler:** admin.technestlondon.co.uk'a giriş yapılmış telefonunuz; iki **deneme** trade başvurusu (sitedeki trade formundan iki deneme müşteri hesabıyla gönderin) ve bir **deneme** tamir randevusu (sitedeki tamir formundan kendi telefon numaranızla gönderin).
 - **Nerede:** menü → **"Orders"** (Siparişler) → **"Trade"** sekmesi (`/app/shop-orders?tab=trade`) ve **"Repairs"** (Tamirler) sekmesi (`/app/shop-orders?tab=repairs`); eski adresler de buraya açılır.
 - **Durum:** 2026-10-11'de panel koduyla karşılaştırıldı (menü: Today, Orders, Products, Shop settings; her birinde sekmeler). ⚠ işaretli adımlar Medusa'nın kendi ekranlarıdır.
 

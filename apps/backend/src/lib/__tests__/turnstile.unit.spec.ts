@@ -27,7 +27,7 @@ describe("createTurnstileVerifier", () => {
   it("refuses a token solved for another widget (wrong action)", async () => {
     const verify = createTurnstileVerifier({
       secret: "s",
-      fetchImpl: respond({ success: true, action: "newsletter", hostname: "technest.co.uk" }),
+      fetchImpl: respond({ success: true, action: "newsletter", hostname: "technestlondon.co.uk" }),
       expectedAction: "repair-booking",
     })
     await expect(verify("tok")).resolves.toBe(false)
@@ -51,12 +51,12 @@ describe("createTurnstileVerifier", () => {
         secret: "s",
         fetchImpl: respond({ success: true, action: "repair-booking", hostname }),
         expectedAction: "repair-booking",
-        expectedHostname: "technest.co.uk",
+        expectedHostname: "technestlondon.co.uk",
       })
-    await expect(solvedOn("technest.co.uk")("tok")).resolves.toBe(true)
-    await expect(solvedOn("www.technest.co.uk")("tok")).resolves.toBe(true)
+    await expect(solvedOn("technestlondon.co.uk")("tok")).resolves.toBe(true)
+    await expect(solvedOn("www.technestlondon.co.uk")("tok")).resolves.toBe(true)
     await expect(solvedOn("evil.example")("tok")).resolves.toBe(false)
-    await expect(solvedOn("nottechnest.co.uk")("tok")).resolves.toBe(false)
+    await expect(solvedOn("nottechnestlondon.co.uk")("tok")).resolves.toBe(false)
     await expect(solvedOn(undefined)("tok")).resolves.toBe(false)
 
     const unchecked = createTurnstileVerifier({
@@ -120,10 +120,10 @@ describe("resolveTurnstileVerifier", () => {
       const prod = resolveTurnstileVerifier(container(), {
         secret: "s3cret",
         nodeEnv: "production",
-        storefrontUrl: "https://technest.co.uk/",
+        storefrontUrl: "https://technestlondon.co.uk/",
       })
       await expect(prod("tok")).resolves.toBe(false)
-      answer.hostname = "technest.co.uk"
+      answer.hostname = "technestlondon.co.uk"
       await expect(prod("tok")).resolves.toBe(true)
       answer.action = "other"
       await expect(prod("tok")).resolves.toBe(false)
@@ -134,7 +134,7 @@ describe("resolveTurnstileVerifier", () => {
       const dev = resolveTurnstileVerifier(container(), {
         secret: "s3cret",
         nodeEnv: "development",
-        storefrontUrl: "https://technest.co.uk",
+        storefrontUrl: "https://technestlondon.co.uk",
       })
       await expect(dev("tok")).resolves.toBe(true)
       const unset = resolveTurnstileVerifier(container(), { secret: "s3cret", nodeEnv: "production" })

@@ -135,7 +135,7 @@ const notificationModule = {
           pass: process.env.SMTP_PASS || undefined,
           from:
             process.env.MAIL_FROM ||
-            (isProduction ? undefined : "Tech Nest <hello@technest.co.uk>"),
+            (isProduction ? undefined : "Tech Nest <hello@technestlondon.co.uk>"),
           reply_to: process.env.MAIL_REPLY_TO || undefined,
         },
       },
