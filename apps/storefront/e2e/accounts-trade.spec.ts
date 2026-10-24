@@ -24,8 +24,11 @@ async function shot(page: Page, info: TestInfo, name: string) {
  * of the page: axe's target-size rule counts whatever lies under the sticky
  * header at the current scroll position as "partially obscured", which
  * depends on where the previous step left the page, not on the page itself.
+ * It also waits for the <title>: Next streams it in after the body on a
+ * production build, so a fast check could find it still empty.
  */
 async function expectNoAxeViolations(page: Page) {
+  await expect(page).toHaveTitle(/\S/)
   await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" })
   await page.evaluate(() => window.scrollTo(0, 0))
   const { violations } = await new AxeBuilder({ page }).withTags(WCAG).analyze()
