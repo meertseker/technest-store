@@ -5,7 +5,6 @@ import RepairBookingsMoved from "../../src/admin/routes/repair-bookings/page"
 import RepairBookingPage from "../../src/admin/routes/repair-bookings/[id]/page"
 import ShopProductsPage from "../../src/admin/routes/shop-products/page"
 import ShopSettingsPage from "../../src/admin/routes/shop-settings/page"
-import TodayPage from "../../src/admin/routes/today/page"
 import TradeApplicationsMoved from "../../src/admin/routes/trade-applications/page"
 import TradeApplicationPage from "../../src/admin/routes/trade-applications/[id]/page"
 import { RequireSignIn } from "./auth"
@@ -28,8 +27,8 @@ function NotFound() {
     <Container className="flex flex-col gap-2 px-4 py-6 md:px-6">
       <Heading level="h1">Page not found</Heading>
       <Text size="large">
-        <Link to="/today" className="text-ui-fg-interactive underline">
-          Go to Today
+        <Link to="/sales" className="text-ui-fg-interactive underline">
+          Go to Sales
         </Link>
       </Text>
     </Container>
@@ -51,8 +50,9 @@ function SignedIn() {
       {(me) => (
         <Shell me={me}>
           <Routes>
-            <Route path="/" element={<Navigate to="/today" replace />} />
-            <Route path="/today" element={<TodayPage />} />
+            <Route path="/" element={<Navigate to="/sales" replace />} />
+            {/* Today was removed (lead, 2026-10-24); old bookmarks land on Sales. */}
+            <Route path="/today" element={<Navigate to="/sales" replace />} />
             <Route path="/shop-orders" element={<OrdersPage />} />
             <Route path="/orders" element={<Navigate to="/shop-orders?tab=all" replace />} />
             <Route path="/orders/:id" element={<OrderPage />} />

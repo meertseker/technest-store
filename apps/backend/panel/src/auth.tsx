@@ -74,7 +74,7 @@ function SignIn() {
           <img src="/panel/favicon.svg" alt="" className="mb-3 size-12" />
           <Heading level="h1">Tech Nest shop panel</Heading>
           <Text size="large" className="text-ui-fg-subtle">
-            Sign in to see today's orders and run the shop.
+            Sign in to see your sales and run the shop.
           </Text>
         </div>
         <form className="flex flex-col gap-4" onSubmit={submit} noValidate>

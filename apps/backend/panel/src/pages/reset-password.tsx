@@ -23,7 +23,7 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 }
 
 const backToSignIn = (
-  <Link to="/today" className="txt-large text-ui-fg-interactive inline-flex min-h-11 items-center underline-offset-2 hover:underline">
+  <Link to="/sales" className="txt-large text-ui-fg-interactive inline-flex min-h-11 items-center underline-offset-2 hover:underline">
     Back to sign in
   </Link>
 )
@@ -102,7 +102,7 @@ function ChoosePassword({ token }: { token: string }) {
     return (
       <Card title="Password changed">
         <Text size="large">You can sign in with your new password now.</Text>
-        <Link to="/today" className="bg-ui-button-inverted text-ui-contrast-fg-primary txt-large-plus inline-flex min-h-12 items-center justify-center rounded-xl px-4">
+        <Link to="/sales" className="bg-ui-button-inverted text-ui-contrast-fg-primary txt-large-plus inline-flex min-h-12 items-center justify-center rounded-xl px-4">
           Sign in
         </Link>
       </Card>

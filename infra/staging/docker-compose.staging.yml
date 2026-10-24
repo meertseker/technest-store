@@ -10,8 +10,9 @@ services:
     environment: { NODE_OPTIONS: --max-old-space-size=530 }
     deploy: { resources: { limits: { cpus: "1", memory: 768m } } }
   storefront:
-    environment: { NODE_OPTIONS: --max-old-space-size=350 }
-    deploy: { resources: { limits: { cpus: "1", memory: 512m } } }
+    # 1 GB since 2026-10-24: at 512 MB it ran at 70% idle, the first thing to fall over under traffic.
+    environment: { NODE_OPTIONS: --max-old-space-size=700 }
+    deploy: { resources: { limits: { cpus: "1", memory: 1g } } }
   postgres:
     deploy: { resources: { limits: { memory: 512m } } }
   redis:

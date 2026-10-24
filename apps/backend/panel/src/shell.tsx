@@ -1,4 +1,4 @@
-import { ArrowRightOnRectangle, ChartBar, CogSixTooth, ShoppingBag, Sun, Tag, Users } from "@medusajs/icons"
+import { ArrowRightOnRectangle, ChartBar, CogSixTooth, ShoppingBag, Tag, Users } from "@medusajs/icons"
 import { clx } from "@medusajs/ui"
 import type { ComponentType, ReactNode } from "react"
 import { Link, NavLink, useLocation } from "react-router-dom"
@@ -18,11 +18,10 @@ type NavItem = {
 
 /** At most five along the bottom of a phone; Settings sits in the top bar there. */
 export const NAV: NavItem[] = [
-  { to: "/today", label: "Today", Icon: Sun, also: [] },
+  { to: "/sales", label: "Sales", Icon: ChartBar, also: [] },
   { to: "/shop-orders", label: "Orders", Icon: ShoppingBag, also: ["/orders", "/repair-bookings", "/trade-applications"] },
   { to: "/shop-products", label: "Products", Icon: Tag, also: ["/products", "/inventory"] },
   { to: "/customers", label: "Customers", Icon: Users, also: [] },
-  { to: "/sales", label: "Sales", Icon: ChartBar, also: [] },
 ]
 
 export const SETTINGS: NavItem = { to: "/shop-settings", label: "Settings", Icon: CogSixTooth, also: [] }
@@ -39,7 +38,7 @@ function NavLinks({ variant }: { variant: "side" | "bottom" }) {
   const active = activeNav(pathname)
   const items = variant === "side" ? [...NAV, SETTINGS] : NAV
   return (
-    <ul className={variant === "bottom" ? "grid grid-cols-5 gap-1" : "flex flex-col gap-1"}>
+    <ul className={variant === "bottom" ? "grid grid-cols-4 gap-1" : "flex flex-col gap-1"}>
       {items.map(({ to, label, Icon }) => {
         const on = active === to
         return (
@@ -70,7 +69,7 @@ function NavLinks({ variant }: { variant: "side" | "bottom" }) {
 
 function Brand({ size }: { size: "lg" | "sm" }) {
   return (
-    <Link to="/today" className={clx("press flex items-center gap-2.5 rounded-xl px-2 py-1", FOCUS)}>
+    <Link to="/sales" className={clx("press flex items-center gap-2.5 rounded-xl px-2 py-1", FOCUS)}>
       <img src="/panel/favicon.svg" alt="" className={size === "lg" ? "size-9" : "size-8"} />
       <span className="flex flex-col leading-tight">
         <span className={clx("font-semibold tracking-[-0.02em] text-ui-fg-base", size === "lg" ? "text-lg" : "text-base")}>
