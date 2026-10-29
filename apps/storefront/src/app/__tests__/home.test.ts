@@ -53,6 +53,8 @@ describe("home page", { timeout: 30_000 }, () => {
   it("has one H1, the spec's sections in order, and no starter content", async () => {
     const html = await render()
     expect(count(html, "<h1")).toBe(1)
+    // the page opens on the department cards; nothing but the hidden H1 sits above them (2026-10-29)
+    expect(html.indexOf("Shop now")).toBeLessThan(html.indexOf("Your phone or console"))
     const order = [
       "Accessories that fit your phone",
       "New in",
@@ -68,15 +70,23 @@ describe("home page", { timeout: 30_000 }, () => {
     expect(html).not.toMatch(/Medusa|Starter Template|GitHub/i)
   })
 
-  it("uses only real Tech Nest photos, all below the hero and lazy", async () => {
+  it("uses our own photos (plus the repair-bench picture); only the department cards load eagerly", async () => {
     const html = await render()
     const imgs = html.match(/<img[^>]*>/g) ?? []
     expect(imgs.length).toBeGreaterThan(0)
     const srcs = imgs.map((i) => decodeURIComponent(i.match(/src="([^"]+)"/)?.[1] ?? ""))
-    for (const s of srcs) expect(s).toMatch(/\/images\/shop\/(controller-wall|interior-wide|interior-audio|case-wall|shopfront|aisle-accessories)\.jpg/)
-    // the hero has no photo (2026-10-12): nothing is eager, so the text and the picker paint first
+    for (const s of srcs)
+      expect(s).toMatch(
+        /\/images\/(shop\/(controller-wall|interior-wide|interior-audio|case-wall|shopfront|aisle-accessories)|repair\/bench)\.jpg/
+      )
+    // the page opens on the department cards (2026-10-29), so their photos are the LCP and load eagerly;
+    // everything further down stays lazy
     const eager = imgs.filter((i) => !/loading="lazy"/.test(i))
-    expect(eager).toHaveLength(0)
+    expect(eager.length).toBeGreaterThan(0)
+    expect(eager.length).toBeLessThanOrEqual(4)
+    for (const i of eager)
+      expect(decodeURIComponent(i.match(/src="([^"]+)"/)?.[1] ?? "")).toMatch(/\/images\/shop\/(case-wall|interior-audio|controller-wall|aisle-accessories)\.jpg/)
+    expect(srcs.some((s) => s.includes("/images/repair/bench.jpg"))).toBe(true)
   })
 
   it("category tiles come from the backend, without the £1 range", async () => {

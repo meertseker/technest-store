@@ -49,11 +49,11 @@ Rules:
 
 ## 3. Typography
 
-**Revised 2026-10-12 (storefront redesign):** headings (`h1Class`, `h2Class`, `h3Class` in `src/lib/typography.ts`),
-the display headline and prices use **Bricolage Grotesque** (variable, `next/font/google`, `--font-display`,
-`opsz` and `wdth` axes), set heavy and tight like the sign over the door. Body, UI and form text stay in Inter.
-Reverting is the one `Bricolage_Grotesque` declaration in `src/app/layout.tsx`. The scale below is otherwise
-unchanged, except H2 is 24/32 and the home display headline 36/56.
+**Revised 2026-10-29 (owner feedback):** one typeface, **Inter**, for everything. The Bricolage Grotesque
+display face from the 2026-10-12 redesign is gone: the owner asked for a plain, clean, Arial-like face, and Inter
+is the one we already ship. `font-display` (headings, prices, the wordmark) now resolves to Inter in
+`tailwind.config.js`, headings are bold rather than extra-bold, letter-spacing is at most -0.02em. The scale
+below is otherwise unchanged, except H2 is 24/32 and the home display headline 36/56.
 
 One typeface for body and UI: **Inter** (variable, `next/font/google`, `display: swap`, latin subset, self-hosted by Next). Atkinson Hyperlegible is the fallback choice if the lead prefers it, and swapping it is a one-line change. Prices use `font-variant-numeric: tabular-nums` (`.tabular-nums`).
 
@@ -125,12 +125,12 @@ Notation: `[ ]` = block, top to bottom. Width 375 = single column, 16px gutter.
 **375px**
 ```
 [Header + device chip]
-[Hero: shop photo with scrim · H1 "Accessories that fit your phone" · lead · DEVICE PICKER card (Brand ▸ Series ▸ Model, search by name) · link "How do I find my model?"]
+[Hero (revised 2026-10-29, owner feedback): opens straight on the 4 department cards (real shelf photo, name, "Shop now"; 2-col) · then one slim row: device search field + Search button + brand chips + link "How do I find my model?". The H1 "Accessories that fit your phone" is visually hidden; no headline or lead above the cards]
 [Trust row: 3 icon+label items, horizontal scroll disabled, wrap: "Free Click & Collect" · "5.0 on Google" · "14-day returns"]
 [Category tiles: 2-col grid, 6–8 tiles (from backend categories), 1:1 image + label]
 [£1 Deals / Under £5: H2 + tabs (£1 | Under £5) + 2-col product grid (4 items) + "See all"]
 [Best sellers: 2-col grid (4 items) + "See all"]
-[Repairs CTA: surface band, photo_07, "Screen broken? Most repairs same day" + "Book a repair" (secondary button)]
+[Repairs CTA: surface band, repair-bench photo (`/images/repair/bench.jpg`, Pexels stock until the shop has its own bench photo; the owner did not want the interior here, 2026-10-29), "Screen broken? Most repairs same day" + "Book a repair" (secondary button)]
 [Reviews: "5.0 on Google · 30 reviews" + 3 review cards stacked (real text, author first name + initial, date, Google attribution) + "Read all reviews on Google" → Maps]
 [Shop strip: photo_09, address, today's hours, "Free Click & Collect", Map link, Call button]
 [Trade banner: "Buying for a business?" + "Apply for a trade account" (secondary)]
@@ -140,7 +140,7 @@ Notation: `[ ]` = block, top to bottom. Width 375 = single column, 16px gutter.
 **1280px**
 ```
 [Header one row]
-[Hero 2-col: left 7/12 H1 + lead + device picker card; right 5/12 shop photo. Height ≤560px]
+[Hero: 4 department cards in one row (≤200px tall) · device search row underneath. No headline, no lead, no photo backdrop]
 [Trust row: 3 items inline]
 [Category tiles: 4 cols × 2 rows]
 [£1 Deals: 4-col grid]  [Best sellers: 4-col grid]
@@ -150,7 +150,7 @@ Notation: `[ ]` = block, top to bottom. Width 375 = single column, 16px gutter.
 [Trade banner full width]
 [Footer 4-col]
 ```
-Only one hero; no carousels. LCP element = hero H1/photo; photo `priority`, `fetchPriority="high"`.
+Only one hero; no carousels. LCP element = the department card photos (`priority`); everything below is lazy.
 
 Reviews rules: text copied exactly (emoji characters in review text are left as the reviewer wrote them, since editing them would be editing the review), no rating-only reviews, choose from the latest reviews by a fixed rule (newest with ≥60 characters), always show "Reviews from Google" and link to the Maps profile.
 

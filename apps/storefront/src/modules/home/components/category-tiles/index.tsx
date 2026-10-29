@@ -6,15 +6,6 @@ import PhotoPlaceholder from "@/components/ui/photo-placeholder"
 import { iconKeyFor } from "@/lib/catalogue/category-icon"
 import { h2Class } from "@/lib/typography"
 
-/** Department tint by the top-level handle (the first segment of the tile's path) */
-const TINTS: Record<string, string> = {
-  "phone-accessories": "phone",
-  audio: "audio",
-  gaming: "gaming",
-  "computer-laptop": "computer",
-}
-const tintFor = (href: string) => TINTS[href.split("/")[2] ?? ""] ?? "other"
-
 const imageOf = (c: HttpTypes.StoreProductCategory) => {
   const url = c.metadata?.image_url
   return typeof url === "string" && url.startsWith("https://") ? url : null
@@ -22,11 +13,13 @@ const imageOf = (c: HttpTypes.StoreProductCategory) => {
 
 /**
  * "Shop by category" (docs/specs/design.md 7.1). Categories have no images in
- * the backend yet, so the default tile is an icon disc and the name, two to a
- * row on a phone and four from 1024px. Once an admin sets a
- * `metadata.image_url` on any category, every tile switches to the picture
- * layout (4:3 image above the name), with the icon standing in for the ones
- * still without a picture. The tiles themselves always come from the backend.
+ * the backend yet, so the default tile is one plain white card: a line icon,
+ * the name and a chevron, two to a row on a phone and four from 768px. The
+ * owner asked for this section to be simpler (2026-10-29), so the coloured
+ * department tints are gone. Once an admin sets a `metadata.image_url` on any
+ * category, every tile switches to the picture layout (4:3 image above the
+ * name), with the icon standing in for the ones still without a picture. The
+ * tiles themselves always come from the backend.
  */
 export default function CategoryTiles({
   categories,
@@ -51,7 +44,7 @@ export default function CategoryTiles({
           const image = imageOf(c)
           const icon = iconKeyFor(c.handle, c.name)
           return (
-            <li key={c.id}>
+            <li key={c.id} className="min-w-0">
               {pictures ? (
                 <Link
                   href={hrefFor(c)}
@@ -76,22 +69,13 @@ export default function CategoryTiles({
               ) : (
                 <Link
                   href={hrefFor(c)}
-                  style={
-                    {
-                      "--tint": `var(--tint-${tintFor(hrefFor(c))})`,
-                      "--tint-ink": `var(--tint-${tintFor(hrefFor(c))}-ink)`,
-                    } as React.CSSProperties
-                  }
-                  className="group flex h-full min-h-[116px] flex-col justify-between gap-3 rounded-lg bg-[image:var(--tint)] p-4 transition-[box-shadow,transform] duration-150 hover:shadow-[inset_0_0_0_2px_var(--tint-ink)]"
+                  className="group flex h-full min-h-[72px] min-w-0 items-center gap-3 rounded-lg border border-border bg-background p-3 transition-colors duration-150 hover:border-border-strong hover:bg-surface lg:p-4"
                 >
-                  <PhotoPlaceholder
-                    icon={icon}
-                    size="tile"
-                    className="bg-background/80 text-[color:var(--tint-ink)]"
-                  />
-                  <span className="flex items-center justify-between gap-2 font-semibold leading-snug">
-                    {c.name}
-                    <ChevronRight aria-hidden className="size-5 shrink-0 text-[color:var(--tint-ink)]" />
+                  {/* below 640px the card is just the name: a two-column phone row has no room for the icon */}
+                  <PhotoPlaceholder icon={icon} size="tile" className="hidden bg-surface text-foreground sm:flex" />
+                  <span className="flex min-w-0 flex-1 items-center justify-between gap-2 font-medium leading-snug">
+                    <span className="min-w-0">{c.name}</span>
+                    <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
                   </span>
                 </Link>
               )}

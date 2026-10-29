@@ -1,9 +1,11 @@
 /**
- * Type scale from docs/specs/design.md section 3, as class strings. Headings
- * and prices use the display face (`font-display`, Bricolage Grotesque); body
- * and UI text stay in Inter. Sizes: H1 28/36, H2 24/32, H3 18/20.
+ * Type scale from docs/specs/design.md section 3, as class strings. One
+ * typeface, Inter, for headings, prices, body and UI (the owner asked for a
+ * plain, clean face, 2026-10-29); `font-display` resolves to it. Headings are
+ * bold, not extra-bold, and only lightly tightened. Sizes: H1 28/36, H2 24/32,
+ * H3 18/20.
  */
-export const displayClass = "font-display text-[36px] font-extrabold leading-[1.02] tracking-[-0.025em] lg:text-[56px]"
+export const displayClass = "font-display text-[36px] font-bold leading-[1.05] tracking-[-0.02em] lg:text-[56px]"
 export const h1Class = "font-display text-[28px] font-bold leading-[1.1] tracking-[-0.02em] lg:text-[36px]"
 export const h2Class = "font-display text-[24px] font-bold leading-[1.1] tracking-[-0.015em] lg:text-[32px]"
 export const h3Class = "font-display text-lg font-bold leading-snug tracking-[-0.01em] lg:text-xl"

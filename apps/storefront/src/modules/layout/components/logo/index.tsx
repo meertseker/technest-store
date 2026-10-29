@@ -1,11 +1,11 @@
 import Link from "next/link"
 
 /**
- * Wordmark styled after the sign over the door: heavy, tight, uppercase, in
- * the shop's red. Uppercase here is the logo, not a text style.
+ * Wordmark styled after the sign over the door: bold, uppercase, in the
+ * shop's red. Uppercase here is the logo, not a text style.
  */
 const wordmark = (
-  <span className="font-display whitespace-nowrap text-[22px] font-extrabold uppercase leading-none tracking-[-0.03em] text-brand lg:text-[26px]">
+  <span className="font-display whitespace-nowrap text-[22px] font-bold uppercase leading-none tracking-[-0.02em] text-brand lg:text-[26px]">
     Tech Nest
   </span>
 )

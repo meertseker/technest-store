@@ -17,6 +17,8 @@ type Props = {
   defaultQuery?: string
   /** Visible label; the hero uses a shorter one */
   label?: string
+  /** Home strip: the example line becomes the placeholder, so only the label sits above the field */
+  compact?: boolean
 }
 
 const resultsHeading = (count: number, q: string) =>
@@ -36,6 +38,7 @@ export default function DeviceSearch({
   currentSlug,
   defaultQuery = "",
   label = "Search for your phone or console",
+  compact = false,
 }: Props) {
   const id = useId()
   const [q, setQ] = useState(defaultQuery)
@@ -50,9 +53,11 @@ export default function DeviceSearch({
         <label htmlFor={`${id}-q`} className="block font-semibold">
           {label}
         </label>
-        <p id={`${id}-hint`} className="text-base text-muted-foreground">
-          For example: iPhone 15 Pro, S24, PS5 or a model number
-        </p>
+        {!compact && (
+          <p id={`${id}-hint`} className="text-base text-muted-foreground">
+            For example: iPhone 15 Pro, S24, PS5 or a model number
+          </p>
+        )}
         <div className="mt-2 flex gap-2">
           <input
             id={`${id}-q`}
@@ -61,7 +66,8 @@ export default function DeviceSearch({
             autoComplete="off"
             enterKeyHint="search"
             maxLength={60}
-            aria-describedby={`${id}-hint`}
+            placeholder={compact ? "e.g. iPhone 15, S24, PS5" : undefined}
+            aria-describedby={compact ? undefined : `${id}-hint`}
             value={q}
             onChange={(e) => {
               setQ(e.target.value)

@@ -1,6 +1,6 @@
 import { getBaseURL } from "@lib/util/env"
 import { Metadata } from "next"
-import { Bricolage_Grotesque, Inter } from "next/font/google"
+import { Inter } from "next/font/google"
 import "styles/globals.css"
 
 const inter = Inter({
@@ -9,17 +9,9 @@ const inter = Inter({
   variable: "--font-inter",
 })
 
-/**
- * Display face for headings and prices (docs/specs/design.md 3, revised in the
- * 2026-10 redesign): a grotesque with the weight of the shop sign. Body and UI
- * text stay in Inter. Swapping it back is this one declaration.
- */
-const display = Bricolage_Grotesque({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-display",
-  axes: ["opsz", "wdth"],
-})
+// One typeface everywhere: the owner asked for a plain, clean face (2026-10-29),
+// so the Bricolage Grotesque display face from the 2026-10 redesign is gone and
+// `font-display` resolves to Inter in tailwind.config.js.
 
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseURL()),
@@ -31,7 +23,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout(props: { children: React.ReactNode }) {
   return (
-    <html lang="en-GB" data-mode="light" className={`${inter.variable} ${display.variable}`}>
+    <html lang="en-GB" data-mode="light" className={inter.variable}>
       <body>
         <a
           href="#main"

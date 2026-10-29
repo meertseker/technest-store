@@ -15,15 +15,20 @@ const REPAIRS = [
   { Icon: Gamepad2, label: "Consoles and laptops" },
 ]
 
-/** Repairs CTA: interior photo | text with what we fix, secondary button */
+/**
+ * Repairs CTA: repair-bench photo | text with what we fix, secondary button.
+ * The photo is a stock picture (Pexels licence: free to use, no attribution
+ * needed): the owner wanted a repair scene here, not the shop interior
+ * (2026-10-29). Swap in a photo of the shop's own bench when there is one.
+ */
 export function RepairsCta() {
   return (
     <section aria-labelledby="repairs-heading" className="content-container section">
       <div className="grid gap-6 md:grid-cols-2 md:items-center lg:gap-12">
         <div className={photo}>
           <Image
-            src="/images/shop/interior-audio.jpg"
-            alt="Inside the Tech Nest shop: shelves of speakers, headphones and accessories"
+            src="/images/repair/bench.jpg"
+            alt="A phone opened up on a repair mat, with a screwdriver and tweezers beside it"
             fill
             loading="lazy"
             sizes="(min-width: 1280px) 600px, (min-width: 768px) 50vw, 100vw"

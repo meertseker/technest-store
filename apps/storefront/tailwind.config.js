@@ -80,7 +80,8 @@ module.exports = {
         "3xl": "2rem",
       },
       fontFamily: {
-        display: ["var(--font-display)", "var(--font-inter)", "Inter", "sans-serif"],
+        // `font-display` stays as a class so headings are one edit away from a display face
+        display: ["var(--font-inter)", "Inter", "Arial", "sans-serif"],
         sans: [
           "var(--font-inter)",
           "Inter",
